@@ -1,5 +1,5 @@
 import { log, LogLevel } from 'crawlee';
-import { loadSources, getSeedUrls } from './config.js';
+import { loadSources, getSeedUrls } from './utils/index.js';
 import { createCrawler } from './crawler.js';
 
 log.setLevel(LogLevel.INFO);

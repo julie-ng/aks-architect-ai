@@ -9,7 +9,9 @@
   "scripts": {
     "crawl": "tsx src/main.ts",
     "clean": "rm -rf storage/",
-    "export": "tsx src/export.ts"
+    "export": "tsx src/export.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "crawlee": "^3.12.0",
@@ -21,6 +23,7 @@
     "@types/node": "^22.0.0",
     "@types/turndown": "^5.0.5",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
   }
 }

@@ -2,7 +2,7 @@ import { CheerioCrawler, Dataset, RequestQueue, log } from 'crawlee';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import { type Source, type PageResult } from './types.js';
-import { getAllowedGlobs, matchSource, autoDetectDocType } from './config.js';
+import { getAllowedGlobs, matchSource, autoDetectDocType } from './utils/index.js';
 
 // ---------------------------------------------------------------------------
 // HTML → Markdown converter
