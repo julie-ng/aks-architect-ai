@@ -118,6 +118,12 @@ export async function createCrawler(sources: Source[]) {
           // Strip URL fragments and query params for deduplication
           const clean = req.url.split('#')[0].split('?')[0];
           req.url = clean;
+
+          // Skip non-HTML resources (images, SVGs, PDFs, etc.)
+          if (/\.(svg|png|jpg|jpeg|gif|webp|pdf|zip|json)$/i.test(clean)) {
+            return false;
+          }
+
           return req;
         },
       });
