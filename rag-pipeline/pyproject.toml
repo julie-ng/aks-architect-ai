@@ -1,0 +1,8 @@
+[project]
+name = "rag-pipeline"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "qdrant-client>=1.9.0",
+    "ollama>=0.3.0",
+]

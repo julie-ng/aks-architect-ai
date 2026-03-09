@@ -86,8 +86,8 @@ npm run crawl
 ```
 rag-pipeline/
   chunk.py          # Read crawler JSON → chunk markdown → output chunks.jsonl
-  requirements.txt  # qdrant-client, ollama
-docker-compose.yaml # Qdrant container (project root)
+  pyproject.toml    # uv project config + dependencies
+docker-compose.dev.yaml # Qdrant container (project root)
 ```
 
 ### Key Commands
@@ -97,10 +97,10 @@ docker compose up -f docker-compose.dev.yaml -d
 
 # Install Python deps
 cd rag-pipeline
-pip install -r requirements.txt
+uv sync
 
 # Chunk crawled docs
-python chunk.py
+uv run python chunk.py
 # Options: --dataset <path>  --output <path>
 ```
 

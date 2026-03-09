@@ -1,3 +1,0 @@
-# Embedding pipeline dependencies
-qdrant-client>=1.9.0    # Qdrant vector DB client
-ollama>=0.3.0           # Ollama client for nomic-embed-text (local embeddings)
