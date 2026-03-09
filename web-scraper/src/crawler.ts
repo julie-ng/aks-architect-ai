@@ -58,16 +58,16 @@ export async function createCrawler(sources: Source[]) {
 
       log.info(`Crawling: ${url}`);
 
-      // Extract main content — target div.content inside <main> to skip
+      // Extract main content — collect all div.content inside <main> to skip
       // article-header, metadata, doc-outline, and other page chrome.
-      const $content = $('main div.content').first();
-      if (!$content.length) {
+      const $contentBlocks = $('main div.content');
+      if (!$contentBlocks.length) {
         log.warning(`No <main div.content> element found: ${url}`);
         return;
       }
 
-      // Remove remaining noise elements before markdown conversion
-      $content.find([
+      // Remove noise elements from each content block before conversion
+      const noiseSelector = [
         '.feedback-section',
         '.action-container',
         '.contributor-guide',
@@ -80,12 +80,13 @@ export async function createCrawler(sources: Source[]) {
         '.alert-holder',
         '[unauthorized-private-section]',
         '[data-id="ai-summary"]',
-      ].join(', ')).remove();
+      ].join(', ');
+      $contentBlocks.find(noiseSelector).remove();
 
       const title = $('h1').first().text().trim();
       const description = $('meta[name="description"]').attr('content') ?? '';
-      const mainHtml = $content.html() ?? '';
-      const markdown = turndown.turndown(mainHtml);
+      const combinedHtml = $contentBlocks.map((_, el) => $(el).html()).get().join('\n');
+      const markdown = turndown.turndown(combinedHtml);
 
       // Skip pages with very little content (likely index/redirect pages)
       if (markdown.trim().length < 50) {
