@@ -73,3 +73,60 @@ To re-crawl from scratch, delete the dataset and request queue first:
 rm -rf storage/datasets/aks-docs storage/request_queues/aks-crawl
 npm run crawl
 ```
+
+## RAG Pipeline
+
+### Tech Stack
+- **Language:** Python 3
+- **Vector DB:** [Qdrant](https://qdrant.tech/) — local via Docker, upgrade path to Qdrant Cloud on Azure
+- **Embeddings (local):** `nomic-embed-text` via [Ollama](https://ollama.com/)
+- **Embeddings (production):** Azure OpenAI (requires re-embedding on deploy)
+
+### Project Structure
+```
+rag-pipeline/
+  chunk.py          # Read crawler JSON → chunk markdown → output chunks.jsonl
+  requirements.txt  # qdrant-client, ollama
+docker-compose.yaml # Qdrant container (project root)
+```
+
+### Key Commands
+```bash
+# Start Qdrant (dashboard at http://localhost:6333/dashboard)
+docker compose up -f docker-compose.dev.yaml -d
+
+# Install Python deps
+cd rag-pipeline
+pip install -r requirements.txt
+
+# Chunk crawled docs
+python chunk.py
+# Options: --dataset <path>  --output <path>
+```
+
+### Pipeline Stages
+1. **Chunk** (`chunk.py`) — splits markdown on `##`/`###`/`####` headings, merges tiny fragments, further splits oversized sections on paragraph breaks. Outputs `chunks.jsonl` (one JSON object per line).
+2. **Embed** _(not yet built)_ — reads `chunks.jsonl`, calls Ollama/nomic-embed-text, upserts vectors into Qdrant
+3. **Query** _(not yet built)_ — takes a user question, embeds it, retrieves top-k chunks from Qdrant
+
+### Chunk Output Format
+```json
+{
+  "id": "<uuid>",
+  "text": "## Section heading\n\nContent...",
+  "url": "https://learn.microsoft.com/...",
+  "title": "Page title",
+  "description": "Meta description",
+  "source_name": "aac-reference-architectures",
+  "priority": 10,
+  "tags": { "source_category": "aac", "doc_type": "reference-architecture" },
+  "chunk_index": 3,
+  "chunk_total": 12,
+  "crawled_at": "2026-03-09T..."
+}
+```
+
+### Chunking Tunables
+Defined at the top of `chunk.py`:
+- `MAX_CHARS = 1500` — max chunk size (~300–400 tokens, safe for nomic-embed-text's 2048 token limit)
+- `MIN_CHARS = 100` — minimum size; smaller fragments are merged or discarded
