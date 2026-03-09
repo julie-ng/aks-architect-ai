@@ -39,16 +39,16 @@ sources:
   # --------------------------
   # Well-Architected Framework
   # --------------------------
-  - name: waf-aks
-    description: Well-Architected Framework - AKS service guide
-    seed_urls:
-      - https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service
-    allowed_globs:
-      - "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service**"
-    priority: 20
-    tags:
-      source_category: waf
-      waf_pillar: multi
+  # - name: waf-aks
+  #   description: Well-Architected Framework - AKS service guide
+  #   seed_urls:
+  #     - https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service
+  #   allowed_globs:
+  #     - "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service**"
+  #   priority: 20
+  #   tags:
+  #     source_category: waf
+  #     waf_pillar: multi
 
   # -------------------------
   # Azure Architecture Center
@@ -69,16 +69,16 @@ sources:
   # -------------------------------------------
   # Cloud Adoption Framework — AKS Landing Zone
   # -------------------------------------------
-  - name: caf-landing-zone
-    description: Cloud Adoption Framework - AKS Landing Zone Accelerator
-    seed_urls:
-      - https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/landing-zone-accelerator
-    allowed_globs:
-      - "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/**"
-    priority: 20
-    tags:
-      source_category: caf
-      doc_type: landing-zone
+  # - name: caf-landing-zone
+  #   description: Cloud Adoption Framework - AKS Landing Zone Accelerator
+  #   seed_urls:
+  #     - https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/landing-zone-accelerator
+  #   allowed_globs:
+  #     - "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/**"
+  #   priority: 20
+  #   tags:
+  #     source_category: caf
+  #     doc_type: landing-zone
 
   # -------------------
   # Regulated Scenarios
