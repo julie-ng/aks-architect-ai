@@ -103,6 +103,7 @@ export async function createCrawler(sources: Source[]) {
         description,
         markdown,
         source_name: sourceMatch?.name ?? 'unknown',
+        priority: sourceMatch?.priority ?? 0,
         tags,
         crawled_at: new Date().toISOString(),
       };

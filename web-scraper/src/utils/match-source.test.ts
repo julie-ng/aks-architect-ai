@@ -7,6 +7,7 @@ const aksDocs: Source = {
   description: 'Official AKS docs',
   seed_urls: ['https://learn.microsoft.com/en-us/azure/aks/'],
   allowed_globs: ['https://learn.microsoft.com/en-us/azure/aks/**'],
+  priority: 20,
   tags: { source_category: 'aks-docs' },
 };
 
@@ -15,6 +16,7 @@ const pciRegulated: Source = {
   description: 'PCI DSS regulated cluster docs',
   seed_urls: ['https://learn.microsoft.com/en-us/azure/aks/pci-intro'],
   allowed_globs: ['https://learn.microsoft.com/en-us/azure/aks/pci-**'],
+  priority: 10,
   tags: { source_category: 'aks-docs', scenario_tags: ['regulated', 'pci-dss'] },
 };
 
@@ -64,6 +66,22 @@ describe('matchSource', () => {
       allSources,
     );
     expect(result).toBeNull();
+  });
+
+  it('returns the priority from the matched source', () => {
+    const result = matchSource(
+      'https://learn.microsoft.com/en-us/azure/aks/concepts-networking',
+      allSources,
+    );
+    expect(result?.priority).toBe(20);
+  });
+
+  it('defaults priority to 0 when source has no priority set', () => {
+    const result = matchSource(
+      'https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/security',
+      allSources,
+    );
+    expect(result?.priority).toBe(0);
   });
 
   it('returns a copy of tags (not a reference to the original)', () => {

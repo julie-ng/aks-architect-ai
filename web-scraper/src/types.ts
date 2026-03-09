@@ -6,6 +6,7 @@ export interface Source {
   description: string;
   seed_urls: string[];
   allowed_globs: string[];
+  priority?: number;
   tags: Record<string, string | string[]>;
 }
 
@@ -25,6 +26,7 @@ export interface PageResult {
   description: string;
   markdown: string;
   source_name: string;
+  priority: number;
   tags: Record<string, string | string[]>;
   crawled_at: string;
 }

@@ -5,7 +5,7 @@ import { type Source } from '../types.js';
  * "Best match" = source whose allowed_globs produce the longest prefix match.
  * Returns null if no source matches.
  */
-export function matchSource(url: string, sources: Source[]): { name: string; tags: Record<string, string | string[]> } | null {
+export function matchSource(url: string, sources: Source[]): { name: string; priority: number; tags: Record<string, string | string[]> } | null {
   let bestMatch: Source | null = null;
   let bestPrefixLen = 0;
 
@@ -24,6 +24,7 @@ export function matchSource(url: string, sources: Source[]): { name: string; tag
 
   return {
     name: bestMatch.name,
+    priority: bestMatch.priority ?? 0,
     tags: { ...bestMatch.tags },
   };
 }
