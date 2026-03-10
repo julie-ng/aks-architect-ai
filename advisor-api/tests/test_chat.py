@@ -38,23 +38,29 @@ class TestChatEndpoint:
         assert response.status_code == 422
 
 
-@patch("app.routers.health.ollama")
+@patch("app.routers.healthz.ollama")
 class TestHealthEndpoint:
     def setup_method(self):
         app.state.qdrant = MagicMock()
         self.client = TestClient(app)
 
     def test_healthy(self, mock_ollama):
-        response = self.client.get("/api/health")
+        response = self.client.get("/healthz")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
-        assert data["checks"]["qdrant"] == "ok"
-        assert data["checks"]["ollama"] == "ok"
+        assert data["name"] == "advisor-api"
+        assert data["version"] == "0.1.0"
+        assert data["status"] == "pass"
+        assert data["checks"]["qdrant"] == "pass"
+        assert data["checks"]["ollama"] == "pass"
+        assert "uptime" in data
+        assert data["uptime"]["component_type"] == "system"
+        assert data["uptime"]["observed_unit"] == "s"
+        assert data["uptime"]["observed_value"] >= 0
 
     def test_degraded_when_ollama_down(self, mock_ollama):
         mock_ollama.list.side_effect = Exception("connection refused")
-        response = self.client.get("/api/health")
+        response = self.client.get("/healthz")
         data = response.json()
-        assert data["status"] == "degraded"
-        assert "error" in data["checks"]["ollama"]
+        assert data["status"] == "fail"
+        assert data["checks"]["ollama"].startswith("fail:")

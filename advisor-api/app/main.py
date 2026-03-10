@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import QdrantClient
 
 from app.config import Settings
-from app.routers import chat, health
+from app.routers import chat, healthz
 
 
 @asynccontextmanager
@@ -27,4 +27,4 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
-app.include_router(health.router)
+app.include_router(healthz.router)
