@@ -68,9 +68,9 @@ Turndown also globally strips: `nav`, `aside`, `header`, `footer`, `script`, `st
 Core AKS docs source (`aks-docs`) is defined but commented out.
 
 ### Re-crawling
-To re-crawl from scratch, delete the dataset and request queue first:
+To re-crawl from scratch, delete all Crawlee storage (dataset, request queue, and session state):
 ```bash
-rm -rf storage/datasets/aks-docs storage/request_queues/aks-crawl
+rm -rf storage/
 npm run crawl
 ```
 

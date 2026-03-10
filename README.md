@@ -2,6 +2,17 @@
 
 Experimenting with RAG Pipelines for AKS docs to create an AI Advisor.
 
+## Crawler
+
+### Key Commands
+```bash
+cd web-scraper
+npm run crawl        # Run the crawler (tsx src/main.ts)
+npm run clean        # Delete all storage/ data
+npm run test         # Vitest run
+npm run test:watch   # Vitest watch mode
+```
+
 ## Rag Pipeline
 
 ## Commands
