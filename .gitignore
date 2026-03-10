@@ -3,3 +3,5 @@ node_modules
 backup*
 claude-*
 rag-pipeline/chunks.jsonl
+__pycache__
+.pytest_cache

@@ -6,3 +6,11 @@ dependencies = [
     "qdrant-client>=1.9.0",
     "ollama>=0.4.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

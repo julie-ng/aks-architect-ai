@@ -24,13 +24,14 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
 EMBEDDING_MODEL = 'nomic-embed-text'
+EMBEDDING_PREFIX = 'search_document: '
 VECTOR_DIM = 768       # nomic-embed-text output dimension
 BATCH_SIZE = 50        # points per upsert call
 QDRANT_URL = 'http://localhost:6333'
 
 
 def get_embedding(text: str) -> list[float]:
-    response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=text)
+    response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=EMBEDDING_PREFIX + text)
     return response['embedding']
 
 

@@ -15,6 +15,7 @@ import ollama
 from qdrant_client import QdrantClient
 
 EMBEDDING_MODEL = 'nomic-embed-text'
+EMBEDDING_PREFIX = 'search_query: '
 QDRANT_URL = 'http://localhost:6333'
 
 
@@ -28,7 +29,7 @@ def main():
     client = QdrantClient(url=QDRANT_URL)
 
     # Embed the question
-    response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=args.question)
+    response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=EMBEDDING_PREFIX + args.question)
     vector = response['embedding']
 
     # Search

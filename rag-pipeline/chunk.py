@@ -19,65 +19,11 @@ Usage:
 
 import argparse
 import json
-import re
 import sys
 import uuid
 from pathlib import Path
 
-# Tunables
-MAX_CHARS = 1500  # ~300-400 tokens — safe for nomic-embed-text (2048 token limit)
-MIN_CHARS = 100   # Discard tiny fragments (e.g. heading-only sections)
-
-
-def split_by_headings(markdown: str) -> list[tuple[str, str]]:
-    """
-    Split markdown into (heading, body) pairs at ## / ### / #### boundaries.
-    Returns a list of (heading_text, section_content) tuples.
-    The first tuple's heading may be empty if content precedes the first heading.
-    """
-    # Match ##+ headings (but not # which is the page title)
-    pattern = re.compile(r'^(#{2,}\s+.+)$', re.MULTILINE)
-    parts = pattern.split(markdown)
-
-    sections = []
-    # parts alternates: [pre_heading_text, heading, body, heading, body, ...]
-    # First element is text before any heading
-    if parts[0].strip():
-        sections.append(('', parts[0].strip()))
-
-    for i in range(1, len(parts), 2):
-        heading = parts[i].strip()
-        body = parts[i + 1].strip() if i + 1 < len(parts) else ''
-        sections.append((heading, body))
-
-    return sections
-
-
-def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
-    """Further split a long block on blank lines to stay under max_chars."""
-    if len(text) <= max_chars:
-        return [text]
-
-    paragraphs = re.split(r'\n{2,}', text)
-    chunks = []
-    current = ''
-
-    for para in paragraphs:
-        if not para.strip():
-            continue
-        candidate = (current + '\n\n' + para).strip() if current else para
-        if len(candidate) <= max_chars:
-            current = candidate
-        else:
-            if current:
-                chunks.append(current)
-            # If a single paragraph exceeds max, include it anyway (hard to split further)
-            current = para
-
-    if current:
-        chunks.append(current)
-
-    return chunks
+from helpers.chunking import MAX_CHARS, MIN_CHARS, sections_to_chunks, split_by_headings
 
 
 def chunk_document(doc: dict) -> list[dict]:
@@ -87,44 +33,10 @@ def chunk_document(doc: dict) -> list[dict]:
         return []
 
     sections = split_by_headings(markdown)
-    raw_chunks = []
+    chunk_texts = sections_to_chunks(sections, MAX_CHARS, MIN_CHARS)
 
-    for heading, body in sections:
-        text = (heading + '\n\n' + body).strip() if heading else body
-        if not text:
-            continue
-        # Split oversized sections further
-        for part in split_on_paragraphs(text, MAX_CHARS):
-            if part.strip():
-                raw_chunks.append(part.strip())
-
-    # Merge consecutive tiny chunks
-    merged = []
-    buffer = ''
-    for chunk in raw_chunks:
-        candidate = (buffer + '\n\n' + chunk).strip() if buffer else chunk
-        if len(buffer) < MIN_CHARS:
-            buffer = candidate
-        else:
-            merged.append(buffer)
-            buffer = chunk
-    if buffer:
-        merged.append(buffer)
-
-    # Deduplicate — some pages have repeated div.content blocks
-    seen = set()
-    deduped = []
-    for chunk in merged:
-        if chunk not in seen:
-            seen.add(chunk)
-            deduped.append(chunk)
-    merged = deduped
-
-    # Build output records
     results = []
-    for i, text in enumerate(merged):
-        if len(text) < MIN_CHARS:
-            continue
+    for i, text in enumerate(chunk_texts):
         results.append({
             'id': str(uuid.uuid4()),
             'text': text,
@@ -135,7 +47,7 @@ def chunk_document(doc: dict) -> list[dict]:
             'priority': doc.get('priority', 0),
             'tags': doc.get('tags', {}),
             'chunk_index': i,
-            'chunk_total': len(merged),
+            'chunk_total': len(chunk_texts),
             'crawled_at': doc.get('crawled_at', ''),
         })
 
