@@ -19,6 +19,7 @@ services:
     environment:
       QDRANT_URL: http://qdrant:6333
       OLLAMA_HOST: http://host.docker.internal:11434
+      OPENAPI_DOCS_ENABLED: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

@@ -16,9 +16,15 @@ async def lifespan(app: FastAPI):
     app.state.qdrant.close()
 
 
-app = FastAPI(title="AKS Architect", lifespan=lifespan)
-
 settings = Settings()
+
+app = FastAPI(
+    title="AKS Architect",
+    lifespan=lifespan,
+    docs_url="/docs" if settings.openapi_docs_enabled else None,
+    redoc_url="/redoc" if settings.openapi_docs_enabled else None,
+    openapi_url="/openapi.json" if settings.openapi_docs_enabled else None,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
