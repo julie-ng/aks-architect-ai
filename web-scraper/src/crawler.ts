@@ -93,7 +93,8 @@ export async function createCrawler(sources: Source[]) {
       ].join(', ');
       $contentBlocks.find(noiseSelector).remove();
 
-      const title = $('h1').first().text().trim();
+      const rawTitle = $('title').text().trim();
+      const title = rawTitle.replace(/\s*\|\s*Microsoft Learn$/, '');
       const description = $('meta[name="description"]').attr('content') ?? '';
       const combinedHtml = $contentBlocks.map((_, el) => $(el).html()).get().join('\n');
       const markdown = turndown.turndown(combinedHtml);
