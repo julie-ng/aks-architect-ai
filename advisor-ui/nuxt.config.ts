@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     advisorApiUrl: 'http://localhost:8000',
     ollamaBaseUrl: 'http://localhost:11434',
-    chatModel: 'llama3.2',
+    chatModel: 'gemma3:1b',
     provider: 'ollama',
     azureApiKey: '',
     azureEndpoint: '',

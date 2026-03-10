@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UIMessage } from '@ai-sdk/vue'
+import type { UIMessage } from 'ai'
 
 const props = defineProps<{
   message: UIMessage

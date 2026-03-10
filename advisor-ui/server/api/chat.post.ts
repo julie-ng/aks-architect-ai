@@ -1,4 +1,4 @@
-import { streamText } from 'ai'
+import { streamText, UIMessage, convertToModelMessages } from 'ai'
 import { getChatModel } from '../utils/provider'
 import { getSystemPrompt } from '../utils/system-prompt'
 
@@ -20,51 +20,45 @@ function formatContext(chunks: RetrieveChunk[]): string {
     .join('\n\n---\n\n')
 }
 
-function extractText(message: { parts?: { type: string; text?: string }[]; content?: string }): string {
-  if (message.parts) {
-    return message.parts
-      .filter((p) => p.type === 'text')
-      .map((p) => p.text ?? '')
-      .join('')
-  }
-  return message.content ?? ''
-}
+export default defineLazyEventHandler(async () => {
+  return defineEventHandler(async (event) => {
+    const config = useRuntimeConfig()
+    const { messages }: { messages: UIMessage[] } = await readBody(event)
 
-export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  const { messages } = await readBody(event)
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+    if (!lastUserMessage) {
+      throw createError({ statusCode: 400, message: 'No user message found' })
+    }
 
-  const lastUserMessage = [...messages].reverse().find((m: { role: string }) => m.role === 'user')
-  if (!lastUserMessage) {
-    throw createError({ statusCode: 400, message: 'No user message found' })
-  }
+    const question = lastUserMessage.parts
+      ?.filter((p) => p.type === 'text')
+      .map((p) => p.text)
+      .join('') ?? ''
 
-  const question = extractText(lastUserMessage)
+    const retrieveResponse = await $fetch<RetrieveResponse>(
+      `${config.advisorApiUrl}/api/retrieve`,
+      {
+        method: 'POST',
+        body: { question },
+      },
+    )
 
-  const retrieveResponse = await $fetch<RetrieveResponse>(
-    `${config.advisorApiUrl}/api/retrieve`,
-    {
-      method: 'POST',
-      body: { question },
-    },
-  )
+    const context = formatContext(retrieveResponse.chunks)
+    const systemPrompt = getSystemPrompt()
 
-  const context = formatContext(retrieveResponse.chunks)
-  const systemPrompt = getSystemPrompt()
-
-  const augmentedMessages = [
-    ...messages.slice(0, -1),
-    {
+    const modelMessages = await convertToModelMessages(messages)
+    // Replace last user message with augmented version including RAG context
+    modelMessages[modelMessages.length - 1] = {
       role: 'user' as const,
       content: `Documentation sources:\n\n${context}\n\n---\n\nQuestion: ${question}`,
-    },
-  ]
+    }
 
-  const result = streamText({
-    model: getChatModel(),
-    system: systemPrompt,
-    messages: augmentedMessages,
+    const result = streamText({
+      model: getChatModel(),
+      system: systemPrompt,
+      messages: modelMessages,
+    })
+
+    return result.toUIMessageStreamResponse()
   })
-
-  return result.toUIMessageStreamResponse()
 })

@@ -1,4 +1,4 @@
-import { createOllama } from 'ollama-ai-provider'
+import { createOllama } from 'ollama-ai-provider-v2'
 import { createAzure } from '@ai-sdk/azure'
 
 export function getChatModel() {
