@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useChat } from '@ai-sdk/vue'
 
-const { messages, input, handleSubmit, status } = useChat()
+// const { messages, input, handleSubmit, status } = useChat()
 
-const isLoading = computed(() => status.value === 'submitted' || status.value === 'streaming')
+// const isLoading = computed(() => status.value === 'submitted' || status.value === 'streaming')
+//
+
+const isLoading = false
 </script>
 
 <template>
@@ -14,20 +17,20 @@ const isLoading = computed(() => status.value === 'submitted' || status.value ==
     </header>
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
-      <p v-if="messages.length === 0" class="text-gray-400 text-center mt-8">
+      <!-- <p v-if="messages.length === 0" class="text-gray-400 text-center mt-8">
         Ask a question about AKS architecture to get started.
-      </p>
-      <ChatMessage
+      </p> -->
+      <!-- <ChatMessage
         v-for="message in messages"
         :key="message.id"
         :message="message"
-      />
+      /> -->
     </div>
 
     <form class="p-4 border-t border-gray-200 dark:border-gray-800" @submit.prevent="handleSubmit">
       <div class="flex gap-2">
+          <!-- v-model="input" -->
         <UInput
-          v-model="input"
           placeholder="Ask about AKS architecture..."
           class="flex-1"
           :disabled="isLoading"
