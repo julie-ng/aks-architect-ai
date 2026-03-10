@@ -233,8 +233,8 @@ All via environment variables (pydantic-settings). Key settings:
 ### Tech Stack
 - **Framework:** Nuxt 3 (Vue 3)
 - **Components:** @nuxt/ui (Tailwind-based)
-- **AI SDK:** `ai` (core) + `@ai-sdk/vue` (useChat composable)
-- **LLM Providers:** `ollama-ai-provider` (local), `@ai-sdk/azure` (production)
+- **AI SDK:** `ai` v6 (core) + `@ai-sdk/vue` (Chat class)
+- **LLM Providers:** `ollama-ai-provider-v2` (local), `@ai-sdk/azure` (production)
 - **Package manager:** npm
 
 ### Key Commands
@@ -245,10 +245,10 @@ make advisor-ui/dev       # Start dev server on :3000
 
 ### Architecture
 ```
-Browser → useChat (@ai-sdk/vue) → Nuxt server route (POST /api/chat)
+Browser → new Chat() (@ai-sdk/vue) → Nuxt server route (POST /api/chat)
   1. Calls FastAPI POST /api/retrieve → gets RAG chunks
   2. Calls streamText() with system prompt + chunks → streams tokens back
-  Provider: ollama('llama3.2') locally / azure('deployment') in prod
+  Provider: ollama('gemma3:1b') locally / azure('deployment') in prod
 ```
 
 The Nuxt server route acts as the LLM orchestrator: it fetches retrieval context from FastAPI, then streams the LLM response directly to the browser via AI SDK's data stream protocol.
@@ -258,7 +258,7 @@ Server-only runtime config in `nuxt.config.ts`. Env vars auto-map with `NUXT_` p
 - `NUXT_ADVISOR_API_URL` — FastAPI URL (default: `http://localhost:8000`)
 - `NUXT_PROVIDER` — `ollama` or `azure` (default: `ollama`)
 - `NUXT_OLLAMA_BASE_URL` — Ollama URL (default: `http://localhost:11434`)
-- `NUXT_CHAT_MODEL` — model name (default: `llama3.2`)
+- `NUXT_CHAT_MODEL` — model name (default: `gemma3:1b`)
 - `NUXT_AZURE_API_KEY`, `NUXT_AZURE_ENDPOINT`, `NUXT_AZURE_DEPLOYMENT` — for Azure OpenAI
 
 ### Shared System Prompt
