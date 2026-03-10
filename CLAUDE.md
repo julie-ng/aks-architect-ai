@@ -2,6 +2,14 @@
 
 AI-assisted architecture advisor for Azure Kubernetes Service (AKS). Data pipeline is complete (crawl → chunk → embed → query). Advisor layer: FastAPI backend (retrieval + chat) and Nuxt 3 streaming chat UI.
 
+## General
+- Current year is 2026. Do not suggest deprecated packages or outdated patterns.
+
+## MCP Server Preferences
+- **Nuxt / Nuxt UI docs:** Always use `nuxt-remote` and `nuxt-ui-remote` MCP servers (official sources)
+- **AI SDK, other libraries:** Use `context7` MCP server
+- Never use `context7` for Nuxt or Nuxt UI documentation
+
 ## Project Structure
 
 ```
