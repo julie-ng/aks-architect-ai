@@ -58,11 +58,21 @@ export async function createCrawler(sources: Source[]) {
 
       log.info(`Crawling: ${url}`);
 
-      // Extract main content — collect all div.content inside <main> to skip
-      // article-header, metadata, doc-outline, and other page chrome.
-      const $contentBlocks = $('main div.content');
-      if (!$contentBlocks.length) {
+      // Extract main content — grab div.content blocks inside <main>, but skip
+      // the one that only wraps the <h1> title (it duplicates content otherwise).
+      const $allContent = $('main div.content');
+      if (!$allContent.length) {
         log.warning(`No <main div.content> element found: ${url}`);
+        return;
+      }
+
+      const $contentBlocks = $allContent.filter((_, el) => {
+        const $el = $(el);
+        // Skip if the only child is an h1 (title-only block)
+        return !($el.children().length === 1 && $el.children().first().is('h1'));
+      });
+      if (!$contentBlocks.length) {
+        log.warning(`No content blocks after filtering title-only div: ${url}`);
         return;
       }
 

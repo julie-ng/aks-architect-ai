@@ -111,6 +111,15 @@ def chunk_document(doc: dict) -> list[dict]:
     if buffer:
         merged.append(buffer)
 
+    # Deduplicate — some pages have repeated div.content blocks
+    seen = set()
+    deduped = []
+    for chunk in merged:
+        if chunk not in seen:
+            seen.add(chunk)
+            deduped.append(chunk)
+    merged = deduped
+
     # Build output records
     results = []
     for i, text in enumerate(merged):
