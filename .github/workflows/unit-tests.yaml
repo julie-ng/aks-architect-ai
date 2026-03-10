@@ -3,13 +3,39 @@ name: Unit Tests
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      web-scraper: ${{ steps.filter.outputs.web-scraper }}
+      rag-pipeline: ${{ steps.filter.outputs.rag-pipeline }}
+      advisor-api: ${{ steps.filter.outputs.advisor-api }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web-scraper:
+              - 'web-scraper/**'
+            rag-pipeline:
+              - 'rag-pipeline/**'
+            advisor-api:
+              - 'advisor-api/**'
+
   web-scraper:
     name: Web Scraper (Node.js)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.web-scraper == 'true'
     defaults:
       run:
         working-directory: web-scraper
@@ -26,9 +52,25 @@ jobs:
   rag-pipeline:
     name: RAG Pipeline (Python)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.rag-pipeline == 'true'
     defaults:
       run:
         working-directory: rag-pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group dev
+      - run: uv run pytest
+
+  advisor-api:
+    name: Advisor API (Python)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.advisor-api == 'true'
+    defaults:
+      run:
+        working-directory: advisor-api
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
