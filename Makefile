@@ -1,5 +1,7 @@
 DC = docker compose -f docker-compose.dev.yaml
 
+rag-pipeline: pipeline/chunk pipeline/embed
+rag-pipeline/full: scrape pipeline/chunk pipeline/embed
 unit-tests: scraper/test pipeline/test advisor-api/test
 
 # --- Web Scraper ---
@@ -61,7 +63,7 @@ dc/down:
 dc/build:
 	$(DC) up -d --build
 
-.PHONY: unit-tests \
+.PHONY: rag-pipeline rag-pipeline/full unit-tests \
 	scraper/test scraper/clean scraper/crawl \
 	pipeline/test pipeline/chunk pipeline/embed pipeline/query \
 	advisor-api/test \
