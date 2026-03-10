@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useChat } from '@ai-sdk/vue'
 
-const { messages, input, handleSubmit, isLoading } = useChat()
+const { messages, input, handleSubmit, status } = useChat()
+
+const isLoading = computed(() => status.value === 'submitted' || status.value === 'streaming')
 </script>
 
 <template>
@@ -22,7 +24,7 @@ const { messages, input, handleSubmit, isLoading } = useChat()
       />
     </div>
 
-    <form class="p-4 border-t border-gray-200 dark:border-gray-800" @submit="handleSubmit">
+    <form class="p-4 border-t border-gray-200 dark:border-gray-800" @submit.prevent="handleSubmit">
       <div class="flex gap-2">
         <UInput
           v-model="input"

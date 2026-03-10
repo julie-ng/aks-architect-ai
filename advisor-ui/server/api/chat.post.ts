@@ -20,6 +20,16 @@ function formatContext(chunks: RetrieveChunk[]): string {
     .join('\n\n---\n\n')
 }
 
+function extractText(message: { parts?: { type: string; text?: string }[]; content?: string }): string {
+  if (message.parts) {
+    return message.parts
+      .filter((p) => p.type === 'text')
+      .map((p) => p.text ?? '')
+      .join('')
+  }
+  return message.content ?? ''
+}
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const { messages } = await readBody(event)
@@ -29,11 +39,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'No user message found' })
   }
 
+  const question = extractText(lastUserMessage)
+
   const retrieveResponse = await $fetch<RetrieveResponse>(
     `${config.advisorApiUrl}/api/retrieve`,
     {
       method: 'POST',
-      body: { question: lastUserMessage.content },
+      body: { question },
     },
   )
 
@@ -44,7 +56,7 @@ export default defineEventHandler(async (event) => {
     ...messages.slice(0, -1),
     {
       role: 'user' as const,
-      content: `Documentation sources:\n\n${context}\n\n---\n\nQuestion: ${lastUserMessage.content}`,
+      content: `Documentation sources:\n\n${context}\n\n---\n\nQuestion: ${question}`,
     },
   ]
 
@@ -54,5 +66,5 @@ export default defineEventHandler(async (event) => {
     messages: augmentedMessages,
   })
 
-  return result.toDataStreamResponse()
+  return result.toUIMessageStreamResponse()
 })
