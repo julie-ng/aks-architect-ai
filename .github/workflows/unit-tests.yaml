@@ -1,0 +1,36 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web-scraper:
+    name: Web Scraper (Node.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web-scraper/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  rag-pipeline:
+    name: RAG Pipeline (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rag-pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group dev
+      - run: uv run pytest
