@@ -34,16 +34,16 @@ def get_embedding(text: str) -> list[float]:
     return response['embedding']
 
 
-def ensure_collection(client: QdrantClient, name: str) -> None:
+def recreate_collection(client: QdrantClient, name: str) -> None:
     existing = [c.name for c in client.get_collections().collections]
-    if name not in existing:
-        client.create_collection(
-            collection_name=name,
-            vectors_config=VectorParams(size=VECTOR_DIM, distance=Distance.COSINE),
-        )
-        print(f'Created collection: {name}')
-    else:
-        print(f'Using existing collection: {name}')
+    if name in existing:
+        client.delete_collection(collection_name=name)
+        print(f'Deleted existing collection: {name}')
+    client.create_collection(
+        collection_name=name,
+        vectors_config=VectorParams(size=VECTOR_DIM, distance=Distance.COSINE),
+    )
+    print(f'Created collection: {name}')
 
 
 def main():
@@ -59,7 +59,7 @@ def main():
         sys.exit(1)
 
     client = QdrantClient(url=QDRANT_URL)
-    ensure_collection(client, args.collection)
+    recreate_collection(client, args.collection)
 
     chunks = [json.loads(line) for line in input_path.read_text().splitlines() if line.strip()]
     total = len(chunks)
