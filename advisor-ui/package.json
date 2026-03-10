@@ -1,0 +1,22 @@
+{
+  "name": "advisor-ui",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@ai-sdk/azure": "^3.0.42",
+    "@ai-sdk/vue": "^3.0.116",
+    "@nuxt/ui": "^4.5.1",
+    "ai": "^6.0.116",
+    "nuxt": "^4.3.1",
+    "ollama-ai-provider": "^1.2.0",
+    "vue": "^3.5.30",
+    "vue-router": "^4.6.4"
+  }
+}

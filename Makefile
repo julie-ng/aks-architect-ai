@@ -33,6 +33,14 @@ pipeline/query:
 advisor-api/test:
 	cd advisor-api && uv run pytest
 
+# --- Advisor UI ---
+
+advisor-ui/dev:
+	cd advisor-ui && npm run dev
+
+advisor-ui/install:
+	cd advisor-ui && npm install
+
 # --- Ollama ---
 
 ollama/start:
@@ -57,5 +65,6 @@ dc/build:
 	scraper/test scraper/clean scraper/crawl \
 	pipeline/test pipeline/chunk pipeline/embed pipeline/query \
 	advisor-api/test \
+	advisor-ui/dev advisor-ui/install \
 	ollama/start ollama/pull \
 	dc/up dc/down dc/build

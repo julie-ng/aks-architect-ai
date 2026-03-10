@@ -38,6 +38,55 @@ class TestChatEndpoint:
         assert response.status_code == 422
 
 
+@patch("app.routers.chat.retrieve", return_value=[
+    {
+        "title": "Node Pools Guide",
+        "url": "https://learn.microsoft.com/aks/node-pools",
+        "score": 0.92,
+        "text": "System node pools run critical add-ons...",
+        "tags": {"doc_type": "guide"},
+        "priority": 10,
+    }
+])
+@patch("app.routers.chat.reformulate_query", return_value="AKS node pool configuration best practices")
+class TestRetrieveEndpoint:
+    def setup_method(self):
+        app.state.qdrant = MagicMock()
+        self.client = TestClient(app)
+
+    def test_returns_chunks_and_reformulated_query(self, mock_reform, mock_retrieve):
+        response = self.client.post("/api/retrieve", json={"question": "How to set up node pools?"})
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["reformulated_query"] == "AKS node pool configuration best practices"
+        assert len(data["chunks"]) == 1
+
+        chunk = data["chunks"][0]
+        assert chunk["title"] == "Node Pools Guide"
+        assert chunk["score"] == 0.92
+        assert chunk["text"] == "System node pools run critical add-ons..."
+        assert chunk["tags"] == {"doc_type": "guide"}
+        assert chunk["priority"] == 10
+
+    def test_returns_full_text_not_truncated(self, mock_reform, mock_retrieve):
+        long_text = "A" * 500
+        mock_retrieve.return_value = [{
+            "title": "Long Doc",
+            "url": "https://example.com",
+            "score": 0.8,
+            "text": long_text,
+            "tags": {},
+            "priority": None,
+        }]
+        response = self.client.post("/api/retrieve", json={"question": "test"})
+        assert response.json()["chunks"][0]["text"] == long_text
+
+    def test_rejects_missing_question(self, mock_reform, mock_retrieve):
+        response = self.client.post("/api/retrieve", json={})
+        assert response.status_code == 422
+
+
 @patch("app.routers.healthz.ollama")
 class TestHealthEndpoint:
     def setup_method(self):

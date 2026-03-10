@@ -3,7 +3,7 @@ from qdrant_client import QdrantClient
 
 from app.config import Settings
 from app.dependencies import get_qdrant, get_settings
-from app.models import ChatRequest, ChatResponse, Source
+from app.models import ChatRequest, ChatResponse, RetrieveChunk, RetrieveRequest, RetrieveResponse, Source
 from app.services.llm import generate_answer
 from app.services.reformulation import reformulate_query
 from app.services.retrieval import retrieve
@@ -19,7 +19,7 @@ def chat(
 ):
     reformulated = reformulate_query(req.question, settings.chat_model)
     chunks = retrieve(reformulated, client, settings)
-    answer = generate_answer(req.question, chunks, settings.chat_model)
+    answer = generate_answer(req.question, chunks, settings.chat_model, settings.system_prompt_path)
 
     sources = [
         Source(
@@ -34,5 +34,20 @@ def chat(
     return ChatResponse(
         answer=answer,
         sources=sources,
+        reformulated_query=reformulated,
+    )
+
+
+@router.post("/retrieve", response_model=RetrieveResponse)
+def retrieve_endpoint(
+    req: RetrieveRequest,
+    settings: Settings = Depends(get_settings),
+    client: QdrantClient = Depends(get_qdrant),
+):
+    reformulated = reformulate_query(req.question, settings.chat_model)
+    chunks = retrieve(reformulated, client, settings)
+
+    return RetrieveResponse(
+        chunks=[RetrieveChunk(**c) for c in chunks],
         reformulated_query=reformulated,
     )
