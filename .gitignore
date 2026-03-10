@@ -5,3 +5,4 @@ claude-*
 rag-pipeline/chunks.jsonl
 __pycache__
 .pytest_cache
+notes/
