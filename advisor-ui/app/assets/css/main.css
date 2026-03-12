@@ -1,2 +1,20 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+:root {
+  --ui-primary: var(--color-indigo-600);
+  --ui-secondary: var(--color-teal-500);
+  --ui-success: var(--color-emerald-600);
+  --ui-info: var(--color-sky-500);
+  --ui-warning: var(--color-orange-400);
+  --ui-error: var(--color-red-500);
+}
+
+/*.dark{
+  --ui-primary: var(--color-indigo-600);
+  --ui-secondary: var(--color-teal-500);
+  --ui-success: var(--color-emerald-600);
+  --ui-info: var(--color-sky-500);
+  --ui-warning: var(--color-orange-400);
+  --ui-error: var(--color-red-500);
+}*/

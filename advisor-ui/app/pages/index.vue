@@ -12,10 +12,6 @@ const chat = new Chat({
   },
 });
 
-const isLoading = computed(
-  () => chat.status === "submitted" || chat.status === "streaming",
-);
-
 function onSubmit (e: Event) {
   console.log("submitting");
   e.preventDefault();
@@ -30,7 +26,7 @@ function onSubmit (e: Event) {
 <template>
   <div class="flex flex-col h-screen max-w-3xl mx-auto">
     <header class="p-4 border-b border-gray-200 dark:border-gray-800">
-      <h1 class="text-xl font-semibold">AKS Architect</h1>
+      <h1 class="text-xl font-semibold">AKS Architect</h1> <UColorModeButton />
       <p class="text-sm text-gray-500">
         AI-assisted architecture advisor for Azure Kubernetes Service
       </p>
@@ -40,36 +36,27 @@ function onSubmit (e: Event) {
       <p v-if="chat.messages.length === 0" class="text-gray-400 text-center mt-8">
         Ask a question about AKS architecture to get started foo.
       </p>
-      <!-- <ChatMessage
-        v-for="message in chat.messages"
-        :key="message.id"
-        :message="message"
-      /> -->
       <UChatMessages
         :messages="chat.messages"
         :status="chat.status"
         :assistant="{
-          variant: 'outline',
+          variant: 'naked',
         }"
         :user="{
-          variant: 'solid',
-          ui: { content: 'bg-blue-800' },
+          variant: 'soft',
+          ui: { content: 'bg-indigo-50 text-slate-700  dark:bg-indigo-900 dark:text-mist-300' },
         }"
         :auto-scroll="{
           color: 'neutral',
-          variant: 'outline',
+          variant: 'subtle',
         }"
-        should-auto-scroll>
-        <!-- <UChatMessage
-           v-for="(message, index) in chat.messages"
-           :key="message.id"
-           v-bind="message"
-         /> -->
+        should-auto-scroll
+      >
 
         <template #content="{ message }">
           <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
             <MDC
-              :ui="{ prose: { p: { base: 'leading-1' } } }"
+              v-if="part.type === 'text'"
               :value="part.text"
               :cache-key="`${message.id}-${index}`"
               class="*:first:mt-0 *:last:mb-0" />
@@ -78,15 +65,22 @@ function onSubmit (e: Event) {
       </UChatMessages>
     </div>
 
-    <form class="p-4 border-t border-gray-200 dark:border-gray-800" @submit="onSubmit">
-      <div class="flex gap-2">
-        <UInput
-          v-model="input"
-          placeholder="Ask about AKS architecture..."
-          class="flex-1"
-          :disabled="isLoading" />
-        <UButton type="submit" :loading="isLoading"> Send </UButton>
-      </div>
-    </form>
+    <UContainer class="pb-4 sm:pb-6">
+      <UChatPrompt
+        v-model="input"
+        variant="subtle"
+        rows="3"
+        :error="chat.error"
+        @submit="onSubmit"
+      >
+        <UChatPromptSubmit
+          :status="chat.status"
+          color="primary"
+          variant="solid"
+          @stop="chat.stop()"
+          @reload="chat.regenerate()"
+        />
+      </UChatPrompt>
+    </UContainer>
   </div>
 </template>
