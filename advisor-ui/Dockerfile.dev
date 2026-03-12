@@ -1,0 +1,12 @@
+ARG NODE_VERSION=22
+
+FROM node:${NODE_VERSION}-slim AS base
+WORKDIR /workspace
+
+FROM base AS build
+COPY --link package.json package-lock.json .
+RUN npm install
+
+FROM base
+COPY --from=build /workspace/node_modules /workspace/node_modules
+CMD ["npm", "run", "dev"]

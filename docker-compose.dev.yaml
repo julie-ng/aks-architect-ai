@@ -24,5 +24,25 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  advisor-ui:
+    build:
+      context: advisor-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+      - "24678:24678" # Nuxt HMR websocket
+    depends_on:
+      - advisor-api
+    volumes:
+      - ./advisor-ui:/workspace
+      - advisor_ui_node_modules:/workspace/node_modules
+      - ./system-prompt.txt:/system-prompt.txt:ro
+    environment:
+      NUXT_ADVISOR_API_URL: http://advisor-api:8000
+      NUXT_OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   qdrant_data:
+  advisor_ui_node_modules:

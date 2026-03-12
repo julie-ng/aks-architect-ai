@@ -60,18 +60,12 @@ make ollama/start
 
 Check if it's running with `pgrep -l ollama` or open [localhost:11434](http://localhost:11434)
 
-#### Step 2 - Start Qdrant DB and Python Backend
+#### Step 2 - Start Containers
+
+This command starts up Qdrant db, Python `advisor-api` backend and Nuxt.js `advisor-ui` frontend.
 
 ```bash
-docker-compose -f docker-compose.dev.yaml up
-```
-
-Todo: consider adding Nuxt JS to compose file, depending on performance with HMR.
-
-#### Step 3 - Start Frontend UI
-
-```bash
-cd advisor-ui && npm run dev
+docker-compose -f docker-compose.dev.yaml up --build
 ```
 
 Finally open [http://localhost:3000](http://localhost:3000) and use the chat interface.
