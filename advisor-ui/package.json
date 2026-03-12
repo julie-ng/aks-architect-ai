@@ -16,6 +16,7 @@
     "@ai-sdk/azure": "^3.0.42",
     "@ai-sdk/vue": "^3.0.116",
     "@nuxt/ui": "^4.5.1",
+    "@nuxtjs/mdc": "^0.20.2",
     "ai": "^6.0.116",
     "nuxt": "^4.3.1",
     "ollama-ai-provider-v2": "^3.4.0",
