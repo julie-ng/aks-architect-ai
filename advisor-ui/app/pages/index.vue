@@ -24,17 +24,10 @@ function onSubmit (e: Event) {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen max-w-3xl mx-auto">
-    <header class="p-4 border-b border-gray-200 dark:border-gray-800">
-      <h1 class="text-xl font-semibold">AKS Architect</h1> <UColorModeButton />
-      <p class="text-sm text-gray-500">
-        AI-assisted architecture advisor for Azure Kubernetes Service
-      </p>
-    </header>
-
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+  <div class="flex flex-col h-full max-w-3xl mx-auto border-3 border-blue-800">
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 h-full max-h-80 border border-red-500">
       <p v-if="chat.messages.length === 0" class="text-gray-400 text-center mt-8">
-        Ask a question about AKS architecture to get started foo.
+        Ask a question about AKS architecture to get started.
       </p>
       <UChatMessages
         :messages="chat.messages"
@@ -52,6 +45,7 @@ function onSubmit (e: Event) {
         }"
         should-auto-scroll
       >
+        <!-- :ui="{ autoScroll: 'bottom-40' }" -->
 
         <template #content="{ message }">
           <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
@@ -65,22 +59,26 @@ function onSubmit (e: Event) {
       </UChatMessages>
     </div>
 
-    <UContainer class="pb-4 sm:pb-6">
+    <div class="pb-4 sm:pb-6 border border-green-600">
       <UChatPrompt
         v-model="input"
         variant="subtle"
-        rows="3"
+        :rows="3"
         :error="chat.error"
         @submit="onSubmit"
       >
-        <UChatPromptSubmit
-          :status="chat.status"
-          color="primary"
-          variant="solid"
-          @stop="chat.stop()"
-          @reload="chat.regenerate()"
-        />
+        <template #footer>
+          <div class="flex w-full justify-end">
+            <UChatPromptSubmit
+              :status="chat.status"
+              color="primary"
+              variant="solid"
+              @stop="chat.stop()"
+              @reload="chat.regenerate()"
+            />
+          </div>
+        </template>
       </UChatPrompt>
-    </UContainer>
+    </div>
   </div>
 </template>
