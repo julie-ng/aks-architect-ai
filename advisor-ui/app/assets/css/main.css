@@ -5,6 +5,10 @@
   --font-sans: 'Inter', sans-serif;
 }
 
+b, strong {
+  font-weight: 600;
+}
+
 :root {
   --ui-primary: var(--color-indigo-600);
   --ui-secondary: var(--color-teal-500);

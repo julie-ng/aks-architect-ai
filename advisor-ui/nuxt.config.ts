@@ -3,6 +3,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   modules: ['@nuxt/ui', '@nuxtjs/mdc', '@nuxt/eslint', '@nuxt/fonts'],
   css: ['~/assets/css/main.css'],
+  app: {
+    head: {
+      titleTemplate: '%s | AKS Architect',
+    },
+  },
   devtools: { enabled: true },
   runtimeConfig: {
     advisorApiUrl: 'http://localhost:8000',
