@@ -10,5 +10,6 @@ class Settings(BaseSettings):
     chat_model: str = "llama3.2"
     cors_origins: list[str] = ["http://localhost:3000"]
     retrieval_top_k: int = 5
+    priority_boost_weight: float = 0.1
     system_prompt_path: str = "system-prompt.txt"
     openapi_docs_enabled: bool = False

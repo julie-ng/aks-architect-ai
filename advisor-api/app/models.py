@@ -26,6 +26,7 @@ class RetrieveChunk(BaseModel):
     title: str
     url: str
     score: float
+    boosted_score: float
     text: str
     tags: dict
     priority: int | None
