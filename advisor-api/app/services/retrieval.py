@@ -82,6 +82,7 @@ def retrieve(
     for point in points:
         p = point.payload
         results.append({
+            "id": str(point.id),
             "title": p.get("title", "(no title)"),
             "url": p.get("url", ""),
             "score": point.score,

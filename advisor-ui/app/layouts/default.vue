@@ -14,6 +14,13 @@ const links = computed(() => [
       icon: 'i-lucide-bot-message-square',
     },
   ],
+  [
+    {
+      label: 'Retrieval',
+      to: '/_debug/retrieval',
+      icon: 'i-lucide-database-search',
+    },
+  ],
 ])
 
 </script>

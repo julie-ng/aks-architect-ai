@@ -23,6 +23,7 @@ class RetrieveRequest(BaseModel):
 
 
 class RetrieveChunk(BaseModel):
+    id: str
     title: str
     url: str
     score: float
