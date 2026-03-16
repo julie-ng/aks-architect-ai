@@ -33,6 +33,28 @@ def split_by_headings(markdown: str) -> list[tuple[str, str]]:
     return sections
 
 
+def hard_split(text: str, max_chars: int) -> list[str]:
+    """Split text that has no paragraph breaks into chunks at line boundaries."""
+    lines = text.split('\n')
+    chunks = []
+    current = ''
+
+    for line in lines:
+        candidate = (current + '\n' + line) if current else line
+        if len(candidate) <= max_chars:
+            current = candidate
+        else:
+            if current:
+                chunks.append(current)
+            # If a single line exceeds max_chars, include it as its own chunk
+            current = line
+
+    if current:
+        chunks.append(current)
+
+    return chunks
+
+
 def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
     """Further split a long block on blank lines to stay under max_chars."""
     if len(text) <= max_chars:
@@ -44,6 +66,13 @@ def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
 
     for para in paragraphs:
         if not para.strip():
+            continue
+        # If a single paragraph exceeds max_chars, hard-split it on line breaks
+        if len(para) > max_chars:
+            if current:
+                chunks.append(current)
+                current = ''
+            chunks.extend(hard_split(para, max_chars))
             continue
         candidate = (current + '\n\n' + para).strip() if current else para
         if len(candidate) <= max_chars:
@@ -59,16 +88,17 @@ def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
     return chunks
 
 
-def merge_small_chunks(chunks: list[str], min_chars: int) -> list[str]:
-    """Merge consecutive chunks that are smaller than min_chars."""
+def merge_small_chunks(chunks: list[str], min_chars: int, max_chars: int) -> list[str]:
+    """Merge consecutive chunks that are smaller than min_chars, without exceeding max_chars."""
     merged = []
     buffer = ''
     for chunk in chunks:
         candidate = (buffer + '\n\n' + chunk).strip() if buffer else chunk
-        if len(buffer) < min_chars:
+        if len(buffer) < min_chars and len(candidate) <= max_chars:
             buffer = candidate
         else:
-            merged.append(buffer)
+            if buffer:
+                merged.append(buffer)
             buffer = chunk
     if buffer:
         merged.append(buffer)
@@ -101,6 +131,6 @@ def sections_to_chunks(
             if part.strip():
                 raw.append(part.strip())
 
-    merged = merge_small_chunks(raw, min_chars)
+    merged = merge_small_chunks(raw, min_chars, max_chars)
     deduped = deduplicate(merged)
     return [t for t in deduped if len(t) >= min_chars]

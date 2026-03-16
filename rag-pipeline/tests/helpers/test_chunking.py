@@ -2,6 +2,7 @@
 
 from helpers.chunking import (
     deduplicate,
+    hard_split,
     merge_small_chunks,
     sections_to_chunks,
     split_by_headings,
@@ -59,6 +60,27 @@ class TestSplitByHeadings:
 
 
 # ---------------------------------------------------------------------------
+# hard_split
+# ---------------------------------------------------------------------------
+
+class TestHardSplit:
+    def test_splits_on_lines(self):
+        text = "Line one.\nLine two.\nLine three."
+        result = hard_split(text, 20)
+        assert all(len(c) <= 20 for c in result)
+
+    def test_short_text_unchanged(self):
+        text = "Short."
+        assert hard_split(text, 100) == ["Short."]
+
+    def test_single_long_line_kept(self):
+        """A single line exceeding max_chars is kept (no way to split further)."""
+        text = "A" * 200
+        result = hard_split(text, 100)
+        assert result == [text]
+
+
+# ---------------------------------------------------------------------------
 # split_on_paragraphs
 # ---------------------------------------------------------------------------
 
@@ -78,10 +100,15 @@ class TestSplitOnParagraphs:
         result = split_on_paragraphs(text, 100)
         assert result == ["Short.\n\nAlso short."]
 
-    def test_oversized_single_paragraph_kept(self):
-        text = "A" * 200
+    def test_oversized_paragraph_hard_split(self):
+        """A single paragraph exceeding max_chars is split on line breaks."""
+        lines = [f"Line {i} with content." for i in range(20)]
+        text = "\n".join(lines)
         result = split_on_paragraphs(text, 100)
-        assert result == [text]
+        assert all(len(c) <= 100 for c in result)
+        # All original content is preserved
+        rejoined = "\n".join(result)
+        assert rejoined == text
 
     def test_exact_boundary(self):
         text = "12345\n\n67890"
@@ -97,22 +124,28 @@ class TestSplitOnParagraphs:
 class TestMergeSmallChunks:
     def test_merges_tiny_into_next(self):
         chunks = ["Hi", "This is a longer chunk that should absorb the tiny one."]
-        result = merge_small_chunks(chunks, min_chars=50)
+        result = merge_small_chunks(chunks, min_chars=50, max_chars=500)
         assert len(result) == 1
         assert "Hi" in result[0]
         assert "longer chunk" in result[0]
 
     def test_large_chunks_not_merged(self):
         chunks = ["A" * 200, "B" * 200]
-        result = merge_small_chunks(chunks, min_chars=50)
+        result = merge_small_chunks(chunks, min_chars=50, max_chars=500)
         assert len(result) == 2
 
     def test_empty_input(self):
-        assert merge_small_chunks([], min_chars=50) == []
+        assert merge_small_chunks([], min_chars=50, max_chars=500) == []
 
     def test_single_tiny_chunk(self):
-        result = merge_small_chunks(["Hi"], min_chars=50)
+        result = merge_small_chunks(["Hi"], min_chars=50, max_chars=500)
         assert result == ["Hi"]
+
+    def test_respects_max_chars(self):
+        """Merging tiny chunks should not exceed max_chars."""
+        chunks = ["A" * 80, "B" * 80, "C" * 80]
+        result = merge_small_chunks(chunks, min_chars=100, max_chars=200)
+        assert all(len(c) <= 200 for c in result)
 
 
 # ---------------------------------------------------------------------------
@@ -169,4 +202,4 @@ class TestSectionsToChunks:
         sections = [("## Big", long_body)]
         result = sections_to_chunks(sections, max_chars=200, min_chars=10)
         assert len(result) > 1
-        assert all(len(c) <= 200 or "\n\n" not in c for c in result)
+        assert all(len(c) <= 200 for c in result)
