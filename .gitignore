@@ -1,8 +1,14 @@
 .DS_Store
 node_modules
-backup*
 claude-*
 rag-pipeline/chunks.jsonl
 __pycache__
 .pytest_cache
+
+# Personal notes
 notes/
+
+# Web Scraper Debugging files
+backup*
+*.xlsx
+web-scraper/crawled-pages.csv
