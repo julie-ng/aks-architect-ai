@@ -10,6 +10,16 @@ export function matchSource(url: string, sources: Source[]): { name: string; pri
   let bestPrefixLen = 0;
 
   for (const source of sources) {
+    // TODO: temporary workaround — seed-only sources (allowed_globs: [])
+    // never match via glob prefix, so check seed_urls as exact match
+    if (source.seed_urls.includes(url)) {
+      return {
+        name: source.name,
+        priority: source.priority ?? 0,
+        tags: { ...source.tags },
+      };
+    }
+
     for (const glob of source.allowed_globs) {
       // Extract the fixed prefix (everything before the first wildcard)
       const prefix = glob.replace(/\*.*$/, '');

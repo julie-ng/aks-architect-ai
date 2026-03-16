@@ -16,7 +16,7 @@ export function loadSources(path: string = SOURCES_PATH): Source[] {
   for (const source of config.sources) {
     if (!source.name) throw new Error('Every source must have a "name"');
     if (!source.seed_urls?.length) throw new Error(`Source "${source.name}" has no seed_urls`);
-    if (!source.allowed_globs?.length) throw new Error(`Source "${source.name}" has no allowed_globs`);
+    if (!Array.isArray(source.allowed_globs)) throw new Error(`Source "${source.name}" is missing allowed_globs (use [] for seed-only sources)`);
   }
 
   return config.sources;

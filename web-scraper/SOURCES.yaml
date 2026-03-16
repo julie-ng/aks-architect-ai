@@ -26,42 +26,59 @@ sources:
   # ----------------------
   # Core AKS Documentation
   # ----------------------
-  # - name: aks-docs
-  #   description: Official AKS documentation
-  #   seed_urls:
-  #     - https://learn.microsoft.com/en-us/azure/aks/
-  #   allowed_globs:
-  #     - "https://learn.microsoft.com/en-us/azure/aks/**"
-  #   priority: 20
-  #   tags:
-  #     source_category: aks-docs
+  - name: aks-docs
+    description: Official AKS documentation
+    seed_urls:
+      - https://learn.microsoft.com/en-us/azure/aks/
+    allowed_globs:
+      - "https://learn.microsoft.com/en-us/azure/aks/**"
+    priority: 10
+    tags:
+      source_category: aks-docs
 
   # --------------------------
   # Well-Architected Framework
   # --------------------------
-  # - name: waf-aks
-  #   description: Well-Architected Framework - AKS service guide
-  #   seed_urls:
-  #     - https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service
-  #   allowed_globs:
-  #     - "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service**"
-  #   priority: 20
-  #   tags:
-  #     source_category: waf
-  #     waf_pillar: multi
+  - name: waf-aks
+    description: Well-Architected Framework - AKS service guide
+    seed_urls:
+      - https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service
+    allowed_globs:
+      - "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-kubernetes-service**"
+    priority: 15
+    tags:
+      source_category: waf
+      waf_pillar: multi
 
   # -------------------------
   # Azure Architecture Center
   # -------------------------
-  - name: aac-reference-architectures
-    description: Azure Architecture Center - AKS reference architectures
+  - name: aac-aks-baseline
+    description: AKS baseline architecture (Azure Architecture Center)
     seed_urls:
       - https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks/baseline-aks
+    allowed_globs: []
+    priority: 30
+    tags:
+      source_category: aac
+      doc_type: reference-architecture
+
+  - name: aac-aks-microservices
+    description: AKS microservices architecture (Azure Architecture Center)
+    seed_urls:
       - https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks-microservices/aks-microservices-advanced
+    allowed_globs: []
+    priority: 15
+    tags:
+      source_category: aac
+      doc_type: reference-architecture
+
+  - name: aac-aks-multi-cluster
+    description: AKS multi-cluster architecture (Azure Architecture Center)
+    seed_urls:
       - https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks-multi-region/aks-multi-cluster
-    allowed_globs:
-      - "https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks**"
-    priority: 10
+    allowed_globs: []
+    priority: 15
     tags:
       source_category: aac
       doc_type: reference-architecture
@@ -69,16 +86,17 @@ sources:
   # -------------------------------------------
   # Cloud Adoption Framework — AKS Landing Zone
   # -------------------------------------------
-  # - name: caf-landing-zone
-  #   description: Cloud Adoption Framework - AKS Landing Zone Accelerator
-  #   seed_urls:
-  #     - https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/landing-zone-accelerator
-  #   allowed_globs:
-  #     - "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/**"
-  #   priority: 20
-  #   tags:
-  #     source_category: caf
-  #     doc_type: landing-zone
+  - name: caf-landing-zone
+    description: Cloud Adoption Framework - AKS Landing Zone Accelerator
+    seed_urls:
+      - https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/landing-zone-accelerator
+    allowed_globs:
+      - "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/**"
+    priority: 15
+    tags:
+      source_category: caf
+      scenario_tags: [enterprise]
+      doc_type: landing-zone
 
   # -------------------
   # Regulated Scenarios

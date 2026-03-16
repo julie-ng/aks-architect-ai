@@ -94,10 +94,9 @@ sources:
   - name: bad-source
     description: No globs
     seed_urls: [https://example.com/]
-    allowed_globs: []
     tags: {}
 `);
-    expect(() => loadSources(path)).toThrow('has no allowed_globs');
+    expect(() => loadSources(path)).toThrow('is missing allowed_globs');
     cleanup();
   });
 
