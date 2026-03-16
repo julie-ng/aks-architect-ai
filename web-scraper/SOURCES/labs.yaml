@@ -1,0 +1,42 @@
+group_title: Labs
+group_priority: 10
+description: |
+  Collection of hands-on labs, i.e. walkthroughs designed for workshops, etc. These are community authored and curated. Do not treat as official source. These may be useful for "how do I" type questions.
+urls:
+  - title: Kubernetes and AKS Fundamentals
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/getting-started/k8s-aks-fundamentals"
+
+  - title: "Kubernetes the Easy Way with AKS Automatic"
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/getting-started/aks-automatic"
+
+  - title: Container Image Signing
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/security/secure-supply-chain/"
+
+  - title: Continuous Patching
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/security/acr-patching/"
+
+  - title: "Updates and Multi-Cluster Management"
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/operations/updates-and-multi-cluster-management"
+
+  - title: Deploy AKS Clusters with Terraform
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/operations/deploy-kubernetes-clusters-terraform"
+
+  - title: Advanced Observability
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/operations/observability-and-monitoring/"
+
+  - title: Platform Engineering on AKS with GitOps, CAPZ, and ASO
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/platform-engineering/aks-capz-aso"
+
+  - title: Build a GitOps-Driven Platform on AKS with the App of Apps Pattern
+    doc_type: how-to
+    url: "https://azure-samples.github.io/aks-labs/docs/platform-engineering/app-of-apps"
+    description: |
+      Implementing a modern, production-grade platform engineering environment on Azure Kubernetes Service (AKS). GitOps for managing both infrastructure and application lifecycles declaratively via Argo CD, enabling a fully automated and auditable workflow.

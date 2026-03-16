@@ -1,0 +1,15 @@
+group_title: Azure Arc
+group_priority: 5
+scenarios:
+  - enterprise
+  - on-prem
+  - private
+workloads:
+  - all
+description: |
+  Azure Arc is about extending AKS to on-prem. For this project, consider it niche. Customers considering Azure Arc will likely have sales teams at their disposable for personal guidance.
+urls:
+  - url: "https://learn.microsoft.com/en-us/azure/aks/aksarc/aks-overview"
+    doc_type: overview
+  - url: "https://learn.microsoft.com/en-us/azure/aks/aksarc/aks-platforms-compare"
+    doc_type: reference

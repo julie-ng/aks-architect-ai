@@ -4,14 +4,11 @@ import { createCrawler } from './crawler.js';
 
 log.setLevel(LogLevel.INFO);
 
-// Load sources configuration
+// Load curated sources from SOURCES/ directory
 const sources = loadSources();
 const seedUrls = getSeedUrls(sources);
 
-log.info(`Starting crawl with ${sources.length} sources and ${seedUrls.length} seed URLs`);
-for (const source of sources) {
-  log.info(`  • ${source.name}: ${source.seed_urls.length} seed URL(s)`);
-}
+log.info(`Starting crawl with ${seedUrls.length} curated URLs`);
 
 // Create and run crawler
 const { crawler } = await createCrawler(sources);

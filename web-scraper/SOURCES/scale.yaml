@@ -1,0 +1,20 @@
+group_title: Scale
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-scale
+    priority: 15
+    comments: |
+      Good overview about scaling for applications, i.e. auto-scaling
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/best-practices-performance-scale
+    priority: 15
+    comments: |
+      Best practices for scaling small to medium workloads, explanation of application vs infrastructure autoscaling, incl. how to calculate buffers and safety margins for scaling.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/best-practices-performance-scale-large
+    priority: 10
+    comments: |
+      Best practices for large workloads, referring more to load of control plane, i.e. Kubernetes API server.

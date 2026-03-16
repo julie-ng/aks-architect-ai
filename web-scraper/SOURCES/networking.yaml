@@ -1,0 +1,49 @@
+group_title: Networking
+# group_priority: 10
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network
+    doc_type: overview
+    priority: 15
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/plan-control-plane-networking
+    doc_type: overview
+    priority: 15
+    comments: |
+      Explains best with diagrams API server integration, i.e. control plane access.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/plan-node-networking
+    doc_type: overview
+    priority: 10
+    comments: |
+      a bit niche, but has diagrams of how nodes need to commmunicate with each other, and whether Load Balance, NAT Gateway, etc.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/plan-pod-networking
+    doc_type: article
+    priority: 15
+    comments: About IPs for pods, good diagram for flat vs overlay networking
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/plan-application-networking
+    doc_type: aritcle
+    priority: 10
+    comments: |
+      Sparse. When to use Layer 4 vs Layer 7.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning
+    doc_type: reference
+    priority: 20
+    comments: |
+      One of the most important concepts for networking in AKS. Really important because IP address planning needs to be done up front and if done wrong, cluster needs to be torn down and deployed anew.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network-services
+    doc_type: article
+    priority: 5
+    comments: |
+      Explains Kubernetes service types, ClusterIP, NodePort, LoadBalancer, ExternalName
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/advanced-container-networking-services-overview
+    doc_type: overview
+    priority: 10

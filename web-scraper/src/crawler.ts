@@ -2,7 +2,7 @@ import { CheerioCrawler, Dataset, RequestQueue, log } from 'crawlee';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import { type Source, type PageResult } from './types.js';
-import { getAllowedGlobs, matchSource, autoDetectDocType } from './utils/index.js';
+import { matchSource, autoDetectDocType } from './utils/index.js';
 
 // ---------------------------------------------------------------------------
 // HTML → Markdown converter
@@ -29,11 +29,10 @@ turndown.remove([
 // Crawler factory
 // ---------------------------------------------------------------------------
 export async function createCrawler(sources: Source[]) {
-  const allowedGlobs = getAllowedGlobs(sources);
   const requestQueue = await RequestQueue.open('aks-crawl');
   const dataset = await Dataset.open('aks-docs');
 
-  log.info(`Loaded ${sources.length} sources with ${allowedGlobs.length} glob patterns`);
+  log.info(`Loaded ${sources.length} curated URLs`);
 
   const crawler = new CheerioCrawler({
     requestQueue,
@@ -47,7 +46,7 @@ export async function createCrawler(sources: Source[]) {
     useSessionPool: true,
     persistCookiesPerSession: true,
 
-    async requestHandler({ request, $, enqueueLinks }) {
+    async requestHandler({ request, $ }) {
       const url = request.url;
 
       // Strip locale redirects (e.g. /en-us/azure/aks/ → keep, /de-de/... → skip)
@@ -128,23 +127,6 @@ export async function createCrawler(sources: Source[]) {
 
       await dataset.pushData(result);
       log.info(`  ✓ Saved: "${title}" [${result.source_name}]`);
-
-      // Discover and enqueue links within allowed scope
-      await enqueueLinks({
-        globs: allowedGlobs,
-        transformRequestFunction(req) {
-          // Strip URL fragments and query params for deduplication
-          const clean = req.url.split('#')[0].split('?')[0];
-          req.url = clean;
-
-          // Skip non-HTML resources (images, SVGs, PDFs, etc.)
-          if (/\.(svg|png|jpg|jpeg|gif|webp|pdf|zip|json)$/i.test(clean)) {
-            return false;
-          }
-
-          return req;
-        },
-      });
     },
 
     failedRequestHandler({ request }) {

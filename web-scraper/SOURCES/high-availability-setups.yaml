@@ -1,0 +1,23 @@
+group_title: High Availability and Multi Region Setups
+group_priority: 15
+scenarios:
+  - enterprise
+  - business-continuity
+workloads:
+  - all
+urls:
+  - url: "https://learn.microsoft.com/en-us/azure/aks/reliability-multi-region-deployment-models"
+    doc_type: guidance
+    tags:
+      - business-continuity
+  - url: "https://learn.microsoft.com/en-us/azure/aks/active-active-solution"
+    doc_type: guidance
+    scenario: mission-critical
+    tags:
+      - business-continuity
+  - url: "https://learn.microsoft.com/en-us/azure/aks/active-passive-solution"
+    doc_type: guidance
+    tags:
+      - business-continuity
+  - url: "https://learn.microsoft.com/en-us/azure/aks/passive-cold-solution"
+    doc_type: guidance

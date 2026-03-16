@@ -1,5 +1,8 @@
 # =============================================================================
-# AKS Documentation Sources
+# DEPRECATED — Superseded by SOURCES/ directory (curated per-URL format).
+# Kept as reference for the old crawler-follows-links format.
+# =============================================================================
+# AKS Documentation Sources (old format)
 # =============================================================================
 # Each source defines:
 #   - name:          Unique identifier for this source group

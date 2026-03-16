@@ -1,0 +1,15 @@
+group_title: Storage
+workloads:
+  - stateful
+scenarios:
+  - all
+urls:
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-storage
+    priority: 15
+    comments: |
+      Overall concepts page. Good for sources, includes diagrams, overview of storage mediums, classes, and persistant volume claims. Importantly it explains concurrency requirements means Azure Disks or Files.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-storage
+    priority: 15
+    comments: |
+      Decent, succinct overview of best practices about choosing storage type.

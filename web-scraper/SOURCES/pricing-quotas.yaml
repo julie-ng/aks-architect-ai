@@ -1,0 +1,28 @@
+group_title: Pricing and Quotas
+group_priority: 25
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  - url: "https://learn.microsoft.com/en-us/azure/aks/free-standard-pricing-tiers"
+    doc_type: reference
+    # priority: 25
+    comments: |
+      Definitive source for pricing overview, free, standard, and premium, incl. what it means for SLAs.
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/quotas-skus-regions"
+    doc_type: reference
+    # priority: 25
+    comments: |
+      Definitve source for resource limits. Has table, e.g. max 5000 clusters per subscription global, max 100 node pools per cluster, etc.
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/aks-virtual-machine-sizes"
+    doc_type: guidance
+    # priority: 25
+    comments: |
+      Good overview about VM support, compatibility and how to choose. See also related link "https://learn.microsoft.com/en-us/azure/aks/node-images"
+  # - url: "https://learn.microsoft.com/en-us/azure/aks/concepts-preview-api-life-cycle"
+  #   doc_type: reference
+  #   priority: 10
+  #   comment: "Niche topic about preview APIs"

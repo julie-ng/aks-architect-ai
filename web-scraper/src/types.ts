@@ -1,20 +1,39 @@
 /**
- * A documentation source defined in sources.yaml
+ * A single curated URL entry from a SOURCES/*.yaml file
  */
-export interface Source {
-  name: string;
-  description: string;
-  seed_urls: string[];
-  allowed_globs: string[];
+export interface CuratedUrl {
+  url: string;
+  title?: string;
   priority?: number;
-  tags: Record<string, string | string[]>;
+  doc_type?: string;
+  workloads?: string[];
+  scenarios?: string[];
+  tags?: string[];
+  comments?: string;
 }
 
 /**
- * Top-level structure of sources.yaml
+ * A topic group from a SOURCES/*.yaml file
  */
-export interface SourcesConfig {
-  sources: Source[];
+export interface CuratedGroup {
+  group_title: string;
+  group_priority?: number;
+  description?: string;
+  workloads?: string[];
+  scenarios?: string[];
+  urls: CuratedUrl[];
+}
+
+/**
+ * Internal source representation used by the crawler and downstream pipeline.
+ * Produced by flattening CuratedGroup files into one Source per URL.
+ */
+export interface Source {
+  name: string;
+  seed_urls: string[];
+  allowed_globs: string[];
+  priority: number;
+  tags: Record<string, string | string[]>;
 }
 
 /**

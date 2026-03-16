@@ -1,0 +1,23 @@
+group_title: AI Toolchain Operator
+workloads:
+  - ai
+urls:
+  - url: "https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator"
+    priority: 10
+    doc_type: how-to
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator-fine-tune"
+    priority: 10
+    doc_type: how-to
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator-mcp"
+    priority: 10
+    doc_type: how-to
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator-monitoring"
+    priority: 10
+    doc_type: how-to
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator-tool-calling"
+    priority: 10
+    doc_type: how-to

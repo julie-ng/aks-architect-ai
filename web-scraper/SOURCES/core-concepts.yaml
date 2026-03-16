@@ -1,0 +1,47 @@
+group_title: Getting Started Docs
+description: |
+  Use these docs as basis for foundational knowledge. This type of information should apply to nearly every AKS user and cluster.
+workloads:
+  - all
+scnarios:
+  - all
+urls:
+  - url: "https://learn.microsoft.com/en-us/azure/aks/core-aks-concepts"
+    doc_type: overview
+    priority: 15
+    comments: good overview of what a AKS/Kubernetes cluster is and its overall components, e.g. control plane (azure managed) vs data plane, i.e. nodes, namespaces, etc.
+
+  # Identity
+  - url: "https://learn.microsoft.com/en-us/azure/aks/concepts-identity"
+    doc_type: overview
+    priority: 20
+    comments: |
+      Good list of Kubernetes concepts, mapping to Azure and and diagrams.
+
+  # Security
+  - url: "https://learn.microsoft.com/en-us/azure/aks/concepts-security"
+    doc_type: overview
+    priority: 10
+    comments: |
+      Good list of security topics, incl. build, container, cluster, node, network, application, secrets. Not many links. Use for framing, but not as source.
+
+  # Networking
+  - url: "https://learn.microsoft.com/en-us/azure/aks/concepts-network"
+    doc_type: overview
+    priority: 10
+    comments: |
+      Just concepts. Use for framing. But do not use as source except for table with required NSG rules.
+
+  # Backup and Recovery
+  - url: https://learn.microsoft.com/en-us/azure/backup/azure-kubernetes-service-backup-overview
+    doc_type: overview
+    priority: 10
+    comments: |
+      Overview of priorietary AKS Backup solution.
+
+  # Pre-reqs for backup
+  - url: https://learn.microsoft.com/en-us/azure/backup/azure-kubernetes-service-cluster-backup-concept
+    doc_type: overview
+    priority: 15
+    comments: |
+      Has tables for required roles, permissions, etc. for backup extension. Good source.

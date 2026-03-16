@@ -1,0 +1,13 @@
+group_title: Networking Egress
+# group_priority: 10
+workloads:
+  - all
+scenarios:
+  - private
+  - enterprise
+urls:
+  - url: https://learn.microsoft.com/en-us/azure/aks/outbound-rules-control-egress
+    priority: 10
+    doc_type: reference
+    comments: |
+      Reference doc of network rule configurations needed to keep cluster working, if customer chooses deny-first approach. Cluster nodes need access to verified FQDNs to download updates, etc.
