@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'web-scraper/SOURCES/**/*.yaml'
-      - 'web-scraper/SOURCES/**/*.yml'
+      - "web-scraper/SOURCES/**/*.yaml"
+      - "web-scraper/SOURCES/**/*.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'web-scraper/SOURCES/**/*.yaml'
-      - 'web-scraper/SOURCES/**/*.yml'
+      - "web-scraper/SOURCES/**/*.yaml"
+      - "web-scraper/SOURCES/**/*.yml"
 
 jobs:
   validate:
@@ -27,4 +27,4 @@ jobs:
           cache: npm
           cache-dependency-path: web-scraper/package-lock.json
       - run: npm ci
-      - run: npx vitest run src/utils/validate-sources.test.ts
+      - run: npm run validate:sources-yaml

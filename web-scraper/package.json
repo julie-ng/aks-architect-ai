@@ -11,7 +11,8 @@
     "clean": "rm -rf storage/",
     "export": "tsx src/export.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "validate:sources-yaml": "vitest run src/utils/validate-sources.test.ts"
   },
   "dependencies": {
     "crawlee": "^3.12.0",
