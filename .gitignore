@@ -12,3 +12,4 @@ notes/
 backup*
 *.xlsx
 web-scraper/crawled-pages.csv
+web-scraper/SOURCES_FRAMEWORK.yaml
