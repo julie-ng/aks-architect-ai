@@ -88,6 +88,18 @@ class TestRetrieveEndpoint:
         response = self.client.post("/api/retrieve", json={"question": "test"})
         assert response.json()["chunks"][0]["text"] == long_text
 
+    def test_passes_history_to_reformulate(self, mock_reform, mock_retrieve):
+        history = [
+            {"role": "user", "content": "How to configure networking?"},
+            {"role": "assistant", "content": "For AKS networking..."},
+        ]
+        response = self.client.post(
+            "/api/retrieve",
+            json={"question": "What about multi-region?", "history": history},
+        )
+        assert response.status_code == 200
+        mock_reform.assert_called_once_with("What about multi-region?", mock_reform.call_args[0][1], history)
+
     def test_rejects_missing_question(self, mock_reform, mock_retrieve):
         response = self.client.post("/api/retrieve", json={})
         assert response.status_code == 422

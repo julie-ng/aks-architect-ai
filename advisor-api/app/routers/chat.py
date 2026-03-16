@@ -17,7 +17,8 @@ def chat(
     settings: Settings = Depends(get_settings),
     client: QdrantClient = Depends(get_qdrant),
 ):
-    reformulated = reformulate_query(req.question, settings.chat_model)
+    history = [m.model_dump() for m in req.history] or None
+    reformulated = reformulate_query(req.question, settings.chat_model, history)
     chunks = retrieve(reformulated, client, settings)
     answer = generate_answer(req.question, chunks, settings.chat_model, settings.system_prompt_path)
 
@@ -44,7 +45,8 @@ def retrieve_endpoint(
     settings: Settings = Depends(get_settings),
     client: QdrantClient = Depends(get_qdrant),
 ):
-    reformulated = reformulate_query(req.question, settings.chat_model)
+    history = [m.model_dump() for m in req.history] or None
+    reformulated = reformulate_query(req.question, settings.chat_model, history)
     chunks = retrieve(reformulated, client, settings)
 
     return RetrieveResponse(

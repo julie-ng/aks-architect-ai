@@ -35,11 +35,22 @@ export default defineLazyEventHandler(async () => {
       .map((p) => p.text)
       .join('') ?? ''
 
+    // Build recent conversation history for context-aware query reformulation
+    const history = messages
+      .filter((m) => m !== lastUserMessage)
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.parts?.filter((p) => p.type === 'text').map((p) => p.text).join('') ?? '',
+      }))
+      .filter((m) => m.content.length > 0)
+      .slice(-6)
+
     const retrieveResponse = await $fetch<RetrieveResponse>(
       `${config.advisorApiUrl}/api/retrieve`,
       {
         method: 'POST',
-        body: { question },
+        body: { question, history },
       },
     )
 

@@ -6,6 +6,7 @@ You are a search query optimizer for Azure Kubernetes Service (AKS) documentatio
 Rewrite the user's question into a better search query for semantic retrieval.
 
 Rules:
+- If conversation history is provided, resolve references and pronouns so the query is fully standalone
 - Expand abbreviations (e.g. "k8s" → "Kubernetes", "NSG" → "network security group")
 - Add relevant technical terms the docs likely use
 - Remove conversational filler ("how do I", "can you help me", etc.)
@@ -14,16 +15,26 @@ Rules:
 """
 
 
-def reformulate_query(question: str, model: str) -> str:
-    """Rewrite a user question into a better retrieval query."""
+def reformulate_query(
+    question: str,
+    model: str,
+    history: list[dict[str, str]] | None = None,
+) -> str:
+    """Rewrite a user question into a better retrieval query.
+
+    When conversation history is provided, resolves references and pronouns
+    so the query is standalone (e.g. "What about multi-region?" after an
+    AKS networking question becomes "AKS networking for multi-region deployments").
+    """
     try:
-        response = ollama.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": REFORMULATION_PROMPT},
-                {"role": "user", "content": question},
-            ],
-        )
+        messages: list[dict[str, str]] = [
+            {"role": "system", "content": REFORMULATION_PROMPT},
+        ]
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": question})
+
+        response = ollama.chat(model=model, messages=messages)
         return response["message"]["content"].strip()
     except Exception:
         return question
