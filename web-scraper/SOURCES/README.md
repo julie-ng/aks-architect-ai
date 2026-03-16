@@ -4,6 +4,8 @@ Manually curated list of documentation URLs to crawl for the RAG pipeline.
 
 - **Initial Approach - auto-crawling** via link following pulled too many niche pages (722 from a single seed) and missed important ones entirely.
 - **Current Approach - explicit URL lists with meta data** for higher quality control and more granular priority tuning.
+  - Currently ca. 64 URLs
+  - TODO: add more granular pages within sub-topics, e.g. networking or security.
 
 ## YAML File Schema
 

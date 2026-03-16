@@ -1,0 +1,22 @@
+group_title: Baseline Architectures from Azure Architecture Center
+scenarios:
+  - all
+workloads:
+  - all
+urls:
+  # Baseline
+  - url: https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks/baseline-aks
+    priority: 25
+
+  # Microservices
+  - url: https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks-microservices/aks-microservices-advanced
+    priority: 15
+    workloads:
+      - microservices
+      - web
+
+  # Multi-region
+  - url: https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks-multi-region/aks-multi-cluster
+    priority: 15
+    scenarios:
+      - enterprise

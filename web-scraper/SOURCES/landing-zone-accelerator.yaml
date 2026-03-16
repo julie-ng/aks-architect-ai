@@ -1,0 +1,23 @@
+group_title: Landing Zone Accelerator
+group_priority: 15
+description: |
+  scenario-specific, but good list of topics to consider for enterprise audience.
+scenarios:
+  - enterprise
+workloads:
+  - landing-zone
+  - all
+urls:
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/landing-zone-accelerator
+    priority: 8
+    comments: |
+      Overview page
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/identity-and-access-management
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/network-topology-and-connectivity
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/resource-organization
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/security
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/management
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/platform-automation-and-devops
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/scalability
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/storage
+  - url: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/app-platform/aks/cost-governance-with-kubecost
