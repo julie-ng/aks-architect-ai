@@ -20,7 +20,7 @@ urls:
   # Application Gateway for Containers (AGC)
   - url: https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/overview?toc=/azure/aks/toc.json&bc=/azure/aks/breadcrumb/toc.json
     doc_type: article
-    priorioty: 10
+    priority: 10
     comments: |
       Overview of AGC from the AGC product page. Remember that AGC is a separate product offering.
   - url: https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/quickstart-deploy-application-gateway-for-containers-alb-controller-addon?toc=%2Fazure%2Faks%2Ftoc.json&bc=%2Fazure%2Faks%2Fbreadcrumb%2Ftoc.json&tabs=azure-cli%2Cazure-cli2

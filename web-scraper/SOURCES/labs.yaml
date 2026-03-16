@@ -38,5 +38,5 @@ urls:
   - title: Build a GitOps-Driven Platform on AKS with the App of Apps Pattern
     doc_type: how-to
     url: "https://azure-samples.github.io/aks-labs/docs/platform-engineering/app-of-apps"
-    description: |
+    comments: |
       Implementing a modern, production-grade platform engineering environment on Azure Kubernetes Service (AKS). GitOps for managing both infrastructure and application lifecycles declaratively via Argo CD, enabling a fully automated and auditable workflow.

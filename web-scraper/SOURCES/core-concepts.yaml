@@ -3,7 +3,7 @@ description: |
   Use these docs as basis for foundational knowledge. This type of information should apply to nearly every AKS user and cluster.
 workloads:
   - all
-scnarios:
+scenarios:
   - all
 urls:
   - url: "https://learn.microsoft.com/en-us/azure/aks/core-aks-concepts"
@@ -24,13 +24,6 @@ urls:
     priority: 10
     comments: |
       Good list of security topics, incl. build, container, cluster, node, network, application, secrets. Not many links. Use for framing, but not as source.
-
-  # Networking
-  - url: "https://learn.microsoft.com/en-us/azure/aks/concepts-network"
-    doc_type: overview
-    priority: 10
-    comments: |
-      Just concepts. Use for framing. But do not use as source except for table with required NSG rules.
 
   # Backup and Recovery
   - url: https://learn.microsoft.com/en-us/azure/backup/azure-kubernetes-service-backup-overview

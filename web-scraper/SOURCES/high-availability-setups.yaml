@@ -12,7 +12,8 @@ urls:
       - business-continuity
   - url: "https://learn.microsoft.com/en-us/azure/aks/active-active-solution"
     doc_type: guidance
-    scenario: mission-critical
+    scenarios:
+      - mission-critical
     tags:
       - business-continuity
   - url: "https://learn.microsoft.com/en-us/azure/aks/active-passive-solution"

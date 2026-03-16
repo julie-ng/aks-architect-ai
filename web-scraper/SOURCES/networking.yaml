@@ -27,7 +27,7 @@ urls:
     comments: About IPs for pods, good diagram for flat vs overlay networking
 
   - url: https://learn.microsoft.com/en-us/azure/aks/plan-application-networking
-    doc_type: aritcle
+    doc_type: article
     priority: 10
     comments: |
       Sparse. When to use Layer 4 vs Layer 7.
