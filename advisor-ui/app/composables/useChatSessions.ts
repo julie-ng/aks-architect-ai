@@ -42,6 +42,15 @@ export function useChatSessions () {
     }
   }
 
+  function renameSession (id: string, title: string): void {
+    const session = sessions.value[id]
+    if (!session) return
+    sessions.value = {
+      ...sessions.value,
+      [id]: { ...session, title },
+    }
+  }
+
   function deleteSession (id: string): void {
     const { [id]: _, ...rest } = sessions.value
     sessions.value = rest
@@ -51,5 +60,5 @@ export function useChatSessions () {
     return sessions.value[id]
   }
 
-  return { sessions, sortedSessions, createSession, updateMessages, setTitle, deleteSession, getSession }
+  return { sessions, sortedSessions, createSession, updateMessages, setTitle, renameSession, deleteSession, getSession }
 }

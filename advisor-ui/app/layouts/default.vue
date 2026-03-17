@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { sortedSessions } = useChatSessions()
+const route = useRoute()
+const { sortedSessions, renameSession, deleteSession, getSession } = useChatSessions()
 
 const links = computed(() => [
   [
@@ -9,7 +10,7 @@ const links = computed(() => [
       icon: 'i-lucide-home',
     },
     {
-      label: 'Retrieval',
+      label: 'Retrieval (Debug)',
       to: '/_debug/retrieval',
       icon: 'i-lucide-database-search',
     },
@@ -20,6 +21,7 @@ const links = computed(() => [
       to: '/chat',
       icon: 'i-lucide-bot-message-square',
       defaultOpen: true,
+      active: route.path.startsWith('/chat'),
       children: [
         {
           label: 'New Chat',
@@ -30,6 +32,8 @@ const links = computed(() => [
           label: session.title,
           icon: 'i-lucide-messages-square',
           to: `/chat/${session.id}`,
+          slot: 'chat-session' as const,
+          sessionId: session.id,
         })),
       ],
     },
@@ -38,6 +42,43 @@ const links = computed(() => [
 
 function newChat () {
   navigateTo(`/chat/${crypto.randomUUID()}`)
+}
+
+// Rename modal state
+const renameModalOpen = ref(false)
+const renameInput = ref('')
+const renameSessionId = ref('')
+
+function startRename (sessionId: string) {
+  const session = getSession(sessionId)
+  if (!session) return
+  renameSessionId.value = sessionId
+  renameInput.value = session.title
+  renameModalOpen.value = true
+}
+
+function confirmRename () {
+  const trimmed = renameInput.value.trim()
+  if (trimmed && renameSessionId.value) {
+    renameSession(renameSessionId.value, trimmed)
+  }
+  renameModalOpen.value = false
+}
+
+function chatActionItems (sessionId: string) {
+  return [[
+    {
+      label: 'Rename',
+      icon: 'i-lucide-pencil',
+      onSelect: () => startRename(sessionId),
+    },
+    {
+      label: 'Delete',
+      icon: 'i-lucide-trash-2',
+      color: 'error' as const,
+      onSelect: () => deleteSession(sessionId),
+    },
+  ]]
 }
 </script>
 
@@ -73,8 +114,20 @@ function newChat () {
         <UNavigationMenu
           :items="links"
           orientation="vertical"
-          :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : undefined"
-        />
+          :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : { childLink: 'group' }"
+        >
+          <template #chat-session-trailing="{ item }">
+            <UDropdownMenu :items="chatActionItems((item as any).sessionId)">
+              <UButton
+                icon="i-lucide-ellipsis"
+                color="neutral"
+                variant="ghost"
+                size="2xs"
+                class="opacity-0 group-hover:opacity-100 cursor-pointer"
+              />
+            </UDropdownMenu>
+          </template>
+        </UNavigationMenu>
         <div v-if="!collapsed" class="mt-1 px-2">
           <UButton
             label="New Chat"
@@ -88,6 +141,30 @@ function newChat () {
         </div>
       </template>
     </UDashboardSidebar>
+
+    <!-- Rename Modal -->
+    <UModal v-model:open="renameModalOpen">
+      <template #body>
+        <div class="flex flex-col gap-4">
+          <p class="font-medium">
+            Rename chat
+          </p>
+          <UInput
+            v-model="renameInput"
+            placeholder="Chat title"
+            autofocus
+            @keydown.enter="confirmRename" />
+          <div class="flex justify-end gap-2">
+            <UButton
+              label="Cancel"
+              color="neutral"
+              variant="ghost"
+              @click="renameModalOpen = false" />
+            <UButton label="Rename" @click="confirmRename" />
+          </div>
+        </div>
+      </template>
+    </UModal>
 
     <!-- Main Content -->
     <slot />
