@@ -108,7 +108,10 @@ class TestRetrieveEndpoint:
 @patch("app.routers.healthz.ollama")
 class TestHealthEndpoint:
     def setup_method(self):
+        mock_collection = MagicMock()
+        mock_collection.name = "collection"  # matches Settings default
         app.state.qdrant = MagicMock()
+        app.state.qdrant.get_collections.return_value.collections = [mock_collection]
         self.client = TestClient(app)
 
     def test_healthy(self, mock_ollama):
@@ -118,16 +121,27 @@ class TestHealthEndpoint:
         assert data["name"] == "advisor-api"
         assert data["version"] == "0.1.0"
         assert data["status"] == "pass"
-        assert data["checks"]["qdrant"] == "pass"
-        assert data["checks"]["ollama"] == "pass"
+        assert data["checks"]["qdrant"]["status"] == "pass"
+        assert data["checks"]["ollama"]["status"] == "pass"
         assert "uptime" in data
         assert data["uptime"]["component_type"] == "system"
         assert data["uptime"]["observed_unit"] == "s"
         assert data["uptime"]["observed_value"] >= 0
+        assert "env" in data
+        assert "APP_ENVIRONMENT" in data["env"]
+
+    def test_degraded_when_collection_missing(self, mock_ollama):
+        app.state.qdrant.get_collections.return_value.collections = []
+        response = self.client.get("/healthz")
+        data = response.json()
+        assert data["status"] == "fail"
+        assert data["checks"]["qdrant"]["status"] == "fail"
+        assert "output" in data["checks"]["qdrant"]
 
     def test_degraded_when_ollama_down(self, mock_ollama):
         mock_ollama.list.side_effect = Exception("connection refused")
         response = self.client.get("/healthz")
         data = response.json()
         assert data["status"] == "fail"
-        assert data["checks"]["ollama"].startswith("fail:")
+        assert data["checks"]["ollama"]["status"] == "fail"
+        assert "output" in data["checks"]["ollama"]

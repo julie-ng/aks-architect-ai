@@ -1,7 +1,9 @@
 import math
 
 import ollama
+from fastapi import HTTPException
 from qdrant_client import QdrantClient
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
 
 from app.config import Settings
@@ -38,13 +40,22 @@ def search_chunks(
     """Search Qdrant for the nearest chunks, with optional tag filtering."""
     query_filter = build_filter(filters) if filters else None
 
-    response = client.query_points(
-        collection_name=collection,
-        query=vector,
-        limit=top_k,
-        with_payload=True,
-        query_filter=query_filter,
-    )
+    try:
+        response = client.query_points(
+            collection_name=collection,
+            query=vector,
+            limit=top_k,
+            with_payload=True,
+            query_filter=query_filter,
+        )
+    except UnexpectedResponse as e:
+        if e.status_code == 404:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Vector database is online but collection '{collection}' does not exist. "
+                       "Run the RAG pipeline to populate it.",
+            )
+        raise
     return response.points
 
 

@@ -7,12 +7,15 @@ import ollama
 from fastapi import APIRouter, Depends
 from qdrant_client import QdrantClient
 
-from app.dependencies import get_qdrant
+from app.config import Settings
+from app.dependencies import get_qdrant, get_settings
 
 router = APIRouter()
 
 _start_time = time.monotonic()
-_pyproject = tomllib.loads(Path(__file__).resolve().parents[2].joinpath("pyproject.toml").read_text())
+_pyproject = tomllib.loads(
+    Path(__file__).resolve().parents[2].joinpath("pyproject.toml").read_text()
+)
 _project = _pyproject["project"]
 
 
@@ -32,26 +35,37 @@ def _uptime() -> dict:
 
 
 @router.get("/healthz")
-def health(client: QdrantClient = Depends(get_qdrant)):
-    checks = {}
+def health(
+    client: QdrantClient = Depends(get_qdrant),
+    settings: Settings = Depends(get_settings),
+):
+    checks: dict[str, dict] = {}
 
     try:
-        client.get_collections()
-        checks["qdrant"] = "pass"
+        collections = client.get_collections().collections
+        collection_names = [c.name for c in collections]
+        if settings.qdrant_collection in collection_names:
+            checks["qdrant"] = {"status": "pass"}
+        else:
+            checks["qdrant"] = {
+                "status": "fail",
+                "output": f"collection '{settings.qdrant_collection}' not found",
+            }
     except Exception as e:
-        checks["qdrant"] = f"fail: {e}"
+        checks["qdrant"] = {"status": "fail", "output": str(e)}
 
     try:
         ollama.list()
-        checks["ollama"] = "pass"
+        checks["ollama"] = {"status": "pass"}
     except Exception as e:
-        checks["ollama"] = f"fail: {e}"
+        checks["ollama"] = {"status": "fail", "output": str(e)}
 
-    status = "pass" if all(v == "pass" for v in checks.values()) else "fail"
+    status = "pass" if all(c["status"] == "pass" for c in checks.values()) else "fail"
     return {
         "name": _project["name"],
         "version": _project["version"],
         "status": status,
+        "env": {"APP_ENVIRONMENT": settings.app_environment},
         "uptime": _uptime(),
         "checks": checks,
     }
