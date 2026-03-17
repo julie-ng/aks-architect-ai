@@ -4,6 +4,11 @@ AI-assisted architecture advisor for Azure Kubernetes Service (AKS). Data pipeli
 
 ## General
 - Current year is 2026. Do not suggest deprecated packages or outdated patterns.
+- Prefer environment variable configurations. Avoid hard coding variables in configuration files, e.g. `config.py`, `config.ts`, etc. Instead, read from environment variables that are defined in [docker-compose.dev.yaml](./docker-compose.dev.yaml). 
+
+## APIs
+
+- All HTTP APIs should have a `/healthz` endpoint that follows this [IETF proposal](https://datatracker.ietf.org/doc/html/draft-inadarei-api-health-check-06)
 
 ## MCP Server Preferences
 - **Nuxt / Nuxt UI docs:** Always use `nuxt-remote` and `nuxt-ui-remote` MCP servers (official sources)
