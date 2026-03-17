@@ -18,7 +18,15 @@ services:
       - ./advisor-api/app:/workspace/app
       - ./system-prompt.txt:/workspace/system-prompt.txt
     environment:
+      APP_ENVIRONMENT: development
       QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: aks-docs
+      EMBEDDING_MODEL: nomic-embed-text
+      CHAT_MODEL: llama3.2
+      CORS_ORIGINS: '["http://localhost:3000"]'
+      RETRIEVAL_TOP_K: 5
+      PRIORITY_BOOST_WEIGHT: 0.1
+      SYSTEM_PROMPT_PATH: system-prompt.txt
       OLLAMA_HOST: http://host.docker.internal:11434
       OPENAPI_DOCS_ENABLED: "true"
     extra_hosts:
