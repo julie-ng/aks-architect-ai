@@ -5,7 +5,8 @@ let cached: string | null = null
 
 export function getSystemPrompt (): string {
   if (!cached) {
-    const path = resolve(process.cwd(), '..', 'system-prompt.md')
+    const config = useRuntimeConfig()
+    const path = resolve(process.cwd(), config.systemPromptPath)
     cached = readFileSync(path, 'utf-8').trim()
   }
   return cached

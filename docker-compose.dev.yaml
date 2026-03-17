@@ -50,6 +50,7 @@ services:
       NUXT_ADVISOR_API_HOST: http://advisor-api:8000
       NUXT_OLLAMA_HOST: ${OLLAMA_HOST}
       NUXT_CHAT_MODEL: ${CHAT_MODEL}
+      NUXT_SYSTEM_PROMPT_PATH: /system-prompt.md
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
