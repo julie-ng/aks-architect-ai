@@ -30,7 +30,7 @@ All settings via env vars (pydantic-settings). Defined in [`app/config.py`](./ap
 | `CORS_ORIGINS` | `["http://localhost:3000"]` | Allowed CORS origins |
 | `RETRIEVAL_TOP_K` | `5` | Number of chunks returned after re-ranking |
 | `PRIORITY_BOOST_WEIGHT` | `0.1` | How much priority influences ranking (see [Weights](#weights)) |
-| `SYSTEM_PROMPT_PATH` | `system-prompt.txt` | Path to shared system prompt |
+| `SYSTEM_PROMPT_PATH` | `system-prompt.md` | Path to shared system prompt |
 | `OPENAPI_DOCS_ENABLED` | `False` | Enable Swagger UI at `/docs` |
 
 ## Retrieval Process

@@ -69,11 +69,11 @@ advisor-ui/               # Nuxt 3 streaming chat UI
     api/chat.post.ts      # Nuxt server route: retrieve from FastAPI + stream via AI SDK
     utils/
       provider.ts         # LLM provider factory (Ollama local / Azure OpenAI prod)
-      system-prompt.ts    # Reads shared system-prompt.txt
+      system-prompt.ts    # Reads shared system-prompt.md
   nuxt.config.ts
   package.json
 
-system-prompt.txt         # Shared system prompt (used by both advisor-api and advisor-ui)
+system-prompt.md         # Shared system prompt (used by both advisor-api and advisor-ui)
 docker-compose.dev.yaml   # Qdrant + advisor-api containers
 .github/workflows/
   unit-tests.yaml         # CI: web-scraper, rag-pipeline, advisor-api, advisor-ui
@@ -230,7 +230,7 @@ The `/api/retrieve` endpoint is used by the Nuxt UI's server route to get RAG co
 ### Configuration
 All via environment variables (pydantic-settings). Key settings:
 - `QDRANT_URL`, `QDRANT_COLLECTION`, `EMBEDDING_MODEL`, `CHAT_MODEL`
-- `SYSTEM_PROMPT_PATH` — path to shared `system-prompt.txt` (default: `system-prompt.txt`)
+- `SYSTEM_PROMPT_PATH` — path to shared `system-prompt.md` (default: `system-prompt.md`)
 - `OPENAPI_DOCS_ENABLED` — disabled by default, enabled in docker-compose.dev.yaml
 
 ## Advisor UI
@@ -267,7 +267,7 @@ Server-only runtime config in `nuxt.config.ts`. Env vars auto-map with `NUXT_` p
 - `NUXT_AZURE_API_KEY`, `NUXT_AZURE_ENDPOINT`, `NUXT_AZURE_DEPLOYMENT` — for Azure OpenAI
 
 ### Shared System Prompt
-`system-prompt.txt` at the project root is read by both advisor-api (Python) and advisor-ui (Node). For Docker, it's mounted into the advisor-api container via docker-compose.
+`system-prompt.md` at the project root is read by both advisor-api (Python) and advisor-ui (Node). For Docker, it's mounted into the advisor-api container via docker-compose.
 
 ## CI
 

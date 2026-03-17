@@ -17,9 +17,7 @@ def _format_context(chunks: list[dict]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def generate_answer(
-    question: str, chunks: list[dict], model: str, system_prompt_path: str = "system-prompt.txt"
-) -> str:
+def generate_answer(question: str, chunks: list[dict], model: str, system_prompt_path: str = "system-prompt.md") -> str:
     """Generate an answer from retrieved chunks using Ollama chat."""
     context = _format_context(chunks)
     system_prompt = _load_system_prompt(system_prompt_path)

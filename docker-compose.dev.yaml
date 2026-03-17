@@ -16,7 +16,7 @@ services:
       - qdrant
     volumes:
       - ./advisor-api/app:/workspace/app
-      - ./system-prompt.txt:/workspace/system-prompt.txt
+      - ./system-prompt.md:/workspace/system-prompt.md
     environment:
       APP_ENVIRONMENT: development
       QDRANT_URL: http://qdrant:6333
@@ -44,7 +44,7 @@ services:
     volumes:
       - ./advisor-ui:/workspace
       - advisor_ui_node_modules:/workspace/node_modules
-      - ./system-prompt.txt:/system-prompt.txt:ro
+      - ./system-prompt.md:/system-prompt.md:ro
     environment:
       NUXT_APP_ENVIRONMENT: development
       NUXT_ADVISOR_API_HOST: http://advisor-api:8000
