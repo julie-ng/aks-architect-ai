@@ -14,22 +14,21 @@ import sys
 import ollama
 from qdrant_client import QdrantClient
 
-EMBEDDING_MODEL = "nomic-embed-text"
-EMBEDDING_PREFIX = "search_query: "
-QDRANT_URL = "http://localhost:6333"
+from config import config as cfg
 
 
 def main():
     parser = argparse.ArgumentParser(description="Search AKS docs in Qdrant")
     parser.add_argument("question", help="Question to search for")
-    parser.add_argument("--top", type=int, default=5, help="Number of results (default: 5)")
-    parser.add_argument("--collection", default="aks-docs", help="Qdrant collection name")
+    parser.add_argument("--top", type=int, default=cfg.retrieval_top_k, help="Number of results")
+    parser.add_argument("--collection", default=cfg.qdrant_collection, help="Qdrant collection name")
     args = parser.parse_args()
 
-    client = QdrantClient(url=QDRANT_URL)
+    client = QdrantClient(url=cfg.qdrant_url)
 
     # Embed the question
-    response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=EMBEDDING_PREFIX + args.question)
+    ollama_client = ollama.Client(host=cfg.ollama_host)
+    response = ollama_client.embeddings(model=cfg.embedding_model, prompt=cfg.embedding_prefix_query + args.question)
     vector = response["embedding"]
 
     # Search

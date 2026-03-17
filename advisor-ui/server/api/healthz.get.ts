@@ -19,7 +19,7 @@ async function checkAdvisorApi (): Promise<Check> {
 
   const config = useRuntimeConfig()
   try {
-    const res = await $fetch<{ status: string }>(`${config.advisorApiUrl}/healthz`)
+    const res = await $fetch<{ status: string }>(`${config.advisorApiHost}/healthz`)
     advisorApiCheck = res.status === 'pass'
       ? { status: 'pass' }
       : { status: 'fail', output: `upstream status=${res.status}` }

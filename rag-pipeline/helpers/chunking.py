@@ -6,9 +6,7 @@ Used by chunk.py. Separated out for testability.
 
 import re
 
-# Tunables
-MAX_CHARS = 1500  # ~300-400 tokens — safe for nomic-embed-text (2048 token limit)
-MIN_CHARS = 100  # Discard tiny fragments (e.g. heading-only sections)
+from config import config as cfg
 
 
 def split_by_headings(markdown: str) -> list[tuple[str, str]]:
@@ -118,8 +116,8 @@ def deduplicate(chunks: list[str]) -> list[str]:
 
 def sections_to_chunks(
     sections: list[tuple[str, str]],
-    max_chars: int = MAX_CHARS,
-    min_chars: int = MIN_CHARS,
+    max_chars: int = cfg.chunk_max_chars,
+    min_chars: int = cfg.chunk_min_chars,
 ) -> list[str]:
     """Convert heading/body sections into merged, deduped chunk texts."""
     raw = []

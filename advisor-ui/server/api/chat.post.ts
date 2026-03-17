@@ -50,7 +50,7 @@ export default defineLazyEventHandler(async () => {
         .slice(-6)
 
       const retrieveResponse = await $fetch<RetrieveResponse>(
-        `${config.advisorApiUrl}/api/retrieve`,
+        `${config.advisorApiHost}/api/retrieve`,
         {
           method: 'POST',
           body: { question, history },

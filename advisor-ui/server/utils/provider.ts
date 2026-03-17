@@ -12,6 +12,6 @@ export function getChatModel () {
     return azure(config.azureDeployment)
   }
 
-  const ollama = createOllama({ baseURL: `${config.ollamaBaseUrl}/api` })
+  const ollama = createOllama({ baseURL: `${config.ollamaHost}/api` })
   return ollama(config.chatModel)
 }

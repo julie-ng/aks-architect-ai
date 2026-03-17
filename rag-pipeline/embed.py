@@ -23,15 +23,12 @@ import ollama
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
-EMBEDDING_MODEL = "nomic-embed-text"
-EMBEDDING_PREFIX = "search_document: "
-VECTOR_DIM = 768  # nomic-embed-text output dimension
-BATCH_SIZE = 50  # points per upsert call
-QDRANT_URL = "http://localhost:6333"
+from config import config as cfg
 
 
 def get_embedding(text: str) -> list[float]:
-    response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=EMBEDDING_PREFIX + text)
+    client = ollama.Client(host=cfg.ollama_host)
+    response = client.embeddings(model=cfg.embedding_model, prompt=cfg.embedding_prefix_document + text)
     return response["embedding"]
 
 
@@ -42,7 +39,7 @@ def recreate_collection(client: QdrantClient, name: str) -> None:
         print(f"Deleted existing collection: {name}")
     client.create_collection(
         collection_name=name,
-        vectors_config=VectorParams(size=VECTOR_DIM, distance=Distance.COSINE),
+        vectors_config=VectorParams(size=cfg.embedding_vector_dim, distance=Distance.COSINE),
     )
     print(f"Created collection: {name}")
 
@@ -50,7 +47,7 @@ def recreate_collection(client: QdrantClient, name: str) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Embed chunks and upsert into Qdrant")
     parser.add_argument("--input", default="chunks.jsonl", help="Input JSONL file")
-    parser.add_argument("--collection", default="aks-docs", help="Qdrant collection name")
+    parser.add_argument("--collection", default=cfg.qdrant_collection, help="Qdrant collection name")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -59,7 +56,7 @@ def main():
         print("Run chunk.py first to generate chunks.jsonl", file=sys.stderr)
         sys.exit(1)
 
-    client = QdrantClient(url=QDRANT_URL)
+    client = QdrantClient(url=cfg.qdrant_url)
     recreate_collection(client, args.collection)
 
     chunks = [json.loads(line) for line in input_path.read_text().splitlines() if line.strip()]
@@ -77,7 +74,7 @@ def main():
 
         batch.append(PointStruct(id=chunk["id"], vector=vector, payload=payload))
 
-        if len(batch) >= BATCH_SIZE or i == total:
+        if len(batch) >= cfg.embedding_batch_size or i == total:
             client.upsert(collection_name=args.collection, points=batch)
             upserted += len(batch)
             print(f"  [{upserted:>{len(str(total))}}/{total}] upserted")
