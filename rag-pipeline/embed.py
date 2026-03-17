@@ -23,40 +23,40 @@ import ollama
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
-EMBEDDING_MODEL = 'nomic-embed-text'
-EMBEDDING_PREFIX = 'search_document: '
-VECTOR_DIM = 768       # nomic-embed-text output dimension
-BATCH_SIZE = 50        # points per upsert call
-QDRANT_URL = 'http://localhost:6333'
+EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_PREFIX = "search_document: "
+VECTOR_DIM = 768  # nomic-embed-text output dimension
+BATCH_SIZE = 50  # points per upsert call
+QDRANT_URL = "http://localhost:6333"
 
 
 def get_embedding(text: str) -> list[float]:
     response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=EMBEDDING_PREFIX + text)
-    return response['embedding']
+    return response["embedding"]
 
 
 def recreate_collection(client: QdrantClient, name: str) -> None:
     existing = [c.name for c in client.get_collections().collections]
     if name in existing:
         client.delete_collection(collection_name=name)
-        print(f'Deleted existing collection: {name}')
+        print(f"Deleted existing collection: {name}")
     client.create_collection(
         collection_name=name,
         vectors_config=VectorParams(size=VECTOR_DIM, distance=Distance.COSINE),
     )
-    print(f'Created collection: {name}')
+    print(f"Created collection: {name}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Embed chunks and upsert into Qdrant')
-    parser.add_argument('--input', default='chunks.jsonl', help='Input JSONL file')
-    parser.add_argument('--collection', default='aks-docs', help='Qdrant collection name')
+    parser = argparse.ArgumentParser(description="Embed chunks and upsert into Qdrant")
+    parser.add_argument("--input", default="chunks.jsonl", help="Input JSONL file")
+    parser.add_argument("--collection", default="aks-docs", help="Qdrant collection name")
     args = parser.parse_args()
 
     input_path = Path(args.input)
     if not input_path.exists():
-        print(f'Error: input file not found: {input_path}', file=sys.stderr)
-        print('Run chunk.py first to generate chunks.jsonl', file=sys.stderr)
+        print(f"Error: input file not found: {input_path}", file=sys.stderr)
+        print("Run chunk.py first to generate chunks.jsonl", file=sys.stderr)
         sys.exit(1)
 
     client = QdrantClient(url=QDRANT_URL)
@@ -70,21 +70,21 @@ def main():
     batch: list[PointStruct] = []
 
     for i, chunk in enumerate(chunks, 1):
-        vector = get_embedding(chunk['text'])
+        vector = get_embedding(chunk["text"])
 
         # Everything except id and text goes into the payload for retrieval
-        payload = {k: v for k, v in chunk.items() if k != 'id'}
+        payload = {k: v for k, v in chunk.items() if k != "id"}
 
-        batch.append(PointStruct(id=chunk['id'], vector=vector, payload=payload))
+        batch.append(PointStruct(id=chunk["id"], vector=vector, payload=payload))
 
         if len(batch) >= BATCH_SIZE or i == total:
             client.upsert(collection_name=args.collection, points=batch)
             upserted += len(batch)
-            print(f'  [{upserted:>{len(str(total))}}/{total}] upserted')
+            print(f"  [{upserted:>{len(str(total))}}/{total}] upserted")
             batch = []
 
     print(f'\nDone: {upserted} vectors in "{args.collection}"')
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -13,9 +13,7 @@ from app.dependencies import get_qdrant, get_settings
 router = APIRouter()
 
 _start_time = time.monotonic()
-_pyproject = tomllib.loads(
-    Path(__file__).resolve().parents[2].joinpath("pyproject.toml").read_text()
-)
+_pyproject = tomllib.loads(Path(__file__).resolve().parents[2].joinpath("pyproject.toml").read_text())
 _project = _pyproject["project"]
 
 

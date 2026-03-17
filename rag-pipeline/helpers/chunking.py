@@ -8,7 +8,7 @@ import re
 
 # Tunables
 MAX_CHARS = 1500  # ~300-400 tokens — safe for nomic-embed-text (2048 token limit)
-MIN_CHARS = 100   # Discard tiny fragments (e.g. heading-only sections)
+MIN_CHARS = 100  # Discard tiny fragments (e.g. heading-only sections)
 
 
 def split_by_headings(markdown: str) -> list[tuple[str, str]]:
@@ -17,17 +17,17 @@ def split_by_headings(markdown: str) -> list[tuple[str, str]]:
     Returns a list of (heading_text, section_content) tuples.
     The first tuple's heading may be empty if content precedes the first heading.
     """
-    pattern = re.compile(r'^(#{2,}\s+.+)$', re.MULTILINE)
+    pattern = re.compile(r"^(#{2,}\s+.+)$", re.MULTILINE)
     parts = pattern.split(markdown)
 
     sections = []
     # parts alternates: [pre_heading_text, heading, body, heading, body, ...]
     if parts[0].strip():
-        sections.append(('', parts[0].strip()))
+        sections.append(("", parts[0].strip()))
 
     for i in range(1, len(parts), 2):
         heading = parts[i].strip()
-        body = parts[i + 1].strip() if i + 1 < len(parts) else ''
+        body = parts[i + 1].strip() if i + 1 < len(parts) else ""
         sections.append((heading, body))
 
     return sections
@@ -35,12 +35,12 @@ def split_by_headings(markdown: str) -> list[tuple[str, str]]:
 
 def hard_split(text: str, max_chars: int) -> list[str]:
     """Split text that has no paragraph breaks into chunks at line boundaries."""
-    lines = text.split('\n')
+    lines = text.split("\n")
     chunks = []
-    current = ''
+    current = ""
 
     for line in lines:
-        candidate = (current + '\n' + line) if current else line
+        candidate = (current + "\n" + line) if current else line
         if len(candidate) <= max_chars:
             current = candidate
         else:
@@ -60,9 +60,9 @@ def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
     if len(text) <= max_chars:
         return [text]
 
-    paragraphs = re.split(r'\n{2,}', text)
+    paragraphs = re.split(r"\n{2,}", text)
     chunks = []
-    current = ''
+    current = ""
 
     for para in paragraphs:
         if not para.strip():
@@ -71,10 +71,10 @@ def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
         if len(para) > max_chars:
             if current:
                 chunks.append(current)
-                current = ''
+                current = ""
             chunks.extend(hard_split(para, max_chars))
             continue
-        candidate = (current + '\n\n' + para).strip() if current else para
+        candidate = (current + "\n\n" + para).strip() if current else para
         if len(candidate) <= max_chars:
             current = candidate
         else:
@@ -91,9 +91,9 @@ def split_on_paragraphs(text: str, max_chars: int) -> list[str]:
 def merge_small_chunks(chunks: list[str], min_chars: int, max_chars: int) -> list[str]:
     """Merge consecutive chunks that are smaller than min_chars, without exceeding max_chars."""
     merged = []
-    buffer = ''
+    buffer = ""
     for chunk in chunks:
-        candidate = (buffer + '\n\n' + chunk).strip() if buffer else chunk
+        candidate = (buffer + "\n\n" + chunk).strip() if buffer else chunk
         if len(buffer) < min_chars and len(candidate) <= max_chars:
             buffer = candidate
         else:
@@ -124,7 +124,7 @@ def sections_to_chunks(
     """Convert heading/body sections into merged, deduped chunk texts."""
     raw = []
     for heading, body in sections:
-        text = (heading + '\n\n' + body).strip() if heading else body
+        text = (heading + "\n\n" + body).strip() if heading else body
         if not text:
             continue
         for part in split_on_paragraphs(text, max_chars):

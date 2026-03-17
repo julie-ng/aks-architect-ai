@@ -19,29 +19,33 @@ class TestEmbedQuery:
         mock_ollama.embeddings.return_value = {"embedding": [0.1, 0.2, 0.3]}
         result = embed_query("test question", "nomic-embed-text", "search_query: ")
         assert result == [0.1, 0.2, 0.3]
-        mock_ollama.embeddings.assert_called_once_with(
-            model="nomic-embed-text", prompt="search_query: test question"
-        )
+        mock_ollama.embeddings.assert_called_once_with(model="nomic-embed-text", prompt="search_query: test question")
 
 
 class TestBuildFilter:
     def test_single_string_value(self):
         f = build_filter({"tags.doc_type": "guide"})
-        assert f == Filter(must=[
-            FieldCondition(key="tags.doc_type", match=MatchValue(value="guide")),
-        ])
+        assert f == Filter(
+            must=[
+                FieldCondition(key="tags.doc_type", match=MatchValue(value="guide")),
+            ]
+        )
 
     def test_list_value(self):
         f = build_filter({"tags.scenario_tags": ["regulated", "pci-dss"]})
-        assert f == Filter(must=[
-            FieldCondition(key="tags.scenario_tags", match=MatchAny(any=["regulated", "pci-dss"])),
-        ])
+        assert f == Filter(
+            must=[
+                FieldCondition(key="tags.scenario_tags", match=MatchAny(any=["regulated", "pci-dss"])),
+            ]
+        )
 
     def test_mixed_values(self):
-        f = build_filter({
-            "tags.doc_type": "guide",
-            "tags.scenario_tags": ["regulated"],
-        })
+        f = build_filter(
+            {
+                "tags.doc_type": "guide",
+                "tags.scenario_tags": ["regulated"],
+            }
+        )
         assert len(f.must) == 2
 
 
@@ -119,13 +123,16 @@ class TestRetrieve:
     def test_returns_formatted_results(self, mock_embed, mock_search):
         mock_embed.return_value = [0.1, 0.2]
         mock_search.return_value = [
-            _make_point(0.95, {
-                "title": "Node Pools",
-                "url": "https://example.com",
-                "text": "Configure node pools...",
-                "tags": {"doc_type": "guide"},
-                "priority": 10,
-            })
+            _make_point(
+                0.95,
+                {
+                    "title": "Node Pools",
+                    "url": "https://example.com",
+                    "text": "Configure node pools...",
+                    "tags": {"doc_type": "guide"},
+                    "priority": 10,
+                },
+            )
         ]
 
         settings = Settings()
@@ -157,13 +164,16 @@ class TestRetrieve:
         mock_embed.return_value = [0.1]
         # Return more results than top_k
         mock_search.return_value = [
-            _make_point(0.9 - i * 0.01, {
-                "title": f"Doc {i}",
-                "url": "",
-                "text": "",
-                "tags": {},
-                "priority": 10,
-            })
+            _make_point(
+                0.9 - i * 0.01,
+                {
+                    "title": f"Doc {i}",
+                    "url": "",
+                    "text": "",
+                    "tags": {},
+                    "priority": 10,
+                },
+            )
             for i in range(15)
         ]
 

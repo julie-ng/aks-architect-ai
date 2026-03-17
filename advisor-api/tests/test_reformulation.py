@@ -6,17 +6,13 @@ from app.services.reformulation import reformulate_query
 class TestReformulateQuery:
     @patch("app.services.reformulation.ollama")
     def test_returns_reformulated_query(self, mock_ollama):
-        mock_ollama.chat.return_value = {
-            "message": {"content": "AKS cluster network policies configuration"}
-        }
+        mock_ollama.chat.return_value = {"message": {"content": "AKS cluster network policies configuration"}}
         result = reformulate_query("how do I secure my cluster?", "llama3.2")
         assert result == "AKS cluster network policies configuration"
 
     @patch("app.services.reformulation.ollama")
     def test_includes_history_in_messages(self, mock_ollama):
-        mock_ollama.chat.return_value = {
-            "message": {"content": "AKS networking for multi-region deployments"}
-        }
+        mock_ollama.chat.return_value = {"message": {"content": "AKS networking for multi-region deployments"}}
         history = [
             {"role": "user", "content": "How should I configure networking for AKS?"},
             {"role": "assistant", "content": "For AKS networking, consider CNI overlay..."},
@@ -32,9 +28,7 @@ class TestReformulateQuery:
 
     @patch("app.services.reformulation.ollama")
     def test_works_without_history(self, mock_ollama):
-        mock_ollama.chat.return_value = {
-            "message": {"content": "AKS cluster security"}
-        }
+        mock_ollama.chat.return_value = {"message": {"content": "AKS cluster security"}}
         result = reformulate_query("how do I secure my cluster?", "llama3.2")
 
         assert result == "AKS cluster security"

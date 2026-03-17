@@ -14,7 +14,21 @@ dependencies = [
 dev = [
     "pytest>=9.0.2",
     "httpx>=0.28.0",
+    "ruff>=0.12.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+# Ruff rule sets — https://docs.astral.sh/ruff/rules/
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors   — https://docs.astral.sh/ruff/rules/#pycodestyle-e-w
+    "F",  # pyflakes             — https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "I",  # isort (imports)      — https://docs.astral.sh/ruff/rules/#isort-i
+    "W",  # pycodestyle warnings — https://docs.astral.sh/ruff/rules/#pycodestyle-e-w
+]

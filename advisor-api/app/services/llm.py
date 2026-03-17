@@ -13,11 +13,7 @@ def _format_context(chunks: list[dict]) -> str:
     """Format retrieved chunks as numbered sources for the LLM prompt."""
     parts = []
     for i, chunk in enumerate(chunks, 1):
-        parts.append(
-            f"[{i}] {chunk['title']}\n"
-            f"URL: {chunk['url']}\n"
-            f"{chunk['text']}"
-        )
+        parts.append(f"[{i}] {chunk['title']}\nURL: {chunk['url']}\n{chunk['text']}")
     return "\n\n---\n\n".join(parts)
 
 
@@ -34,10 +30,7 @@ def generate_answer(
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": (
-                    f"Documentation sources:\n\n{context}\n\n"
-                    f"---\n\nQuestion: {question}"
-                ),
+                "content": (f"Documentation sources:\n\n{context}\n\n---\n\nQuestion: {question}"),
             },
         ],
     )

@@ -1,6 +1,5 @@
 import ollama
 
-
 REFORMULATION_PROMPT = """\
 You are a search query optimizer for Azure Kubernetes Service (AKS) documentation. \
 Rewrite the user's question into a better search query for semantic retrieval.

@@ -14,23 +14,23 @@ import sys
 import ollama
 from qdrant_client import QdrantClient
 
-EMBEDDING_MODEL = 'nomic-embed-text'
-EMBEDDING_PREFIX = 'search_query: '
-QDRANT_URL = 'http://localhost:6333'
+EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_PREFIX = "search_query: "
+QDRANT_URL = "http://localhost:6333"
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Search AKS docs in Qdrant')
-    parser.add_argument('question', help='Question to search for')
-    parser.add_argument('--top', type=int, default=5, help='Number of results (default: 5)')
-    parser.add_argument('--collection', default='aks-docs', help='Qdrant collection name')
+    parser = argparse.ArgumentParser(description="Search AKS docs in Qdrant")
+    parser.add_argument("question", help="Question to search for")
+    parser.add_argument("--top", type=int, default=5, help="Number of results (default: 5)")
+    parser.add_argument("--collection", default="aks-docs", help="Qdrant collection name")
     args = parser.parse_args()
 
     client = QdrantClient(url=QDRANT_URL)
 
     # Embed the question
     response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=EMBEDDING_PREFIX + args.question)
-    vector = response['embedding']
+    vector = response["embedding"]
 
     # Search
     response = client.query_points(
@@ -42,30 +42,30 @@ def main():
     results = response.points
 
     if not results:
-        print('No results found.')
+        print("No results found.")
         sys.exit(0)
 
     print(f'Top {len(results)} results for: "{args.question}"\n')
-    print('=' * 72)
+    print("=" * 72)
 
     for i, hit in enumerate(results, 1):
         p = hit.payload
-        tags = p.get('tags', {})
-        print(f'\n[{i}] score={hit.score:.4f}  priority={p.get("priority", "?")}')
-        print(f'    {p.get("title", "(no title)")}')
-        print(f'    {p.get("url", "")}')
+        tags = p.get("tags", {})
+        print(f"\n[{i}] score={hit.score:.4f}  priority={p.get('priority', '?')}")
+        print(f"    {p.get('title', '(no title)')}")
+        print(f"    {p.get('url', '')}")
         if tags:
-            tag_str = '  '.join(f'{k}={v}' for k, v in tags.items())
-            print(f'    tags: {tag_str}')
+            tag_str = "  ".join(f"{k}={v}" for k, v in tags.items())
+            print(f"    tags: {tag_str}")
         print()
         # Print a short preview of the chunk text
-        text = p.get('text', '')
-        preview = text[:300].replace('\n', ' ')
+        text = p.get("text", "")
+        preview = text[:300].replace("\n", " ")
         if len(text) > 300:
-            preview += '...'
-        print(f'    {preview}')
-        print('-' * 72)
+            preview += "..."
+        print(f"    {preview}")
+        print("-" * 72)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

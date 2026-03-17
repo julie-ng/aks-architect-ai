@@ -52,7 +52,8 @@ export function useChatSessions () {
   }
 
   function deleteSession (id: string): void {
-    const { [id]: _, ...rest } = sessions.value
+    // eslint-disable-next-line no-unused-vars
+    const { [id]: _removed, ...rest } = sessions.value
     sessions.value = rest
   }
 

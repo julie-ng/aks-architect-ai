@@ -53,7 +53,7 @@ def search_chunks(
             raise HTTPException(
                 status_code=503,
                 detail=f"Vector database is online but collection '{collection}' does not exist. "
-                       "Run the RAG pipeline to populate it.",
+                "Run the RAG pipeline to populate it.",
             )
         raise
     return response.points
@@ -92,16 +92,18 @@ def retrieve(
     results = []
     for point in points:
         p = point.payload
-        results.append({
-            "id": str(point.id),
-            "title": p.get("title", "(no title)"),
-            "url": p.get("url", ""),
-            "score": point.score,
-            "text": p.get("text", ""),
-            "tags": p.get("tags", {}),
-            "priority": p.get("priority"),
-        })
+        results.append(
+            {
+                "id": str(point.id),
+                "title": p.get("title", "(no title)"),
+                "url": p.get("url", ""),
+                "score": point.score,
+                "text": p.get("text", ""),
+                "tags": p.get("tags", {}),
+                "priority": p.get("priority"),
+            }
+        )
 
     results = boost_by_priority(results, settings.priority_boost_weight)
 
-    return results[:settings.retrieval_top_k]
+    return results[: settings.retrieval_top_k]

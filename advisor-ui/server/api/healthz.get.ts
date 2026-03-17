@@ -11,7 +11,7 @@ interface Check {
 
 let advisorApiCheck: Check = { status: 'unknown' }
 
-async function checkAdvisorApi(): Promise<Check> {
+async function checkAdvisorApi (): Promise<Check> {
   const now = Date.now()
   if (now - lastCheckedAt < CHECK_INTERVAL_MS) {
     return advisorApiCheck

@@ -9,10 +9,10 @@ from helpers.chunking import (
     split_on_paragraphs,
 )
 
-
 # ---------------------------------------------------------------------------
 # split_by_headings
 # ---------------------------------------------------------------------------
+
 
 class TestSplitByHeadings:
     def test_single_section(self):
@@ -63,6 +63,7 @@ class TestSplitByHeadings:
 # hard_split
 # ---------------------------------------------------------------------------
 
+
 class TestHardSplit:
     def test_splits_on_lines(self):
         text = "Line one.\nLine two.\nLine three."
@@ -83,6 +84,7 @@ class TestHardSplit:
 # ---------------------------------------------------------------------------
 # split_on_paragraphs
 # ---------------------------------------------------------------------------
+
 
 class TestSplitOnParagraphs:
     def test_short_text_unchanged(self):
@@ -121,6 +123,7 @@ class TestSplitOnParagraphs:
 # merge_small_chunks
 # ---------------------------------------------------------------------------
 
+
 class TestMergeSmallChunks:
     def test_merges_tiny_into_next(self):
         chunks = ["Hi", "This is a longer chunk that should absorb the tiny one."]
@@ -152,6 +155,7 @@ class TestMergeSmallChunks:
 # deduplicate
 # ---------------------------------------------------------------------------
 
+
 class TestDeduplicate:
     def test_removes_duplicates(self):
         assert deduplicate(["a", "b", "a", "c"]) == ["a", "b", "c"]
@@ -172,6 +176,7 @@ class TestDeduplicate:
 # ---------------------------------------------------------------------------
 # sections_to_chunks (integration of the above)
 # ---------------------------------------------------------------------------
+
 
 class TestSectionsToChunks:
     def test_basic_pipeline(self):

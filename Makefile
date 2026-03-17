@@ -43,6 +43,19 @@ advisor-ui/dev:
 advisor-ui/install:
 	cd advisor-ui && npm install
 
+# --- Lint ---
+
+lint: advisor-ui/lint advisor-api/lint pipeline/lint
+
+advisor-ui/lint:
+	cd advisor-ui && npm run lint
+
+advisor-api/lint:
+	cd advisor-api && uv run ruff check . && uv run ruff format --check .
+
+pipeline/lint:
+	cd rag-pipeline && uv run ruff check . && uv run ruff format --check .
+
 # --- Ollama ---
 
 ollama/start:
@@ -67,6 +80,7 @@ dc/build:
 	scraper/test scraper/clean scraper/crawl \
 	pipeline/test pipeline/chunk pipeline/embed pipeline/query \
 	advisor-api/test \
+	lint advisor-ui/lint advisor-api/lint pipeline/lint \
 	advisor-ui/dev advisor-ui/install \
 	ollama/start ollama/pull \
 	dc/up dc/down dc/build
