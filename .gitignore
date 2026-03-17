@@ -1,18 +1,26 @@
+# Note - see also .gitignore files in subdirectories
+
+# Misc.
 .DS_Store
+
+# Node.js dependencies
 node_modules
-claude-*
-rag-pipeline/chunks.jsonl
+
+# Python caches
 __pycache__
 .pytest_cache
 
-# Config
-.env
-
-# Personal notes
+# Notes
+claude-*
+.claude/projects/
 notes/
 
-# Web Scraper Debugging files
+# Data and Debugging
 backup*
 *.xlsx
 web-scraper/crawled-pages.csv
 web-scraper/SOURCES_FRAMEWORK.yaml
+rag-pipeline/chunks.jsonl
+
+# Config
+.env
