@@ -20,7 +20,7 @@ const input = ref('')
 const chat = new Chat({
   id: chatId,
   messages: session.messages,
-  onFinish({ message, messages }) {
+  onFinish ({ message, messages }) {
     updateMessages(chatId, messages)
     // Use reformulated query from first response as chat title
     const meta = message.metadata as Record<string, unknown> | undefined
@@ -28,14 +28,14 @@ const chat = new Chat({
       setTitle(chatId, meta.reformulatedQuery as string)
     }
   },
-  onError(error) {
+  onError (error) {
     console.error(error)
   },
 })
 
 const hasSubmitted = ref(session.messages.length > 0)
 
-function onSubmit(e: Event) {
+function onSubmit (e: Event) {
   e.preventDefault()
   if (!input.value.trim()) return
 
@@ -59,6 +59,31 @@ function onSubmit(e: Event) {
 const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
+
+const errorTitle = computed(() => {
+  if (!chat.error) return ''
+  try {
+    const parsed = JSON.parse(chat.error.message)
+    if (parsed?.statusCode && parsed?.statusMessage) {
+      return `${parsed.statusCode} ${parsed.statusMessage}`
+    }
+    return 'Error'
+  }
+  catch {
+    return 'Error'
+  }
+})
+
+const errorMessage = computed(() => {
+  if (!chat.error) return null
+  try {
+    const parsed = JSON.parse(chat.error.message)
+    return parsed?.data?.error ?? parsed?.statusMessage ?? parsed?.message ?? chat.error.message
+  }
+  catch {
+    return chat.error.message || 'An unexpected error occurred.'
+  }
+})
 </script>
 
 <template>
@@ -82,7 +107,10 @@ const messagesWrapperStyle = computed(() => ({
               :messages="chat.messages"
               :status="chat.status"
               :spacing-offset="180"
-              :ui="{ autoScroll: 'bottom-10 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 shadow-md border border-slate-300 ring-transparent' }"
+              :ui="{
+                root: chat.error ? '[&>article]:last-of-type:min-h-0' : '',
+                autoScroll: 'bottom-10 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 shadow-md border border-slate-300 ring-transparent',
+              }"
               should-auto-scroll
               auto-scroll
             >
@@ -99,10 +127,18 @@ const messagesWrapperStyle = computed(() => ({
             </UChatMessages>
 
             <div class="sticky bottom-0 bg-default py-6">
+              <UAlert
+                v-if="chat.error"
+                color="error"
+                variant="subtle"
+                icon="i-lucide-circle-alert"
+                :title="errorTitle"
+                :description="errorMessage"
+                class="mb-4"
+              />
               <UChatPrompt
                 v-model="input"
                 :rows="3"
-                :error="chat.error"
                 @submit="onSubmit"
               >
                 <UChatPromptSubmit :status="chat.status" @stop="chat.stop()" @reload="chat.regenerate()" />
