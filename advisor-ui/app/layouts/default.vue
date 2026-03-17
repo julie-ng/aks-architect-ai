@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { sortedSessions, deleteSession } = useChatSessions()
+const { sortedSessions } = useChatSessions()
 
 const links = computed(() => [
   [
@@ -9,21 +9,34 @@ const links = computed(() => [
       icon: 'i-lucide-home',
     },
     {
-      label: 'Chat',
-      to: '/chat',
-      icon: 'i-lucide-bot-message-square',
-    },
-  ],
-  [
-    {
       label: 'Retrieval',
       to: '/_debug/retrieval',
       icon: 'i-lucide-database-search',
     },
   ],
+  [
+    {
+      label: 'Chat',
+      to: '/chat',
+      icon: 'i-lucide-bot-message-square',
+      defaultOpen: true,
+      children: [
+        {
+          label: 'New Chat',
+          icon: 'i-lucide-plus',
+          to: '/chat/',
+        },
+        ...sortedSessions.value.map(session => ({
+          label: session.title,
+          icon: 'i-lucide-messages-square',
+          to: `/chat/${session.id}`,
+        })),
+      ],
+    },
+  ],
 ])
 
-function newChat() {
+function newChat () {
   navigateTo(`/chat/${crypto.randomUUID()}`)
 }
 </script>
@@ -62,44 +75,17 @@ function newChat() {
           orientation="vertical"
           :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : undefined"
         />
-
-        <template v-if="!collapsed">
-          <div class="mt-4 px-2">
-            <UButton
-              icon="i-lucide-plus"
-              label="New Chat"
-              color="neutral"
-              variant="ghost"
-              block
-              size="sm"
-              @click="newChat"
-            />
-          </div>
-
-          <nav v-if="sortedSessions.length > 0" class="mt-2 flex flex-col gap-0.5 px-2 overflow-y-auto">
-            <div
-              v-for="session in sortedSessions"
-              :key="session.id"
-              class="group flex items-center gap-1 rounded-md hover:bg-elevated px-2 py-1.5 text-sm"
-            >
-              <NuxtLink
-                :to="`/chat/${session.id}`"
-                class="flex-1 truncate text-muted hover:text-default"
-                active-class="text-default font-medium"
-              >
-                {{ session.title }}
-              </NuxtLink>
-              <UButton
-                icon="i-lucide-x"
-                color="neutral"
-                variant="ghost"
-                size="2xs"
-                class="opacity-0 group-hover:opacity-100 shrink-0"
-                @click.prevent="deleteSession(session.id)"
-              />
-            </div>
-          </nav>
-        </template>
+        <div v-if="!collapsed" class="mt-1 px-2">
+          <UButton
+            label="New Chat"
+            color="secondary"
+            variant="subtle"
+            block
+            size="sm"
+            class="cursor-pointer"
+            @click="newChat"
+          />
+        </div>
       </template>
     </UDashboardSidebar>
 
