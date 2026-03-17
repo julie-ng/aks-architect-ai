@@ -1,4 +1,5 @@
-import { streamText, UIMessage, convertToModelMessages } from 'ai'
+import type { UIMessage} from 'ai';
+import { streamText, convertToModelMessages } from 'ai'
 import { getChatModel } from '../utils/provider'
 import { getSystemPrompt } from '../utils/system-prompt'
 
@@ -14,7 +15,7 @@ interface RetrieveResponse {
   reformulated_query: string
 }
 
-function formatContext(chunks: RetrieveChunk[]): string {
+function formatContext (chunks: RetrieveChunk[]): string {
   return chunks
     .map((c, i) => `[${i + 1}] ${c.title}\nURL: ${c.url}\n${c.text}`)
     .join('\n\n---\n\n')
