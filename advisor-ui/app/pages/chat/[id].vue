@@ -1,62 +1,79 @@
 <script setup lang="ts">
 import { isTextUIPart } from 'ai'
-import { Chat } from "@ai-sdk/vue";
-import { ref } from "vue";
+import { Chat } from '@ai-sdk/vue'
+import { ref } from 'vue'
 
-// definePageMeta({ layout: 'dashboard' })
+const route = useRoute()
+const chatId = route.params.id as string
+
+const { getSession, createSession, updateMessages, setTitle } = useChatSessions()
+
+// Ensure session exists
+const session = getSession(chatId) ?? createSession(chatId)
 
 useHead({
-  title: 'Chat'
+  title: computed(() => session.title !== 'New chat' ? session.title : 'Chat'),
 })
 
-const input = ref("");
+const input = ref('')
 
 const chat = new Chat({
-  onError (error) {
-    console.error(error);
+  id: chatId,
+  messages: session.messages,
+  onFinish({ message, messages }) {
+    updateMessages(chatId, messages)
+    // Use reformulated query from first response as chat title
+    const meta = message.metadata as Record<string, unknown> | undefined
+    if (meta?.reformulatedQuery) {
+      setTitle(chatId, meta.reformulatedQuery as string)
+    }
   },
-});
+  onError(error) {
+    console.error(error)
+  },
+})
 
-const hasSubmitted = ref(false);
+const hasSubmitted = ref(session.messages.length > 0)
 
-function onSubmit (e: Event) {
-  console.log("submitting");
-  e.preventDefault();
-  if (!input.value.trim()) return;
+function onSubmit(e: Event) {
+  e.preventDefault()
+  if (!input.value.trim()) return
 
-  const message = input.value;
-  input.value = "";
+  const message = input.value
+  input.value = ''
 
   if (!hasSubmitted.value) {
-    hasSubmitted.value = true;
-    // Delay sending until the container transition finishes
+    hasSubmitted.value = true
     setTimeout(() => {
-      chat.sendMessage({ text: message });
-    }, 300);
+      chat.sendMessage({ text: message })
+      // Sync user message immediately
+      updateMessages(chatId, chat.messages)
+    }, 300)
   }
- else {
-    chat.sendMessage({ text: message });
+  else {
+    chat.sendMessage({ text: message })
+    updateMessages(chatId, chat.messages)
   }
 }
 
 const messagesWrapperStyle = computed(() => ({
-  minHeight: hasSubmitted.value ? '100dvh' : '0px'
+  minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
 </script>
+
 <template>
   <UDashboardPanel
     id="chat"
     class="relative min-h-0"
     :ui="{ body: 'p-0 sm:p-0 overscroll-none' }"
   >
-    <!-- <template #header>
-      <UDashboardNavbar title="Chat" />
-    </template> -->
-
     <template #body>
       <UContainer>
         <div class="max-w-2xl w-full mx-auto">
-          <UContainer class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out" :style="messagesWrapperStyle">
+          <UContainer
+            class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
+            :style="messagesWrapperStyle"
+          >
             <p v-if="chat.messages.length === 0" class="text-gray-400 text-center py-4 my-4">
               Ask a question about AKS architecture to get started.
             </p>
@@ -69,7 +86,6 @@ const messagesWrapperStyle = computed(() => ({
               should-auto-scroll
               auto-scroll
             >
-              <!-- class="lg:pt-(--ui-header-height) pb-6 sm:pb-6" -->
               <template #content="{ message }">
                 <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
                   <MDC
@@ -82,7 +98,6 @@ const messagesWrapperStyle = computed(() => ({
               </template>
             </UChatMessages>
 
-            <!-- Force solid bg with bg-default -->
             <div class="sticky bottom-0 bg-default py-6">
               <UChatPrompt
                 v-model="input"
@@ -92,7 +107,9 @@ const messagesWrapperStyle = computed(() => ({
               >
                 <UChatPromptSubmit :status="chat.status" @stop="chat.stop()" @reload="chat.regenerate()" />
               </UChatPrompt>
-              <p v-if="!hasSubmitted" class="text-xs text-slate-400 text-center py-3">AI can make mistakes. Always verify the information.</p>
+              <p v-if="!hasSubmitted" class="text-xs text-slate-400 text-center py-3">
+                AI can make mistakes. Always verify the information.
+              </p>
             </div>
           </UContainer>
         </div>

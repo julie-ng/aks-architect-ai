@@ -8,6 +8,13 @@ original_source: "https://github.com/nuxt/ui/blob/v4/skills/nuxt-ui/SKILL.md"
 
 This app uses Nuxt UI to serve the frontend.
 
+## State
+
+- Currently, state is only persisted in user's browser. Avoid backend state.
+- Avoid external plugins to integrate [Pinia](https://pinia.vuejs.org/). Instead prefer composables from Vue.js core team:
+  - [useLocalStorage](https://vueuse.org/core/useLocalStorage/)
+  - [useSessionStorage](https://vueuse.org/core/useSessionStorage/)
+
 ## Theming & Branding
 
 Nuxt UI ships with a default look. The goal is to adapt it to your brand so every app looks unique.

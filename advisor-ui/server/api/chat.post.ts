@@ -64,12 +64,20 @@ export default defineLazyEventHandler(async () => {
       content: `Documentation sources:\n\n${context}\n\n---\n\nQuestion: ${question}`,
     }
 
+    const reformulatedQuery = retrieveResponse.reformulated_query
+
     const result = streamText({
       model: getChatModel(),
       system: systemPrompt,
       messages: modelMessages,
     })
 
-    return result.toUIMessageStreamResponse()
+    return result.toUIMessageStreamResponse({
+      messageMetadata: ({ part }) => {
+        if (part.type === 'finish') {
+          return { reformulatedQuery }
+        }
+      },
+    })
   })
 })
