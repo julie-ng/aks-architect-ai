@@ -10,6 +10,7 @@ export default defineNuxtConfig({
   },
   devtools: { enabled: true },
   runtimeConfig: {
+    appEnvironment: 'development',
     advisorApiUrl: 'http://localhost:8000',
     ollamaBaseUrl: 'http://localhost:11434',
     chatModel: 'gemma3:1b',
