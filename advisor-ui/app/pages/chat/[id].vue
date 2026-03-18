@@ -6,7 +6,7 @@ import { ref } from 'vue'
 const route = useRoute()
 const chatId = route.params.id as string
 
-const { getSession, createSession, updateMessages, setTitle } = useChatSessions()
+const { getSession, createSession, updateMessages, setTitle } = useChatSessionsStore()
 
 // Ensure session exists
 const session = getSession(chatId) ?? createSession(chatId)

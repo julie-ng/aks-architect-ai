@@ -2,7 +2,7 @@ import type { UIMessage } from 'ai'
 import type { ChatSession } from '~/types/chat'
 import { useLocalStorage } from '@vueuse/core'
 
-export function useChatSessions () {
+export const useChatSessionsStore = defineStore('chatSessions', () => {
   const sessions = useLocalStorage<Record<string, ChatSession>>('chat-sessions', {})
 
   const sortedSessions = computed(() =>
@@ -52,7 +52,6 @@ export function useChatSessions () {
   }
 
   function deleteSession (id: string): void {
-    // eslint-disable-next-line no-unused-vars
     const { [id]: _removed, ...rest } = sessions.value
     sessions.value = rest
   }
@@ -62,4 +61,4 @@ export function useChatSessions () {
   }
 
   return { sessions, sortedSessions, createSession, updateMessages, setTitle, renameSession, deleteSession, getSession }
-}
+})

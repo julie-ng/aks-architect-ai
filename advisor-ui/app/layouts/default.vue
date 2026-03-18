@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
-const { sortedSessions, renameSession, deleteSession, getSession } = useChatSessions()
+const chatSessionsStore = useChatSessionsStore()
+const { sortedSessions } = storeToRefs(chatSessionsStore)
+const { renameSession, deleteSession, getSession } = chatSessionsStore
 
 
 const { data: guidePages } = await useAsyncData('guide-pages', () => {
