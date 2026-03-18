@@ -23,7 +23,8 @@ import sys
 import uuid
 from pathlib import Path
 
-from helpers.chunking import MAX_CHARS, MIN_CHARS, sections_to_chunks, split_by_headings
+from config import config as cfg
+from helpers.chunking import sections_to_chunks, split_by_headings
 
 
 def chunk_document(doc: dict) -> list[dict]:
@@ -33,7 +34,7 @@ def chunk_document(doc: dict) -> list[dict]:
         return []
 
     sections = split_by_headings(markdown)
-    chunk_texts = sections_to_chunks(sections, MAX_CHARS, MIN_CHARS)
+    chunk_texts = sections_to_chunks(sections, cfg.chunk_max_chars, cfg.chunk_min_chars)
 
     results = []
     for i, text in enumerate(chunk_texts):
