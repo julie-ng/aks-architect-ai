@@ -27,7 +27,7 @@ services:
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K}
       PRIORITY_BOOST_WEIGHT: ${PRIORITY_BOOST_WEIGHT}
       SYSTEM_PROMPT_PATH: ${SYSTEM_PROMPT_PATH}
-      OLLAMA_HOST: ${OLLAMA_HOST}
+      OLLAMA_HOST: http://host.docker.internal:11434
       OPENAPI_DOCS_ENABLED: ${OPENAPI_DOCS_ENABLED}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -48,7 +48,7 @@ services:
     environment:
       NUXT_APP_ENVIRONMENT: development
       NUXT_ADVISOR_API_HOST: http://advisor-api:8000
-      NUXT_OLLAMA_HOST: ${OLLAMA_HOST}
+      NUXT_OLLAMA_HOST: http://host.docker.internal:11434
       NUXT_CHAT_MODEL: ${CHAT_MODEL}
       NUXT_SYSTEM_PROMPT_PATH: /system-prompt.md
     extra_hosts:
