@@ -1,4 +1,5 @@
-import type { UIMessage} from 'ai';
+import type { UIMessage } from 'ai'
+import { APICallError } from '@ai-sdk/provider'
 import { streamText, convertToModelMessages } from 'ai'
 import { getChatModel } from '../utils/provider'
 import { getSystemPrompt } from '../utils/system-prompt'
@@ -19,6 +20,38 @@ function formatContext (chunks: RetrieveChunk[]): string {
   return chunks
     .map((c, i) => `[${i + 1}] ${c.title}\nURL: ${c.url}\n${c.text}`)
     .join('\n\n---\n\n')
+}
+
+async function checkOllamaModel (host: string, model: string): Promise<void> {
+  let res
+  try {
+    res = await $fetch.raw(`${host}/api/show`, {
+      method: 'POST',
+      body: { model },
+      ignoreResponseError: true,
+    })
+  }
+  catch {
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'LLM host unreachable',
+      data: { error: `Cannot connect to model at ${host}. Is it running?` },
+    })
+  }
+  if (res.status === 404) {
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Model not found',
+      data: { error: `Model "${model}" not found on ${host}.` },
+    })
+  }
+  if (!res.ok) {
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'LLM provider error',
+      data: { error: `LLM provider returned ${res.status} at ${host}. Is it running?` },
+    })
+  }
 }
 
 export default defineLazyEventHandler(async () => {
@@ -69,6 +102,11 @@ export default defineLazyEventHandler(async () => {
 
       const reformulatedQuery = retrieveResponse.reformulated_query
 
+      // Verify model is available before streaming (fast, avoids cryptic mid-stream errors)
+      if (config.provider === 'ollama') {
+        await checkOllamaModel(config.ollamaHost, config.chatModel)
+      }
+
       const result = streamText({
         model: getChatModel(),
         system: systemPrompt,
@@ -84,16 +122,35 @@ export default defineLazyEventHandler(async () => {
       })
     }
     catch (err: unknown) {
-      // Re-throw errors already created with createError (e.g. 400 validation)
+      // Re-throw errors already created with createError (e.g. 400 validation, pre-flight checks)
       if (err && typeof err === 'object' && 'statusCode' in err) {
         throw err
+      }
+
+      // LLM provider errors that slip through streaming
+      if (APICallError.isInstance(err)) {
+        const host = config.provider === 'azure' ? config.azureEndpoint : config.ollamaHost
+        throw createError({
+          statusCode: 502,
+          statusMessage: 'LLM provider error',
+          data: { error: `Could not reach LLM provider at ${host} (${err.statusCode ?? 'connection failed'}). Is it running?` },
+        })
+      }
+
+      // Retrieval API errors (e.g. advisor-api or Qdrant down)
+      if (err instanceof Error && err.message.includes('fetch')) {
+        throw createError({
+          statusCode: 502,
+          statusMessage: 'Retrieval service unavailable',
+          data: { error: `Could not reach advisor-api at ${config.advisorApiHost}. Is it running?` },
+        })
       }
 
       const isDev = config.appEnvironment === 'development'
       throw createError({
         statusCode: 500,
-        message: 'Internal Server Error',
-        ...(isDev && { stack: err instanceof Error ? err.stack : String(err) }),
+        statusMessage: 'Internal Server Error',
+        ...(isDev && { data: { error: err instanceof Error ? err.message : String(err) } }),
       })
     }
   })
