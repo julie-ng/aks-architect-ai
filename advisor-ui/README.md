@@ -9,7 +9,7 @@ Nuxt 3 streaming chat UI for the AKS Architect advisor.
   - Nuxt Backend for Frontend `/api/chat` route that handles communications to:
     - RAG Service (Advisor API)
     - LLM
-- [RAG Service](./../advisor-api/)
+- [RAG Service](./../retrieval-api/)
 - [AI SDK](https://ai-sdk.dev/) (`@ai-sdk/vue`) for chat management and streams LLM responses
  
 ## Chunks in Request-Response Flow

@@ -7,15 +7,15 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
-  advisor-api:
-    build: advisor-api
+  retrieval-api:
+    build: retrieval-api
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     depends_on:
       - qdrant
     volumes:
-      - ./advisor-api/app:/workspace/app
+      - ./retrieval-api/app:/workspace/app
     environment:
       APP_ENVIRONMENT: development
       QDRANT_URL: http://qdrant:6333
@@ -38,14 +38,14 @@ services:
       - "3000:3000"
       - "24678:24678" # Nuxt HMR websocket
     depends_on:
-      - advisor-api
+      - retrieval-api
     volumes:
       - ./advisor-ui:/workspace
       - advisor_ui_node_modules:/workspace/node_modules
       - ./system-prompt.md:/system-prompt.md:ro
     environment:
       NUXT_APP_ENVIRONMENT: development
-      NUXT_ADVISOR_API_HOST: http://advisor-api:8000
+      NUXT_RETRIEVAL_API_HOST: http://retrieval-api:8000
       NUXT_OLLAMA_HOST: http://host.docker.internal:11434
       NUXT_CHAT_MODEL: ${CHAT_MODEL}
       NUXT_SYSTEM_PROMPT_PATH: /system-prompt.md

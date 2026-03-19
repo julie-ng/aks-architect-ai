@@ -17,7 +17,7 @@ jobs:
     outputs:
       web-scraper: ${{ steps.filter.outputs.web-scraper }}
       rag-pipeline: ${{ steps.filter.outputs.rag-pipeline }}
-      advisor-api: ${{ steps.filter.outputs.advisor-api }}
+      retrieval-api: ${{ steps.filter.outputs.retrieval-api }}
       advisor-ui: ${{ steps.filter.outputs.advisor-ui }}
     steps:
       - uses: actions/checkout@v4
@@ -29,8 +29,8 @@ jobs:
               - 'web-scraper/**'
             rag-pipeline:
               - 'rag-pipeline/**'
-            advisor-api:
-              - 'advisor-api/**'
+            retrieval-api:
+              - 'retrieval-api/**'
             advisor-ui:
               - 'advisor-ui/**'
 
@@ -66,14 +66,14 @@ jobs:
       - run: uv sync --group dev
       - run: uv run pytest
 
-  advisor-api:
-    name: Advisor API (Python)
+  retrieval-api:
+    name: Retrieval API (Python)
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.advisor-api == 'true'
+    if: needs.changes.outputs.retrieval-api == 'true'
     defaults:
       run:
-        working-directory: advisor-api
+        working-directory: retrieval-api
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

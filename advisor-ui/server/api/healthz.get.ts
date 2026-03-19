@@ -1,6 +1,6 @@
 const startTime = Date.now()
 
-// Cached advisor-api health check (refreshed every 15 minutes)
+// Cached retrieval-api health check (refreshed every 15 minutes)
 let lastCheckedAt = 0
 const CHECK_INTERVAL_MS = 15 * 60 * 1000
 
@@ -9,26 +9,26 @@ interface Check {
   output?: string
 }
 
-let advisorApiCheck: Check = { status: 'unknown' }
+let retrievalApiCheck: Check = { status: 'unknown' }
 
 async function checkAdvisorApi (): Promise<Check> {
   const now = Date.now()
   if (now - lastCheckedAt < CHECK_INTERVAL_MS) {
-    return advisorApiCheck
+    return retrievalApiCheck
   }
 
   const config = useRuntimeConfig()
   try {
-    const res = await $fetch<{ status: string }>(`${config.advisorApiHost}/healthz`)
-    advisorApiCheck = res.status === 'pass'
+    const res = await $fetch<{ status: string }>(`${config.retrievalApiHost}/healthz`)
+    retrievalApiCheck = res.status === 'pass'
       ? { status: 'pass' }
       : { status: 'fail', output: `upstream status=${res.status}` }
   }
   catch (err) {
-    advisorApiCheck = { status: 'fail', output: err instanceof Error ? err.message : String(err) }
+    retrievalApiCheck = { status: 'fail', output: err instanceof Error ? err.message : String(err) }
   }
   lastCheckedAt = now
-  return advisorApiCheck
+  return retrievalApiCheck
 }
 
 function formatUptime (ms: number) {
@@ -49,7 +49,7 @@ function formatUptime (ms: number) {
 export default defineEventHandler(async () => {
   const config = useRuntimeConfig()
   const checks: Record<string, Check> = {
-    'advisor-api': await checkAdvisorApi(),
+    'retrieval-api': await checkAdvisorApi(),
   }
   const status = Object.values(checks).every(c => c.status === 'pass') ? 'pass' : 'fail'
 

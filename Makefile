@@ -2,7 +2,7 @@ DC = docker compose -f docker-compose.dev.yaml
 
 rag-pipeline: pipeline/chunk pipeline/embed
 rag-pipeline/full: scrape pipeline/chunk pipeline/embed
-unit-tests: scraper/test pipeline/test advisor-api/test
+unit-tests: scraper/test pipeline/test retrieval-api/test
 
 # --- Web Scraper ---
 
@@ -30,10 +30,10 @@ pipeline/query:
 	@test -n "$(Q)" || (echo "Usage: make pipeline/query Q=\"your question\"" && exit 1)
 	cd rag-pipeline && uv run python query.py "$(Q)"
 
-# --- Advisor API ---
+# --- Retrieval API ---
 
-advisor-api/test:
-	cd advisor-api && uv run pytest
+retrieval-api/test:
+	cd retrieval-api && uv run pytest
 
 # --- Advisor UI ---
 
@@ -45,13 +45,13 @@ advisor-ui/install:
 
 # --- Lint ---
 
-lint: advisor-ui/lint advisor-api/lint pipeline/lint
+lint: advisor-ui/lint retrieval-api/lint pipeline/lint
 
 advisor-ui/lint:
 	cd advisor-ui && npm run lint
 
-advisor-api/lint:
-	cd advisor-api && uv run ruff check . && uv run ruff format --check .
+retrieval-api/lint:
+	cd retrieval-api && uv run ruff check . && uv run ruff format --check .
 
 pipeline/lint:
 	cd rag-pipeline && uv run ruff check . && uv run ruff format --check .
@@ -79,8 +79,8 @@ dc/build:
 .PHONY: rag-pipeline rag-pipeline/full unit-tests \
 	scraper/test scraper/clean scraper/crawl \
 	pipeline/test pipeline/chunk pipeline/embed pipeline/query \
-	advisor-api/test \
-	lint advisor-ui/lint advisor-api/lint pipeline/lint \
+	retrieval-api/test \
+	lint advisor-ui/lint retrieval-api/lint pipeline/lint \
 	advisor-ui/dev advisor-ui/install \
 	ollama/start ollama/pull \
 	dc/up dc/down dc/build

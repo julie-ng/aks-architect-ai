@@ -16,7 +16,7 @@ This is a monorepo with many moving parts.
 
 | Directory | Component | Description |
 |:--|:--|:--|
-| [`advisor-api/`](./advisor-api) | Retrieval Backend | Python [FastAPI](https://fastapi.tiangolo.com/) backend with `/api/retrieve` endpoint for RAG queries. |
+| [`retrieval-api/`](./retrieval-api) | Retrieval Backend | Python [FastAPI](https://fastapi.tiangolo.com/) backend with `/api/retrieve` endpoint for RAG queries. |
 | [`advisor-ui/`](./advisor-ui) | UI | NuxtJS app with streaming chat, which calls FastAPI endpoints |
 | [`rag-pipeline/`](./rag-pipeline) | RAG Pipeline | Code to convert scraped docs into embeddings |
 | [`web-scraper/`](./web-scraper) | Crawler | [Crawlee](https://github.com/apify/crawlee) JS Library for scraping web |
@@ -62,7 +62,7 @@ Check if it's running with `pgrep -l ollama` or open [localhost:11434](http://lo
 
 #### Step 2 - Start Containers
 
-This command starts up Qdrant db, Python `advisor-api` backend and Nuxt.js `advisor-ui` frontend.
+This command starts up Qdrant db, Python `retrieval-api` backend and Nuxt.js `advisor-ui` frontend.
 
 ```bash
 docker-compose -f docker-compose.dev.yaml up --build

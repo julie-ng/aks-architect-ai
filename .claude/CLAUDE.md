@@ -1,6 +1,6 @@
 # AKS Architect
 
-AI-assisted architecture advisor for Azure Kubernetes Service (AKS). Data pipeline is complete (crawl → chunk → embed → query). Advisor layer: FastAPI backend (retrieval + chat) and Nuxt 3 streaming chat UI.
+AI-assisted architecture advisor for Azure Kubernetes Service (AKS). Data pipeline is complete (crawl → chunk → embed → query). Advisor layer: FastAPI retrieval backend and Nuxt 3 streaming chat UI.
 
 ## General
 - Current year is 2026. Do not suggest deprecated packages or outdated patterns.
@@ -43,18 +43,17 @@ rag-pipeline/             # Python pipeline: chunk → embed → query
       test_chunking.py    # Unit tests for chunking helpers
   pyproject.toml          # uv project config + dependencies
 
-advisor-api/              # FastAPI backend: RAG retrieval + LLM chat
+retrieval-api/            # FastAPI backend: RAG retrieval
   app/
     main.py               # FastAPI app, CORS, lifespan
     config.py             # pydantic-settings (all config via env vars)
     models.py             # Pydantic request/response schemas
     dependencies.py       # Depends() for Qdrant, Settings
     routers/
-      chat.py             # POST /api/chat, POST /api/retrieve
+      retrieve.py         # POST /api/retrieve
       healthz.py          # GET /healthz (IETF-style health check)
     services/
       retrieval.py        # embed + search Qdrant
-      llm.py              # answer generation via Ollama
       reformulation.py    # query rewriting via Ollama
   tests/
   Dockerfile
@@ -73,10 +72,10 @@ advisor-ui/               # Nuxt 3 streaming chat UI
   nuxt.config.ts
   package.json
 
-system-prompt.md         # Shared system prompt (used by both advisor-api and advisor-ui)
-docker-compose.dev.yaml   # Qdrant + advisor-api containers
+system-prompt.md         # System prompt directory (used by advisor-ui)
+docker-compose.dev.yaml   # Qdrant + retrieval-api containers
 .github/workflows/
-  unit-tests.yaml         # CI: web-scraper, rag-pipeline, advisor-api, advisor-ui
+  unit-tests.yaml         # CI: web-scraper, rag-pipeline, retrieval-api, advisor-ui
 ```
 
 ## Web Scraper
@@ -200,7 +199,7 @@ Defined at the top of `embed.py`:
 }
 ```
 
-## Advisor API
+## Retrieval API
 
 ### Tech Stack
 - **Language:** Python >=3.11
@@ -210,27 +209,24 @@ Defined at the top of `embed.py`:
 
 ### Key Commands
 ```bash
-make advisor-api/test     # Run tests
-make dc/up                # Start Qdrant + advisor-api via Docker Compose
+make retrieval-api/test   # Run tests
+make dc/up                # Start Qdrant + retrieval-api via Docker Compose
 ```
 
 ### Endpoints
-- `POST /api/chat` — full pipeline: reformulate → retrieve → generate answer (synchronous)
-- `POST /api/retrieve` — retrieval only: reformulate → embed → search Qdrant → return chunks (no LLM)
+- `POST /api/retrieve` — reformulate → embed → search Qdrant → return chunks (no LLM)
 - `GET /healthz` — IETF-style health check (Qdrant + Ollama connectivity)
 
 ### Architecture
 ```
-POST /api/chat:      question → reformulate → retrieve → generate_answer → ChatResponse
 POST /api/retrieve:  question → reformulate → retrieve → RetrieveResponse (chunks only)
 ```
 
-The `/api/retrieve` endpoint is used by the Nuxt UI's server route to get RAG context without LLM generation (the UI handles streaming LLM calls via AI SDK).
+The `/api/retrieve` endpoint is used by the Nuxt UI's server route to get RAG context. The UI handles LLM streaming via AI SDK.
 
 ### Configuration
 All via environment variables (pydantic-settings). Key settings:
 - `QDRANT_URL`, `QDRANT_COLLECTION`, `EMBEDDING_MODEL`, `CHAT_MODEL`
-- `SYSTEM_PROMPT_PATH` — path to shared `system-prompt.md` (default: `system-prompt.md`)
 - `OPENAPI_DOCS_ENABLED` — disabled by default, enabled in docker-compose.dev.yaml
 
 ## Advisor UI
@@ -260,15 +256,15 @@ The Nuxt server route acts as the LLM orchestrator: it fetches retrieval context
 
 ### Configuration
 Server-only runtime config in `nuxt.config.ts`. Env vars auto-map with `NUXT_` prefix:
-- `NUXT_ADVISOR_API_URL` — FastAPI URL (default: `http://localhost:8000`)
+- `NUXT_RETRIEVAL_API_HOST` — FastAPI URL (default: `http://localhost:8000`)
 - `NUXT_PROVIDER` — `ollama` or `azure` (default: `ollama`)
 - `NUXT_OLLAMA_BASE_URL` — Ollama URL (default: `http://localhost:11434`)
 - `NUXT_CHAT_MODEL` — model name (default: `gemma3:1b`)
 - `NUXT_AZURE_API_KEY`, `NUXT_AZURE_ENDPOINT`, `NUXT_AZURE_DEPLOYMENT` — for Azure OpenAI
 
-### Shared System Prompt
-`system-prompt.md` at the project root is read by both advisor-api (Python) and advisor-ui (Node). For Docker, it's mounted into the advisor-api container via docker-compose.
+### System Prompt
+`system-prompt.md` at the project root is a directory containing markdown sections stitched together at runtime by advisor-ui.
 
 ## CI
 
-GitHub Actions workflow (`.github/workflows/unit-tests.yaml`) runs on pushes to `main` and PRs. Four parallel jobs: web-scraper (vitest), rag-pipeline (pytest), advisor-api (pytest), advisor-ui (build smoke test).
+GitHub Actions workflow (`.github/workflows/unit-tests.yaml`) runs on pushes to `main` and PRs. Four parallel jobs: web-scraper (vitest), rag-pipeline (pytest), retrieval-api (pytest), advisor-ui (build smoke test).

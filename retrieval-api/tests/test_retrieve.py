@@ -88,7 +88,7 @@ class TestHealthEndpoint:
         response = self.client.get("/healthz")
         assert response.status_code == 200
         data = response.json()
-        assert data["name"] == "advisor-api"
+        assert data["name"] == "retrieval-api"
         assert data["version"] == "0.1.0"
         assert data["status"] == "pass"
         assert data["checks"]["qdrant"]["status"] == "pass"

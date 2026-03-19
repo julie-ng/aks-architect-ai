@@ -83,7 +83,7 @@ export default defineLazyEventHandler(async () => {
         .slice(-6)
 
       const retrieveResponse = await $fetch<RetrieveResponse>(
-        `${config.advisorApiHost}/api/retrieve`,
+        `${config.retrievalApiHost}/api/retrieve`,
         {
           method: 'POST',
           body: { question, history },
@@ -137,12 +137,12 @@ export default defineLazyEventHandler(async () => {
         })
       }
 
-      // Retrieval API errors (e.g. advisor-api or Qdrant down)
+      // Retrieval API errors (e.g. retrieval-api or Qdrant down)
       if (err instanceof Error && err.message.includes('fetch')) {
         throw createError({
           statusCode: 502,
           statusMessage: 'Retrieval service unavailable',
-          data: { error: `Could not reach advisor-api at ${config.advisorApiHost}. Is it running?` },
+          data: { error: `Could not reach retrieval-api at ${config.retrievalApiHost}. Is it running?` },
         })
       }
 
