@@ -1,0 +1,3 @@
+[submodule "advisor-ui/content/system-prompt"]
+	path = advisor-ui/content/system-prompt
+	url = https://github.com/julie-ng/aks-architect-llm-system-prompt
