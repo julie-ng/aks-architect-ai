@@ -19,7 +19,7 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
     const now = new Date().toISOString()
     const session: ChatSession = {
       id,
-      title: 'New chat',
+      title: '(Untitled chat)',
       createdAt: now,
       updatedAt: now,
       messages: [],
@@ -41,7 +41,7 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
 
   function setTitle (id: string, title: string): void {
     const session = sessions.value[id]
-    if (!session || session.title !== 'New chat') return
+    if (!session || session.title !== '(Untitled chat)') return
     sessions.value = {
       ...sessions.value,
       [id]: { ...session, title },

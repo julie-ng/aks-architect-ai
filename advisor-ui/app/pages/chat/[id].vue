@@ -12,7 +12,7 @@ const { getSession, createSession, updateMessages, setTitle } = useChatSessionsS
 const session = getSession(chatId) ?? createSession(chatId)
 
 useHead({
-  title: computed(() => session.title !== 'New chat' ? session.title : 'Chat'),
+  title: computed(() => session.title !== '(Untitled chat)' ? session.title : 'Chat'),
 })
 
 const input = ref('')
