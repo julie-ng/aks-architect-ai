@@ -2,6 +2,13 @@
 const route = useRoute()
 const { sortedSessions, renameSession, deleteSession, getSession } = useChatSessions()
 
+
+const { data: guidePages } = await useAsyncData('guide-pages', () => {
+  return queryCollection('guide')
+    .select('title', 'path')
+    .all()
+})
+
 const links = computed(() => [
   [
     {
@@ -9,6 +16,23 @@ const links = computed(() => [
       to: '/',
       icon: 'i-lucide-home',
     },
+    {
+      label: 'AKS Guide',
+      to: '/guide',
+      icon: 'i-lucide-book-text', // noteboook-text
+      defaultOpen: route.path.startsWith('/guide'),
+      children: guidePages.value?.map(p => ({
+        label: p.title,
+        to: p.path,
+      })),
+    },
+    {
+      label: 'Design Wizard',
+      to: '/designer',
+      icon: 'i-lucide-origami', // goal
+    },
+  ],
+  [
     {
       label: 'Retrieval (Debug)',
       to: '/_debug/retrieval',
@@ -111,23 +135,25 @@ function chatActionItems (sessionId: string) {
 
       <!-- Navigation Menu + Chat List -->
       <template #default="{ collapsed }">
-        <UNavigationMenu
-          :items="links"
-          orientation="vertical"
-          :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : { childLink: 'group' }"
-        >
-          <template #chat-session-trailing="{ item }">
-            <UDropdownMenu :items="chatActionItems((item as any).sessionId)">
-              <UButton
-                icon="i-lucide-ellipsis"
-                color="neutral"
-                variant="ghost"
-                size="2xs"
-                class="opacity-0 group-hover:opacity-100 cursor-pointer"
-              />
-            </UDropdownMenu>
-          </template>
-        </UNavigationMenu>
+        <ClientOnly>
+          <UNavigationMenu
+            :items="links"
+            orientation="vertical"
+            :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : { childLink: 'group' }"
+          >
+            <template #chat-session-trailing="{ item }">
+              <UDropdownMenu :items="chatActionItems((item as any).sessionId)">
+                <UButton
+                  icon="i-lucide-ellipsis"
+                  color="neutral"
+                  variant="ghost"
+                  size="2xs"
+                  class="opacity-0 group-hover:opacity-100 cursor-pointer"
+                />
+              </UDropdownMenu>
+            </template>
+          </UNavigationMenu>
+        </ClientOnly>
         <div v-if="!collapsed" class="mt-1 px-2">
           <UButton
             label="New Chat"
