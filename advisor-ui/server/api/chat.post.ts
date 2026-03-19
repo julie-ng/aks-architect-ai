@@ -104,7 +104,8 @@ export default defineLazyEventHandler(async () => {
       console.timeEnd('[chat] retrieve')
 
       console.time('[chat] systemPrompt')
-      const context = formatContext(retrieveResponse.chunks)
+      const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
+      const context = formatContext(dedupedChunks)
       const systemPrompt = buildSystemPrompt(domains)
       const systemPromptWithContext = `${systemPrompt}\n\n<context>\n${context}\n</context>`
       console.timeEnd('[chat] systemPrompt')
@@ -132,7 +133,7 @@ export default defineLazyEventHandler(async () => {
         },
       })
 
-      const sources = deduplicateChunks(retrieveResponse.chunks).map(c => ({
+      const sources = dedupedChunks.map(c => ({
         url: c.url,
         title: c.title,
       }))
