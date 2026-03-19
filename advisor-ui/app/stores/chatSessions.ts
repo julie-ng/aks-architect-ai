@@ -3,8 +3,10 @@ import type { ChatSession } from '~/types/chat'
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
+const LOCAL_STORAGE_KEY = 'aks-architect:chat-sessions'
+
 export const useChatSessionsStore = defineStore('chatSessions', () => {
-  const sessions = useLocalStorage<Record<string, ChatSession>>('chat-sessions', {})
+  const sessions = useLocalStorage<Record<string, ChatSession>>(LOCAL_STORAGE_KEY, {})
 
   const sortedSessions = computed(() =>
     Object.values(sessions.value).sort(
@@ -13,6 +15,7 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
   )
 
   function createSession (id: string): ChatSession {
+    console.log(`createSession(${id})`)
     const now = new Date().toISOString()
     const session: ChatSession = {
       id,
