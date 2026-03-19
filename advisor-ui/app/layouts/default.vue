@@ -42,12 +42,12 @@ const links = computed(() => [
       to: '/_debug/retrieval',
       icon: 'i-lucide-database-search',
     },
-    {
-      label: 'Debug - System Prompt',
-      to: '/api/_debug/system-prompt',
-      target: '_blank',
-      icon: 'i-lucide-text-select',
-    },
+    // {
+    //   label: 'Debug - System Prompt',
+    //   to: '/api/_debug/system-prompt',
+    //   target: '_blank',
+    //   icon: 'i-lucide-text-select',
+    // },
   ],
   [
     {
