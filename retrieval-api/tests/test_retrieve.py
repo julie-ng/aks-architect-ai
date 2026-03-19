@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
+from app.config import Settings
 from app.main import app
 
 
@@ -78,8 +79,9 @@ class TestRetrieveEndpoint:
 @patch("app.routers.healthz.ollama")
 class TestHealthEndpoint:
     def setup_method(self):
+        self.settings = Settings()
         mock_collection = MagicMock()
-        mock_collection.name = "collection"  # matches Settings default
+        mock_collection.name = self.settings.qdrant_collection
         app.state.qdrant = MagicMock()
         app.state.qdrant.get_collections.return_value.collections = [mock_collection]
         self.client = TestClient(app)
