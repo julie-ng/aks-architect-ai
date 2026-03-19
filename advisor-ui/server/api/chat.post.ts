@@ -82,6 +82,9 @@ export default defineLazyEventHandler(async () => {
         .filter((m) => m.content.length > 0)
         .slice(-6)
 
+      const t0 = performance.now()
+
+      console.time('[chat] retrieve')
       const retrieveResponse = await $fetch<RetrieveResponse>(
         `${config.retrievalApiHost}/api/retrieve`,
         {
@@ -89,9 +92,12 @@ export default defineLazyEventHandler(async () => {
           body: { question, history },
         },
       )
+      console.timeEnd('[chat] retrieve')
 
+      console.time('[chat] systemPrompt')
       const context = formatContext(retrieveResponse.chunks)
       const systemPrompt = buildSystemPrompt(domains)
+      console.timeEnd('[chat] systemPrompt')
 
       const modelMessages = await convertToModelMessages(messages)
       // Replace last user message with augmented version including RAG context
@@ -104,17 +110,31 @@ export default defineLazyEventHandler(async () => {
 
       // Verify model is available before streaming (fast, avoids cryptic mid-stream errors)
       if (config.provider === 'ollama') {
+        console.time('[chat] modelCheck')
         await checkOllamaModel(config.ollamaHost, config.chatModel)
+        console.timeEnd('[chat] modelCheck')
       }
 
+      let firstToken = true
+      console.time('[chat] ttfb')
       const result = streamText({
         model: getChatModel(),
         system: systemPrompt,
         messages: modelMessages,
+        onFinish: () => {
+          const total = (performance.now() - t0).toFixed(0)
+          console.timeEnd('[chat] streaming')
+          console.log(`[chat] total: ${total}ms`)
+        },
       })
 
       return result.toUIMessageStreamResponse({
         messageMetadata: ({ part }) => {
+          if (part.type === 'text-delta' && firstToken) {
+            firstToken = false
+            console.timeEnd('[chat] ttfb')
+            console.time('[chat] streaming')
+          }
           if (part.type === 'finish') {
             return { reformulatedQuery }
           }
