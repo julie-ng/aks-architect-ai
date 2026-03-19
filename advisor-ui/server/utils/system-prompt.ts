@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 interface PromptFile {
@@ -6,8 +6,15 @@ interface PromptFile {
   body: string
 }
 
-const CONTENT_DIR = join(process.cwd(), 'content', 'system-prompt')
+const PRIMARY_DIR = join(process.cwd(), 'content', 'system-prompt')
+const FALLBACK_DIR = join(process.cwd(), 'content', 'system-prompt.example')
 const DEFAULT_EXCLUDE_DOMAINS = ['scalability-and-storage']
+
+function resolveContentDir (): string {
+  const hasFiles = existsSync(PRIMARY_DIR)
+    && readdirSync(PRIMARY_DIR).some(f => f.endsWith('.md'))
+  return hasFiles ? PRIMARY_DIR : FALLBACK_DIR
+}
 
 function parseFrontmatter (raw: string): { domain: string | null, body: string } {
   const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
@@ -20,9 +27,10 @@ function parseFrontmatter (raw: string): { domain: string | null, body: string }
 }
 
 function loadPromptFiles (): PromptFile[] {
-  const files = readdirSync(CONTENT_DIR).filter(f => f.endsWith('.md') && f !== 'README.md')
+  const dir = resolveContentDir()
+  const files = readdirSync(dir).filter(f => f.endsWith('.md') && f !== 'README.md')
   return files.map((filename) => {
-    const raw = readFileSync(join(CONTENT_DIR, filename), 'utf-8')
+    const raw = readFileSync(join(dir, filename), 'utf-8')
     return parseFrontmatter(raw)
   })
 }
