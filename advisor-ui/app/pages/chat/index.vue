@@ -1,5 +1,9 @@
 <script setup lang="ts">
-navigateTo(`/chat/${crypto.randomUUID()}`, { replace: true })
+const { sortedSessions } = useChatSessionsStore()
+const target = sortedSessions.length > 0
+  ? `/chat/${sortedSessions[0].id}`
+  : `/chat/${crypto.randomUUID()}`
+navigateTo(target, { replace: true })
 </script>
 
 <template>
