@@ -28,9 +28,11 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
   function updateMessages (id: string, messages: UIMessage[]): void {
     const session = sessions.value[id]
     if (!session) return
+    // Deep clone to strip Vue reactivity proxies before localStorage serialization
+    const plainMessages = JSON.parse(JSON.stringify(messages)) as UIMessage[]
     sessions.value = {
       ...sessions.value,
-      [id]: { ...session, messages, updatedAt: new Date().toISOString() },
+      [id]: { ...session, messages: plainMessages, updatedAt: new Date().toISOString() },
     }
   }
 
