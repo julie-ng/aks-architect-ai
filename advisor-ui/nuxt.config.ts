@@ -25,6 +25,5 @@ export default defineNuxtConfig({
     azureApiKey: '',
     azureEndpoint: '',
     azureDeployment: '',
-    systemPromptPath: '../system-prompt.md',
   },
 })

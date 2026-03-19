@@ -42,13 +42,11 @@ services:
     volumes:
       - ./advisor-ui:/workspace
       - advisor_ui_node_modules:/workspace/node_modules
-      - ./system-prompt.md:/system-prompt.md:ro
     environment:
       NUXT_APP_ENVIRONMENT: development
       NUXT_RETRIEVAL_API_HOST: http://retrieval-api:8000
       NUXT_OLLAMA_HOST: http://host.docker.internal:11434
       NUXT_CHAT_MODEL: ${CHAT_MODEL}
-      NUXT_SYSTEM_PROMPT_PATH: /system-prompt.md
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

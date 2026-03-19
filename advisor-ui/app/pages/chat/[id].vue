@@ -20,6 +20,16 @@ const input = ref('')
 const chat = new Chat({
   id: chatId,
   messages: session.messages,
+  body: {
+    domains: [
+      'cluster-design',
+      'networking',
+      'security',
+      'operations',
+      'observability-and-cost',
+      'resilience',
+    ],
+  },
   onFinish ({ message, messages }) {
     updateMessages(chatId, messages)
     // Use reformulated query from first response as chat title

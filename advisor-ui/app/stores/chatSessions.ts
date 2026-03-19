@@ -52,6 +52,7 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
   }
 
   function deleteSession (id: string): void {
+    // eslint-disable-next-line no-unused-vars
     const { [id]: _removed, ...rest } = sessions.value
     sessions.value = rest
   }

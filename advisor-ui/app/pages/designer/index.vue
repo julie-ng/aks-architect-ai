@@ -26,6 +26,7 @@ const { data: componentEntries } = await useAsyncData('designer-components', () 
 
 const questions = computed<DesignerQuestion[]>(() => {
   return (componentEntries.value || [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((entry: any, index: number) => {
       const designer = entry?.designer || {}
 

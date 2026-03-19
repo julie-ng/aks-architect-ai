@@ -32,6 +32,13 @@ export default defineContentConfig({
         })
       })
     }),
+    systemPrompt: defineCollection({
+      type: 'page',
+      source: 'system-prompt/*.md',
+      schema: z.object({
+        domain: z.string(),
+      })
+    }),
     guide: defineCollection({
       type: 'page',
       source: 'guide/**/*.md',

@@ -2,7 +2,7 @@ import type { UIMessage } from 'ai'
 import { APICallError } from '@ai-sdk/provider'
 import { streamText, convertToModelMessages } from 'ai'
 import { getChatModel } from '../utils/provider'
-import { getSystemPrompt } from '../utils/system-prompt'
+import { buildSystemPrompt } from '../utils/system-prompt'
 
 interface RetrieveChunk {
   title: string
@@ -59,7 +59,7 @@ export default defineLazyEventHandler(async () => {
     const config = useRuntimeConfig()
 
     try {
-      const { messages }: { messages: UIMessage[] } = await readBody(event)
+      const { messages, domains }: { messages: UIMessage[], domains?: string[] } = await readBody(event)
 
       const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
       if (!lastUserMessage) {
@@ -91,7 +91,7 @@ export default defineLazyEventHandler(async () => {
       )
 
       const context = formatContext(retrieveResponse.chunks)
-      const systemPrompt = getSystemPrompt()
+      const systemPrompt = buildSystemPrompt(domains)
 
       const modelMessages = await convertToModelMessages(messages)
       // Replace last user message with augmented version including RAG context

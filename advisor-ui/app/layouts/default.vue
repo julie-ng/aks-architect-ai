@@ -36,9 +36,15 @@ const links = computed(() => [
   ],
   [
     {
-      label: 'Retrieval (Debug)',
+      label: 'Debug - Retrieval',
       to: '/_debug/retrieval',
       icon: 'i-lucide-database-search',
+    },
+    {
+      label: 'Debug - System Prompt',
+      to: '/api/_debug/system-prompt',
+      target: '_blank',
+      icon: 'i-lucide-text-select',
     },
   ],
   [
