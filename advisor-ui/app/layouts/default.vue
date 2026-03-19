@@ -60,7 +60,7 @@ const links = computed(() => [
         {
           label: 'New Chat',
           icon: 'i-lucide-plus',
-          to: '/chat/',
+          to: '/chat/new',
         },
         ...sortedSessions.value.map(session => ({
           label: session.title,
@@ -75,7 +75,7 @@ const links = computed(() => [
 ])
 
 function newChat () {
-  navigateTo(`/chat/${crypto.randomUUID()}`)
+  navigateTo('/chat/new')
 }
 
 // Rename modal state
