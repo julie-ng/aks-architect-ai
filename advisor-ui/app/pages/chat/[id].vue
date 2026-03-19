@@ -70,6 +70,30 @@ const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
 
+interface SourceMeta {
+  url: string
+  title: string
+}
+
+function getCitedSources (message: typeof chat.messages[number]): SourceMeta[] {
+  const meta = message.metadata as Record<string, unknown> | undefined
+  const sources = (meta?.sources ?? []) as SourceMeta[]
+  if (!sources.length) return []
+
+  const text = message.parts
+    .filter(p => p.type === 'text')
+    .map(p => (p as { type: 'text', text: string }).text)
+    .join('')
+
+  return sources.filter((_, i) => text.includes(`[${i + 1}]`))
+}
+
+function isMessageComplete (message: typeof chat.messages[number]) {
+  const lastMessage = chat.messages[chat.messages.length - 1]
+  if (message !== lastMessage) return true
+  return chat.status === 'ready' || chat.status === 'error'
+}
+
 const errorTitle = computed(() => {
   if (!chat.error) return ''
   try {
@@ -133,6 +157,10 @@ const errorMessage = computed(() => {
                     class="*:first:mt-0 *:last:mb-0"
                   />
                 </template>
+                <SourceLinks
+                  v-if="message.role === 'assistant' && isMessageComplete(message)"
+                  :sources="getCitedSources(message)"
+                />
               </template>
             </UChatMessages>
 

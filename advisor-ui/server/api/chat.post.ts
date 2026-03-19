@@ -22,6 +22,15 @@ function formatContext (chunks: RetrieveChunk[]): string {
     .join('\n\n---\n\n')
 }
 
+function deduplicateChunks (chunks: RetrieveChunk[]): RetrieveChunk[] {
+  const seen = new Set<string>()
+  return chunks.filter((c) => {
+    if (seen.has(c.url)) return false
+    seen.add(c.url)
+    return true
+  })
+}
+
 async function checkOllamaModel (host: string, model: string): Promise<void> {
   let res
   try {
@@ -97,15 +106,10 @@ export default defineLazyEventHandler(async () => {
       console.time('[chat] systemPrompt')
       const context = formatContext(retrieveResponse.chunks)
       const systemPrompt = buildSystemPrompt(domains)
+      const systemPromptWithContext = `${systemPrompt}\n\n<context>\n${context}\n</context>`
       console.timeEnd('[chat] systemPrompt')
 
       const modelMessages = await convertToModelMessages(messages)
-      // Replace last user message with augmented version including RAG context
-      modelMessages[modelMessages.length - 1] = {
-        role: 'user' as const,
-        content: `Documentation sources:\n\n${context}\n\n---\n\nQuestion: ${question}`,
-      }
-
       const reformulatedQuery = retrieveResponse.reformulated_query
 
       // Verify model is available before streaming (fast, avoids cryptic mid-stream errors)
@@ -119,7 +123,7 @@ export default defineLazyEventHandler(async () => {
       console.time('[chat] ttfb')
       const result = streamText({
         model: getChatModel(),
-        system: systemPrompt,
+        system: systemPromptWithContext,
         messages: modelMessages,
         onFinish: () => {
           const total = (performance.now() - t0).toFixed(0)
@@ -127,6 +131,11 @@ export default defineLazyEventHandler(async () => {
           console.log(`[chat] total: ${total}ms`)
         },
       })
+
+      const sources = deduplicateChunks(retrieveResponse.chunks).map(c => ({
+        url: c.url,
+        title: c.title,
+      }))
 
       return result.toUIMessageStreamResponse({
         messageMetadata: ({ part }) => {
@@ -136,7 +145,7 @@ export default defineLazyEventHandler(async () => {
             console.time('[chat] streaming')
           }
           if (part.type === 'finish') {
-            return { reformulatedQuery }
+            return { reformulatedQuery, sources }
           }
         },
       })
