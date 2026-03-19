@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai'
 import type { ChatSession } from '~/types/chat'
 import { useLocalStorage } from '@vueuse/core'
-import { defineStore } from 'pinia'
+import { defineStore, skipHydrate } from 'pinia'
 
 const LOCAL_STORAGE_KEY = 'aks-architect:chat-sessions'
 
@@ -67,5 +67,14 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
     return sessions.value[id]
   }
 
-  return { sessions, sortedSessions, createSession, updateMessages, setTitle, renameSession, deleteSession, getSession }
+  return {
+    sessions: skipHydrate(sessions),
+    sortedSessions,
+    createSession,
+    updateMessages,
+    setTitle,
+    renameSession,
+    deleteSession,
+    getSession,
+  }
 })

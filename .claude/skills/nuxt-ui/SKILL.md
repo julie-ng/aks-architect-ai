@@ -14,6 +14,7 @@ This app uses Nuxt UI to serve the frontend.
 - Avoid external plugins to integrate [Pinia](https://pinia.vuejs.org/). Instead prefer composables from Vue.js core team:
   - [useLocalStorage](https://vueuse.org/core/useLocalStorage/)
   - [useSessionStorage](https://vueuse.org/core/useSessionStorage/)
+- **SSR + Pinia + useLocalStorage:** Pinia hydration overwrites client-side refs with the server's empty state, wiping localStorage data. Fix: return the ref with `skipHydrate()` in the store (e.g. `return { sessions: skipHydrate(sessions) }`).
 
 ## Theming & Branding
 
