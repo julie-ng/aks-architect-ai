@@ -1,6 +1,7 @@
 import type { UIMessage } from 'ai'
 import type { ChatSession } from '~/types/chat'
 import { useLocalStorage } from '@vueuse/core'
+import { defineStore } from 'pinia'
 
 export const useChatSessionsStore = defineStore('chatSessions', () => {
   const sessions = useLocalStorage<Record<string, ChatSession>>('chat-sessions', {})
