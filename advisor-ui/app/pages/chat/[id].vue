@@ -143,6 +143,7 @@ const errorMessage = computed(() => {
               :spacing-offset="180"
               :ui="{
                 root: chat.error ? '[&>article]:last-of-type:min-h-0' : '',
+                indicator: '*:bg-indigo-200 dark:*:bg-indigo-400',
                 autoScroll: 'bottom-10 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 shadow-md border border-slate-300 ring-transparent',
               }"
               should-auto-scroll
