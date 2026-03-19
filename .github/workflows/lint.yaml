@@ -2,6 +2,15 @@ name: Lint
 
 on:
   push:
+    branches: [main, "feat/*"]
+    paths-ignore:
+      - "**/Dockerfile"
+      - "**/*.dev"
+      - "**/*.ignore"
+      - "**/*.md"
+      - "**/*.json"
+      - "**/*.lock"
+  pull_request:
     branches: [main]
     paths-ignore:
       - "**/Dockerfile"
@@ -10,10 +19,6 @@ on:
       - "**/*.md"
       - "**/*.json"
       - "**/*.lock"
-  # pull_request:
-  #   branches: [main]
-  #   paths-ignore:
-  #     - '**.md'
 
 jobs:
   changes:
@@ -48,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-          token: ${{ secrets.SUBMODULE_PAT }}
+          token: ${{ secrets.AKS_AI_WORKFLOWS_PAT }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
