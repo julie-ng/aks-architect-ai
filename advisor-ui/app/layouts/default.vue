@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
+
 const route = useRoute()
 const chatSessionsStore = useChatSessionsStore()
 const { sortedSessions } = storeToRefs(chatSessionsStore)
