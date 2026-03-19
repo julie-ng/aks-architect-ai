@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from qdrant_client import QdrantClient
 
 from app.config import Settings
-from app.routers import chat, healthz
+from app.routers import healthz, retrieve
 
 logger = logging.getLogger(__name__)
 
@@ -68,5 +68,5 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content=body)
 
 
-app.include_router(chat.router)
+app.include_router(retrieve.router)
 app.include_router(healthz.router)

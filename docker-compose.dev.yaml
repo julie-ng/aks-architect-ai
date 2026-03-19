@@ -16,7 +16,6 @@ services:
       - qdrant
     volumes:
       - ./advisor-api/app:/workspace/app
-      - ./system-prompt.md:/workspace/system-prompt.md
     environment:
       APP_ENVIRONMENT: development
       QDRANT_URL: http://qdrant:6333
@@ -26,7 +25,6 @@ services:
       CORS_ORIGINS: '["http://localhost:3000"]'
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K}
       PRIORITY_BOOST_WEIGHT: ${PRIORITY_BOOST_WEIGHT}
-      SYSTEM_PROMPT_PATH: ${SYSTEM_PROMPT_PATH}
       OLLAMA_HOST: http://host.docker.internal:11434
       OPENAPI_DOCS_ENABLED: ${OPENAPI_DOCS_ENABLED}
     extra_hosts:

@@ -8,24 +8,6 @@ class HistoryMessage(BaseModel):
     content: str
 
 
-class ChatRequest(BaseModel):
-    question: str
-    history: list[HistoryMessage] = []
-
-
-class Source(BaseModel):
-    title: str
-    url: str
-    score: float
-    text_preview: str
-
-
-class ChatResponse(BaseModel):
-    answer: str
-    sources: list[Source]
-    reformulated_query: str
-
-
 class RetrieveRequest(BaseModel):
     question: str
     history: list[HistoryMessage] = []
