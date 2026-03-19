@@ -11,8 +11,7 @@ This is the **retrieval** backend service powered by FastAPI.
 
 | Method | Path | Description |
 |:--|:--|:--|
-| `POST` | `/api/chat` | Full pipeline: reformulate → retrieve → generate answer |
-| `POST` | `/api/retrieve` | Retrieval only: reformulate → embed → search Qdrant (no LLM) |
+| `POST` | `/api/retrieve` | Reformulate → embed → search Qdrant → return chunks |
 | `GET` | `/healthz` | IETF-style health check (Qdrant + Ollama connectivity) |
 
 ## Configuration

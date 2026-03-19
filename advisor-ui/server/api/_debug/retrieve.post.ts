@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const response = await $fetch<RetrieveResponse>(
-    `${config.advisorApiHost}/api/retrieve`,
+    `${config.retrievalApiHost}/api/retrieve`,
     {
       method: 'POST',
       body: { question },
