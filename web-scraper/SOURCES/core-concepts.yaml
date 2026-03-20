@@ -11,6 +11,32 @@ urls:
     priority: 15
     comments: good overview of what a AKS/Kubernetes cluster is and its overall components, e.g. control plane (azure managed) vs data plane, i.e. nodes, namespaces, etc.
 
+  # VM Sizes
+  - url: "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+    doc_type: overview
+    priority: 20
+    comments: |
+      VM size families, naming conventions, and selection guidance. Key for node pool SKU decisions.
+
+  - url: "https://learn.microsoft.com/en-us/azure/virtual-machines/vm-naming-conventions"
+    doc_type: reference
+    priority: 20
+    comments: |
+      Explains the VM SKU naming format (family, vCPUs, feature flags, generation).
+
+  # Resource management
+  - url: "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+    doc_type: reference
+    priority: 15
+    comments: |
+      Kubernetes upstream doc on pod resource requests, limits, CPU/memory units, and scheduling behavior.
+
+  - url: "https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/"
+    doc_type: reference
+    priority: 15
+    comments: |
+      Explains kube-reserved, system-reserved, eviction thresholds, and how allocatable capacity is calculated.
+
   # Identity
   - url: "https://learn.microsoft.com/en-us/azure/aks/concepts-identity"
     doc_type: overview
