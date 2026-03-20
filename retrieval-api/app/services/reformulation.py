@@ -13,7 +13,6 @@ Rules:
 - Keep it concise (1-2 sentences max)
 """
 
-
 def reformulate_query(
     question: str,
     model: str,

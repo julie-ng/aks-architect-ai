@@ -13,7 +13,10 @@ const { getSession, createSession, updateMessages, setTitle } = useChatSessionsS
 const session = getSession(chatId) ?? createSession(chatId)
 
 useHead({
-  title: computed(() => session.title !== '(untitled chat)' ? session.title : 'Chat'),
+  title: computed(() => {
+    const title = getSession(chatId)?.title
+    return title && title !== '(untitled chat)' ? title : 'Chat'
+  }),
 })
 
 const input = ref('')
@@ -31,13 +34,8 @@ const chat = new Chat({
       'resilience',
     ],
   },
-  onFinish ({ message, messages }) {
+  onFinish ({ messages }) {
     updateMessages(chatId, messages)
-    // Use reformulated query from first response as chat title
-    const meta = message.metadata as Record<string, unknown> | undefined
-    if (meta?.reformulatedQuery) {
-      setTitle(chatId, meta.reformulatedQuery as string)
-    }
   },
   onError (error) {
     console.error(error)
@@ -60,10 +58,27 @@ function onSubmit (e: Event) {
       // Sync user message immediately
       updateMessages(chatId, chat.messages)
     }, 300)
+    // Fire title generation in parallel
+    generateChatTitle(message)
   }
   else {
     chat.sendMessage({ text: message })
     updateMessages(chatId, chat.messages)
+  }
+}
+
+async function generateChatTitle (question: string) {
+  try {
+    const { title } = await $fetch<{ title: string }>('/api/chat/title', {
+      method: 'POST',
+      body: { question },
+    })
+    if (title) {
+      setTitle(chatId, title)
+    }
+  }
+  catch (err) {
+    console.warn('[chat] title generation failed:', err)
   }
 }
 
@@ -140,6 +155,12 @@ const errorMessage = computed(() => {
     class="relative min-h-0"
     :ui="{ body: 'p-0 sm:p-0 overscroll-none' }"
   >
+    <template #header>
+      <UDashboardNavbar
+        :title="getSession(chatId)?.title ?? 'Chat'"
+        :ui="{ title: 'font-normal text-sm text-center text-muted justify-center w-full' }"
+      />
+    </template>
     <template #body>
       <UContainer>
         <div class="max-w-2xl w-full mx-auto">
