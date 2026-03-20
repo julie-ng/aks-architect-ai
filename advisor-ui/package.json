@@ -8,7 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "overrides": {
     "serialize-javascript": ">=7.0.4"
@@ -34,6 +35,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^25.4.0",
     "eslint": "^10.0.3",
-    "globals": "^17.4.0"
+    "globals": "^17.4.0",
+    "vitest": "^4.1.0"
   }
 }

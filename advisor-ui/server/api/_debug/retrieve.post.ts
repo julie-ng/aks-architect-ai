@@ -1,18 +1,4 @@
-interface RetrieveChunk {
-  id: string
-  title: string
-  url: string
-  score: number
-  boosted_score: number
-  text: string
-  tags: Record<string, string | string[]>
-  priority: number | null
-}
-
-interface RetrieveResponse {
-  chunks: RetrieveChunk[]
-  reformulated_query: string
-}
+import type { RetrieveResponse } from '../../types/retrieval'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()

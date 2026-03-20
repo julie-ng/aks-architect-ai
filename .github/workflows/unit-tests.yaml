@@ -99,4 +99,5 @@ jobs:
           cache: npm
           cache-dependency-path: advisor-ui/package-lock.json
       - run: npm ci
+      - run: npm test
       - run: npx nuxt build

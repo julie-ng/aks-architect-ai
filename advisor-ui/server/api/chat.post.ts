@@ -1,67 +1,11 @@
 import type { UIMessage } from 'ai'
-import { APICallError } from '@ai-sdk/provider'
 import { streamText, convertToModelMessages } from 'ai'
 import { getChatModel } from '../utils/provider'
 import { buildSystemPrompt } from '../utils/system-prompt'
-
-interface RetrieveChunk {
-  title: string
-  url: string
-  score: number
-  text: string
-}
-
-interface RetrieveResponse {
-  chunks: RetrieveChunk[]
-  reformulated_query: string
-}
-
-function formatContext (chunks: RetrieveChunk[]): string {
-  return chunks
-    .map((c, i) => `[${i + 1}] ${c.title}\nURL: ${c.url}\n${c.text}`)
-    .join('\n\n---\n\n')
-}
-
-function deduplicateChunks (chunks: RetrieveChunk[]): RetrieveChunk[] {
-  const seen = new Set<string>()
-  return chunks.filter((c) => {
-    if (seen.has(c.url)) return false
-    seen.add(c.url)
-    return true
-  })
-}
-
-async function checkOllamaModel (host: string, model: string): Promise<void> {
-  let res
-  try {
-    res = await $fetch.raw(`${host}/api/show`, {
-      method: 'POST',
-      body: { model },
-      ignoreResponseError: true,
-    })
-  }
-  catch {
-    throw createError({
-      statusCode: 502,
-      statusMessage: 'LLM host unreachable',
-      data: { error: `Cannot connect to model at ${host}. Is it running?` },
-    })
-  }
-  if (res.status === 404) {
-    throw createError({
-      statusCode: 502,
-      statusMessage: 'Model not found',
-      data: { error: `Model "${model}" not found on ${host}.` },
-    })
-  }
-  if (!res.ok) {
-    throw createError({
-      statusCode: 502,
-      statusMessage: 'LLM provider error',
-      data: { error: `LLM provider returned ${res.status} at ${host}. Is it running?` },
-    })
-  }
-}
+import { formatContext, deduplicateChunks } from '../utils/retrieval'
+import { checkOllamaModel } from '../utils/ollama'
+import { handleChatError } from '../utils/errors'
+import type { RetrieveResponse } from '../types/retrieval'
 
 export default defineLazyEventHandler(async () => {
   return defineEventHandler(async (event) => {
@@ -153,36 +97,7 @@ export default defineLazyEventHandler(async () => {
       })
     }
     catch (err: unknown) {
-      // Re-throw errors already created with createError (e.g. 400 validation, pre-flight checks)
-      if (err && typeof err === 'object' && 'statusCode' in err) {
-        throw err
-      }
-
-      // LLM provider errors that slip through streaming
-      if (APICallError.isInstance(err)) {
-        const host = config.provider === 'azure' ? config.azureEndpoint : config.ollamaHost
-        throw createError({
-          statusCode: 502,
-          statusMessage: 'LLM provider error',
-          data: { error: `Could not reach LLM provider at ${host} (${err.statusCode ?? 'connection failed'}). Is it running?` },
-        })
-      }
-
-      // Retrieval API errors (e.g. retrieval-api or Qdrant down)
-      if (err instanceof Error && err.message.includes('fetch')) {
-        throw createError({
-          statusCode: 502,
-          statusMessage: 'Retrieval service unavailable',
-          data: { error: `Could not reach retrieval-api at ${config.retrievalApiHost}. Is it running?` },
-        })
-      }
-
-      const isDev = config.appEnvironment === 'development'
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Internal Server Error',
-        ...(isDev && { data: { error: err instanceof Error ? err.message : String(err) } }),
-      })
+      handleChatError(err, config)
     }
   })
 })
