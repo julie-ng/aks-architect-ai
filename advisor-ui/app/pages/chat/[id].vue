@@ -172,7 +172,7 @@ const errorMessage = computed(() => {
                     class="*:first:mt-0 *:last:mb-0"
                   />
                 </template>
-                <SourceLinks
+                <source-links
                   v-if="message.role === 'assistant' && isMessageComplete(message)"
                   :sources="getCitedSources(message)"
                 />
