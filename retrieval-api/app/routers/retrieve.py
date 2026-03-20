@@ -17,7 +17,7 @@ def retrieve_endpoint(
     client: QdrantClient = Depends(get_qdrant),
 ):
     history = [m.model_dump() for m in req.history] or None
-    reformulated = reformulate_query(req.question, settings.reformulation_model, history)
+    reformulated = reformulate_query(req.question, settings.reformulation_model, history, settings.reformulation_temperature)
     chunks = retrieve(reformulated, client, settings)
 
     return RetrieveResponse(

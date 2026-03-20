@@ -69,7 +69,7 @@ class TestRetrieveEndpoint:
             json={"question": "What about multi-region?", "history": history},
         )
         assert response.status_code == 200
-        mock_reform.assert_called_once_with("What about multi-region?", mock_reform.call_args[0][1], history)
+        mock_reform.assert_called_once_with("What about multi-region?", mock_reform.call_args[0][1], history, 0.1)
 
     def test_rejects_missing_question(self, mock_reform, mock_retrieve):
         response = self.client.post("/api/retrieve", json={})

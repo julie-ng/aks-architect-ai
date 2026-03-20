@@ -18,6 +18,7 @@ def reformulate_query(
     question: str,
     model: str,
     history: list[dict[str, str]] | None = None,
+    temperature: float = 0.1,
 ) -> str:
     """Rewrite a user question into a better retrieval query.
 
@@ -33,7 +34,7 @@ def reformulate_query(
             messages.extend(history)
         messages.append({"role": "user", "content": question})
 
-        response = ollama.chat(model=model, messages=messages)
+        response = ollama.chat(model=model, messages=messages, options={"temperature": temperature})
         return response["message"]["content"].strip()
     except Exception:
         return question

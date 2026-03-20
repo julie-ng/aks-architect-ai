@@ -124,6 +124,7 @@ export default defineLazyEventHandler(async () => {
       console.time('[chat] ttfb')
       const result = streamText({
         model: getChatModel(),
+        temperature: config.chatTemperature,
         system: systemPromptWithContext,
         messages: modelMessages,
         onFinish: () => {

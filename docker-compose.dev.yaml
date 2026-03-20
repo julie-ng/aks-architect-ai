@@ -27,6 +27,7 @@ services:
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K}
       PRIORITY_BOOST_WEIGHT: ${PRIORITY_BOOST_WEIGHT}
       OLLAMA_HOST: http://host.docker.internal:11434
+      REFORMULATION_TEMPERATURE: ${REFORMULATION_TEMPERATURE}
       OPENAPI_DOCS_ENABLED: ${OPENAPI_DOCS_ENABLED}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -48,6 +49,7 @@ services:
       NUXT_RETRIEVAL_API_HOST: http://retrieval-api:8000
       NUXT_OLLAMA_HOST: http://host.docker.internal:11434
       NUXT_CHAT_MODEL: ${CHAT_MODEL}
+      NUXT_CHAT_TEMPERATURE: ${CHAT_TEMPERATURE}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
