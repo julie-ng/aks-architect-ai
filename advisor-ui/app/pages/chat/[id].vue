@@ -2,6 +2,7 @@
 import { isTextUIPart } from 'ai'
 import { Chat } from '@ai-sdk/vue'
 import { ref } from 'vue'
+import { replaceCitations } from '~/utils/citations'
 
 const route = useRoute()
 const chatId = route.params.id as string
@@ -75,9 +76,13 @@ interface SourceMeta {
   title: string
 }
 
-function getCitedSources (message: typeof chat.messages[number]): SourceMeta[] {
+function getSourcesMeta (message: typeof chat.messages[number]): SourceMeta[] {
   const meta = message.metadata as Record<string, unknown> | undefined
-  const sources = (meta?.sources ?? []) as SourceMeta[]
+  return (meta?.sources ?? []) as SourceMeta[]
+}
+
+function getCitedSources (message: typeof chat.messages[number]): SourceMeta[] {
+  const sources = getSourcesMeta(message)
   if (!sources.length) return []
 
   const text = message.parts
@@ -86,6 +91,15 @@ function getCitedSources (message: typeof chat.messages[number]): SourceMeta[] {
     .join('')
 
   return sources.filter((_, i) => text.includes(`[${i + 1}]`))
+}
+
+function getDisplayText (part: { type: 'text', text: string }, message: typeof chat.messages[number]): string {
+  if (message.role !== 'assistant' || !isMessageComplete(message)) {
+    return part.text
+  }
+  const sources = getSourcesMeta(message)
+  if (!sources.length) return part.text
+  return replaceCitations(part.text, sources)
 }
 
 function isMessageComplete (message: typeof chat.messages[number]) {
@@ -153,8 +167,8 @@ const errorMessage = computed(() => {
                 <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
                   <MDC
                     v-if="isTextUIPart(part)"
-                    :value="part.text"
-                    :cache-key="`${message.id}-${index}`"
+                    :value="getDisplayText(part, message)"
+                    :cache-key="`${message.id}-${index}-${isMessageComplete(message)}`"
                     class="*:first:mt-0 *:last:mb-0"
                   />
                 </template>
