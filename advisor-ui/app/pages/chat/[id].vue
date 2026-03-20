@@ -194,7 +194,12 @@ const errorMessage = computed(() => {
                 :rows="3"
                 @submit="onSubmit"
               >
-                <UChatPromptSubmit :status="chat.status" @stop="chat.stop()" @reload="chat.regenerate()" />
+                <UChatPromptSubmit
+                  submitted-color="error"
+                  submitted-variant="soft"
+                  :status="chat.status"
+                  @stop="chat.stop()"
+                  @reload="chat.regenerate()" />
               </UChatPrompt>
               <p v-if="!hasSubmitted" class="text-xs text-slate-400 text-center py-3">
                 AI can make mistakes. Always verify the information.
