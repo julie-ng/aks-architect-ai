@@ -1,17 +1,25 @@
 import { createOllama } from 'ollama-ai-provider-v2'
-import { createAzure } from '@ai-sdk/azure'
+import { createAnthropic } from '@ai-sdk/anthropic'
+
+function getProvider () {
+  const config = useRuntimeConfig()
+  const { ai } = config
+
+  if (ai.provider === 'anthropic') {
+    return createAnthropic({ apiKey: ai.gatewayApiKey })
+  }
+
+  return createOllama({ baseURL: `${ai.ollamaBaseUrl}/api` })
+}
 
 export function getChatModel () {
   const config = useRuntimeConfig()
+  const provider = getProvider()
+  return provider(config.ai.chatModel)
+}
 
-  if (config.provider === 'azure') {
-    const azure = createAzure({
-      apiKey: config.azureApiKey,
-      resourceName: config.azureEndpoint,
-    })
-    return azure(config.azureDeployment)
-  }
-
-  const ollama = createOllama({ baseURL: `${config.ollamaHost}/api` })
-  return ollama(config.chatModel)
+export function getTitleModel () {
+  const config = useRuntimeConfig()
+  const provider = getProvider()
+  return provider(config.ai.llmXsModel)
 }

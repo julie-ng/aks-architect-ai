@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { text } = await generateText({
-    model: getChatModel(),
+    model: getTitleModel(),
     temperature: 0.1,
     system: TITLE_PROMPT,
     messages: [{ role: 'user', content: question }],

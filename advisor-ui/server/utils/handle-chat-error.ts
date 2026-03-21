@@ -1,9 +1,7 @@
 import { APICallError } from '@ai-sdk/provider'
 
 interface ChatErrorConfig {
-  provider: string
-  azureEndpoint: string
-  ollamaHost: string
+  ai: { provider: string, ollamaBaseUrl: string }
   retrievalApiHost: string
   appEnvironment: string
 }
@@ -21,7 +19,7 @@ export function handleChatError (err: unknown, config: ChatErrorConfig): never {
 
   // LLM provider errors that slip through streaming
   if (APICallError.isInstance(err)) {
-    const host = config.provider === 'azure' ? config.azureEndpoint : config.ollamaHost
+    const host = config.ai.ollamaBaseUrl
     throw createError({
       statusCode: 502,
       statusMessage: 'LLM provider error',

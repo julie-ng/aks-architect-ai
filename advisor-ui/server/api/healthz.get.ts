@@ -59,7 +59,7 @@ async function checkOllama (): Promise<Check> {
 
   const config = useRuntimeConfig()
   try {
-    await checkOllamaModel(config.ollamaHost, config.chatModel)
+    await checkOllamaModel(config.ai.ollamaBaseUrl, config.ai.chatModel)
     ollamaCheck = { status: 'pass' }
   }
   catch (err) {
@@ -91,7 +91,7 @@ export default defineEventHandler(async () => {
     'retrieval-api': await checkRetrievalApi(),
   }
 
-  if (config.provider === 'ollama') {
+  if (config.ai.provider === 'ollama') {
     checks.ollama = await checkOllama()
   }
   const status = Object.values(checks).every(c => c.status === 'pass') ? 'pass' : 'fail'

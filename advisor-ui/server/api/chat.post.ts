@@ -53,9 +53,9 @@ export default defineLazyEventHandler(async () => {
       const reformulatedQuery = retrieveResponse.reformulated_query
 
       // Verify model is available before streaming (fast, avoids cryptic mid-stream errors)
-      if (config.provider === 'ollama') {
+      if (config.ai.provider === 'ollama') {
         console.time('[chat] modelCheck')
-        await checkOllamaModel(config.ollamaHost, config.chatModel)
+        await checkOllamaModel(config.ai.ollamaBaseUrl, config.ai.chatModel)
         console.timeEnd('[chat] modelCheck')
       }
 
@@ -63,7 +63,7 @@ export default defineLazyEventHandler(async () => {
       console.time('[chat] ttfb')
       const result = streamText({
         model: getChatModel(),
-        temperature: config.chatTemperature,
+        temperature: config.ai.chatTemperature,
         system: systemPromptWithContext,
         messages: modelMessages,
         onFinish: () => {

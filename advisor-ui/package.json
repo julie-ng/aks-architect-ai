@@ -15,7 +15,7 @@
     "serialize-javascript": ">=7.0.4"
   },
   "dependencies": {
-    "@ai-sdk/azure": "^3.0.42",
+    "@ai-sdk/anthropic": "^3.0.63",
     "@ai-sdk/vue": "^3.0.116",
     "@nuxt/content": "^3.12.0",
     "@nuxt/fonts": "^0.14.0",
@@ -26,7 +26,6 @@
     "better-sqlite3": "^12.8.0",
     "drizzle-orm": "^0.45.1",
     "nuxt": "^4.3.1",
-    "ollama-ai-provider-v2": "^3.4.0",
     "postgres": "^3.4.8",
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.30",
@@ -40,6 +39,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
+    "ollama-ai-provider-v2": "^3.5.0",
     "vitest": "^4.1.0"
   }
 }
