@@ -6,7 +6,8 @@ from http import HTTPStatus
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from qdrant_client import QdrantClient
+from pgvector.psycopg import register_vector
+from psycopg_pool import ConnectionPool
 
 from app.config import Settings
 from app.routers import healthz, retrieve
@@ -17,9 +18,13 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = Settings()
-    app.state.qdrant = QdrantClient(url=settings.qdrant_url)
+    pool = ConnectionPool(
+        settings.database_url,
+        configure=lambda conn: register_vector(conn),
+    )
+    app.state.db_pool = pool
     yield
-    app.state.qdrant.close()
+    pool.close()
 
 
 settings = Settings()

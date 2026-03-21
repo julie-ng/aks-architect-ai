@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from app.config import Settings
 from app.main import app
 
 
@@ -24,7 +23,10 @@ from app.main import app
 @patch("app.routers.retrieve.reformulate_query", return_value="AKS node pool configuration best practices")
 class TestRetrieveEndpoint:
     def setup_method(self):
-        app.state.qdrant = MagicMock()
+        mock_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_pool.getconn.return_value = mock_conn
+        app.state.db_pool = mock_pool
         self.client = TestClient(app)
 
     def test_returns_chunks_and_reformulated_query(self, mock_reform, mock_retrieve):
@@ -79,11 +81,14 @@ class TestRetrieveEndpoint:
 @patch("app.routers.healthz.ollama")
 class TestHealthEndpoint:
     def setup_method(self):
-        self.settings = Settings()
-        mock_collection = MagicMock()
-        mock_collection.name = self.settings.qdrant_collection
-        app.state.qdrant = MagicMock()
-        app.state.qdrant.get_collections.return_value.collections = [mock_collection]
+        mock_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (42,)
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+        mock_pool.getconn.return_value = mock_conn
+        app.state.db_pool = mock_pool
         self.client = TestClient(app)
 
     def test_healthy(self, mock_ollama):
@@ -93,7 +98,8 @@ class TestHealthEndpoint:
         assert data["name"] == "retrieval-api"
         assert data["version"] == "0.1.0"
         assert data["status"] == "pass"
-        assert data["checks"]["qdrant"]["status"] == "pass"
+        assert data["checks"]["postgres"]["status"] == "pass"
+        assert data["checks"]["postgres"]["chunk_count"] == 42
         assert data["checks"]["ollama"]["status"] == "pass"
         assert "uptime" in data
         assert data["uptime"]["component_type"] == "system"
@@ -102,13 +108,21 @@ class TestHealthEndpoint:
         assert "env" in data
         assert "APP_ENVIRONMENT" in data["env"]
 
-    def test_degraded_when_collection_missing(self, mock_ollama):
-        app.state.qdrant.get_collections.return_value.collections = []
+    def test_degraded_when_db_fails(self, mock_ollama):
+        mock_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.execute.side_effect = Exception("connection refused")
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+        mock_pool.getconn.return_value = mock_conn
+        app.state.db_pool = mock_pool
+
         response = self.client.get("/healthz")
         data = response.json()
         assert data["status"] == "fail"
-        assert data["checks"]["qdrant"]["status"] == "fail"
-        assert "output" in data["checks"]["qdrant"]
+        assert data["checks"]["postgres"]["status"] == "fail"
+        assert "output" in data["checks"]["postgres"]
 
     def test_degraded_when_ollama_down(self, mock_ollama):
         mock_ollama.list.side_effect = Exception("connection refused")

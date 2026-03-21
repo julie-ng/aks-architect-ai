@@ -65,6 +65,11 @@ ollama/pull:
 	ollama pull nomic-embed-text
 	ollama pull llama3.2
 
+# --- Database ---
+
+db/psql:
+	$(DC) exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+
 # --- Docker Compose ---
 
 dc/up:
@@ -83,4 +88,5 @@ dc/build:
 	lint advisor-ui/lint retrieval-api/lint pipeline/lint \
 	advisor-ui/dev advisor-ui/install \
 	ollama/start ollama/pull \
+	db/psql \
 	dc/up dc/down dc/build

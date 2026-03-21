@@ -8,8 +8,7 @@ from pydantic_settings import BaseSettings
 # - https://docs.pydantic.dev/latest/concepts/pydantic_settings/#parsing-environment-variable-values
 class Settings(BaseSettings):
     app_environment: Literal["development", "production"] = "production"
-    qdrant_url: str = "http://localhost:6333"
-    qdrant_collection: str = "collection"
+    database_url: str = "postgresql://aks_architect:localdev@localhost:5432/aks_architect"
     embedding_model: str = "nomic-embed-text"
     embedding_prefix: str = "search_query: "
     document_prefix: str = "search_document: "

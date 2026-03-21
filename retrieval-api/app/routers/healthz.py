@@ -5,10 +5,10 @@ from pathlib import Path
 
 import ollama
 from fastapi import APIRouter, Depends
-from qdrant_client import QdrantClient
+from psycopg import Connection
 
 from app.config import Settings
-from app.dependencies import get_qdrant, get_settings
+from app.dependencies import get_db, get_settings
 
 router = APIRouter()
 
@@ -34,23 +34,18 @@ def _uptime() -> dict:
 
 @router.get("/healthz")
 def health(
-    client: QdrantClient = Depends(get_qdrant),
+    conn: Connection = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     checks: dict[str, dict] = {}
 
     try:
-        collections = client.get_collections().collections
-        collection_names = [c.name for c in collections]
-        if settings.qdrant_collection in collection_names:
-            checks["qdrant"] = {"status": "pass"}
-        else:
-            checks["qdrant"] = {
-                "status": "fail",
-                "output": f"collection '{settings.qdrant_collection}' not found",
-            }
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM chunks")
+            count = cur.fetchone()[0]
+        checks["postgres"] = {"status": "pass", "chunk_count": count}
     except Exception as e:
-        checks["qdrant"] = {"status": "fail", "output": str(e)}
+        checks["postgres"] = {"status": "fail", "output": str(e)}
 
     try:
         ollama.list()

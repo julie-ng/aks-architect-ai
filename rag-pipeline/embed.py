@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-embed.py — Embed chunks and upsert into Qdrant.
+embed.py — Embed chunks and insert into Postgres/pgvector.
 
 Reads chunks.jsonl, generates vectors via Ollama (nomic-embed-text),
-and upserts them into a Qdrant collection with full metadata as payload.
+and inserts them into the chunks table with full metadata.
 
 Prerequisites:
   ollama pull nomic-embed-text
@@ -11,7 +11,7 @@ Prerequisites:
 
 Usage:
   uv run python embed.py
-  uv run python embed.py --input chunks.jsonl --collection aks-docs
+  uv run python embed.py --input chunks.jsonl
 """
 
 import argparse
@@ -20,10 +20,19 @@ import sys
 from pathlib import Path
 
 import ollama
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+import psycopg
+from pgvector.psycopg import register_vector
 
 from config import config as cfg
+
+INSERT_SQL = """
+    INSERT INTO chunks
+        (id, text, url, title, description, source_name,
+         priority, tags, chunk_index, chunk_total, crawled_at, embedding)
+    VALUES
+        (%(id)s, %(text)s, %(url)s, %(title)s, %(description)s, %(source_name)s,
+         %(priority)s, %(tags)s, %(chunk_index)s, %(chunk_total)s, %(crawled_at)s, %(embedding)s)
+"""
 
 
 def get_embedding(text: str) -> list[float]:
@@ -32,22 +41,9 @@ def get_embedding(text: str) -> list[float]:
     return response["embedding"]
 
 
-def recreate_collection(client: QdrantClient, name: str) -> None:
-    existing = [c.name for c in client.get_collections().collections]
-    if name in existing:
-        client.delete_collection(collection_name=name)
-        print(f"Deleted existing collection: {name}")
-    client.create_collection(
-        collection_name=name,
-        vectors_config=VectorParams(size=cfg.embedding_vector_dim, distance=Distance.COSINE),
-    )
-    print(f"Created collection: {name}")
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Embed chunks and upsert into Qdrant")
+    parser = argparse.ArgumentParser(description="Embed chunks and insert into Postgres/pgvector")
     parser.add_argument("--input", default="chunks.jsonl", help="Input JSONL file")
-    parser.add_argument("--collection", default=cfg.qdrant_collection, help="Qdrant collection name")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -56,31 +52,52 @@ def main():
         print("Run chunk.py first to generate chunks.jsonl", file=sys.stderr)
         sys.exit(1)
 
-    client = QdrantClient(url=cfg.qdrant_url)
-    recreate_collection(client, args.collection)
+    conn = psycopg.connect(cfg.database_url)
+    register_vector(conn)
+
+    # Clear existing chunks (equivalent to Qdrant collection recreation)
+    with conn.cursor() as cur:
+        cur.execute("TRUNCATE chunks")
+    conn.commit()
+    print("Cleared chunks table")
 
     chunks = [json.loads(line) for line in input_path.read_text().splitlines() if line.strip()]
     total = len(chunks)
-    print(f'Embedding {total} chunks into "{args.collection}"...\n')
+    print(f"Embedding {total} chunks...\n")
 
-    upserted = 0
-    batch: list[PointStruct] = []
+    inserted = 0
+    batch: list[dict] = []
 
     for i, chunk in enumerate(chunks, 1):
         vector = get_embedding(chunk["text"])
 
-        # Everything except id and text goes into the payload for retrieval
-        payload = {k: v for k, v in chunk.items() if k != "id"}
-
-        batch.append(PointStruct(id=chunk["id"], vector=vector, payload=payload))
+        batch.append(
+            {
+                "id": chunk["id"],
+                "text": chunk["text"],
+                "url": chunk.get("url", ""),
+                "title": chunk.get("title", ""),
+                "description": chunk.get("description", ""),
+                "source_name": chunk.get("source_name", ""),
+                "priority": chunk.get("priority", 1),
+                "tags": json.dumps(chunk.get("tags", {})),
+                "chunk_index": chunk.get("chunk_index", 0),
+                "chunk_total": chunk.get("chunk_total", 0),
+                "crawled_at": chunk.get("crawled_at"),
+                "embedding": vector,
+            }
+        )
 
         if len(batch) >= cfg.embedding_batch_size or i == total:
-            client.upsert(collection_name=args.collection, points=batch)
-            upserted += len(batch)
-            print(f"  [{upserted:>{len(str(total))}}/{total}] upserted")
+            with conn.cursor() as cur:
+                cur.executemany(INSERT_SQL, batch)
+            conn.commit()
+            inserted += len(batch)
+            print(f"  [{inserted:>{len(str(total))}}/{total}] inserted")
             batch = []
 
-    print(f'\nDone: {upserted} vectors in "{args.collection}"')
+    conn.close()
+    print(f"\nDone: {inserted} vectors inserted")
 
 
 if __name__ == "__main__":

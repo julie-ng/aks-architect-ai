@@ -2,7 +2,7 @@
 Configuration for RAG pipeline scripts.
 
 All values can be overridden via environment variables.
-Defaults are suitable for local development with Ollama + Qdrant.
+Defaults are suitable for local development with Ollama + Postgres/pgvector.
 """
 
 import os
@@ -11,8 +11,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Config:
-    qdrant_url: str
-    qdrant_collection: str
+    database_url: str
     ollama_host: str
     embedding_model: str
     embedding_prefix_document: str
@@ -25,8 +24,7 @@ class Config:
 
 
 config_defaults = Config(
-    qdrant_url="http://localhost:6333",
-    qdrant_collection="docs",
+    database_url="postgresql://aks_architect:localdev@localhost:5432/aks_architect",
     ollama_host="http://localhost:11434",
     embedding_model="nomic-embed-text",
     embedding_prefix_document="search_document: ",
@@ -39,8 +37,7 @@ config_defaults = Config(
 )
 
 config = Config(
-    qdrant_url=os.environ.get("QDRANT_URL", config_defaults.qdrant_url),
-    qdrant_collection=os.environ.get("QDRANT_COLLECTION", config_defaults.qdrant_collection),
+    database_url=os.environ.get("DATABASE_URL", config_defaults.database_url),
     ollama_host=os.environ.get("OLLAMA_HOST", config_defaults.ollama_host),
     embedding_model=os.environ.get("EMBEDDING_MODEL", config_defaults.embedding_model),
     embedding_prefix_document=os.environ.get("EMBEDDING_PREFIX_DOCUMENT", config_defaults.embedding_prefix_document),

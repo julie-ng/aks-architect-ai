@@ -1,16 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
-
 from app.config import Settings
-from app.services.retrieval import boost_by_priority, build_filter, embed_query, retrieve, search_chunks
+from app.services.retrieval import boost_by_priority, build_filter_clause, embed_query, retrieve, search_chunks
 
 
-def _make_point(score, payload):
-    point = MagicMock()
-    point.score = score
-    point.payload = payload
-    return point
+def _make_row(score, payload):
+    """Create a dict mimicking a pgvector query result row."""
+    return {"id": payload.get("id", "test-id"), "score": score, **payload}
 
 
 class TestEmbedQuery:
@@ -22,57 +18,55 @@ class TestEmbedQuery:
         mock_ollama.embeddings.assert_called_once_with(model="nomic-embed-text", prompt="search_query: test question")
 
 
-class TestBuildFilter:
+class TestBuildFilterClause:
     def test_single_string_value(self):
-        f = build_filter({"tags.doc_type": "guide"})
-        assert f == Filter(
-            must=[
-                FieldCondition(key="tags.doc_type", match=MatchValue(value="guide")),
-            ]
-        )
+        clause, params = build_filter_clause({"tags.doc_type": "guide"})
+        assert "tags->>'doc_type'" in clause
+        assert params["f0"] == "guide"
 
     def test_list_value(self):
-        f = build_filter({"tags.scenario_tags": ["regulated", "pci-dss"]})
-        assert f == Filter(
-            must=[
-                FieldCondition(key="tags.scenario_tags", match=MatchAny(any=["regulated", "pci-dss"])),
-            ]
-        )
+        clause, params = build_filter_clause({"tags.scenario_tags": ["regulated", "pci-dss"]})
+        assert "ANY" in clause
+        assert params["f0"] == ["regulated", "pci-dss"]
 
     def test_mixed_values(self):
-        f = build_filter(
+        clause, params = build_filter_clause(
             {
                 "tags.doc_type": "guide",
                 "tags.scenario_tags": ["regulated"],
             }
         )
-        assert len(f.must) == 2
+        assert "f0" in params
+        assert "f1" in params
+
+    def test_skips_invalid_keys(self):
+        clause, params = build_filter_clause({"invalid_no_dot": "value"})
+        assert clause == ""
+        assert params == {}
 
 
 class TestSearchChunks:
-    def test_returns_points(self):
-        client = MagicMock()
-        points = [_make_point(0.9, {"text": "hello"})]
-        client.query_points.return_value = MagicMock(points=points)
+    def test_returns_rows(self):
+        rows = [_make_row(0.9, {"text": "hello"})]
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = rows
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
 
-        result = search_chunks(client, [0.1, 0.2], "aks-docs", 5)
-        assert result == points
-        client.query_points.assert_called_once_with(
-            collection_name="aks-docs",
-            query=[0.1, 0.2],
-            limit=5,
-            with_payload=True,
-            query_filter=None,
-        )
+        result = search_chunks(mock_conn, [0.1, 0.2], 5)
+        assert result == rows
 
     def test_passes_filter(self):
-        client = MagicMock()
-        client.query_points.return_value = MagicMock(points=[])
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
 
-        search_chunks(client, [0.1], "col", 5, filters={"tags.doc_type": "guide"})
-        call_kwargs = client.query_points.call_args.kwargs
-        assert call_kwargs["query_filter"] is not None
-        assert call_kwargs["query_filter"].must[0].key == "tags.doc_type"
+        search_chunks(mock_conn, [0.1], 5, filters={"tags.doc_type": "guide"})
+        sql = mock_cursor.execute.call_args[0][0]
+        assert "doc_type" in sql
 
 
 class TestBoostByPriority:
@@ -123,7 +117,7 @@ class TestRetrieve:
     def test_returns_formatted_results(self, mock_embed, mock_search):
         mock_embed.return_value = [0.1, 0.2]
         mock_search.return_value = [
-            _make_point(
+            _make_row(
                 0.95,
                 {
                     "title": "Node Pools",
@@ -136,8 +130,8 @@ class TestRetrieve:
         ]
 
         settings = Settings()
-        client = MagicMock()
-        results = retrieve("node pools", client, settings)
+        conn = MagicMock()
+        results = retrieve("node pools", conn, settings)
 
         assert len(results) == 1
         assert results[0]["title"] == "Node Pools"
@@ -151,12 +145,12 @@ class TestRetrieve:
         mock_search.return_value = []
 
         settings = Settings()
-        client = MagicMock()
-        retrieve("test", client, settings)
+        conn = MagicMock()
+        retrieve("test", conn, settings)
 
         # Should fetch top_k * 3 candidates
         call_args = mock_search.call_args
-        assert call_args[0][3] == settings.retrieval_top_k * 3
+        assert call_args[0][2] == settings.retrieval_top_k * 3
 
     @patch("app.services.retrieval.search_chunks")
     @patch("app.services.retrieval.embed_query")
@@ -164,7 +158,7 @@ class TestRetrieve:
         mock_embed.return_value = [0.1]
         # Return more results than top_k
         mock_search.return_value = [
-            _make_point(
+            _make_row(
                 0.9 - i * 0.01,
                 {
                     "title": f"Doc {i}",
@@ -178,8 +172,8 @@ class TestRetrieve:
         ]
 
         settings = Settings()
-        client = MagicMock()
-        results = retrieve("test", client, settings)
+        conn = MagicMock()
+        results = retrieve("test", conn, settings)
 
         assert len(results) == settings.retrieval_top_k
 
@@ -190,9 +184,9 @@ class TestRetrieve:
         mock_search.return_value = []
 
         settings = Settings()
-        client = MagicMock()
+        conn = MagicMock()
         filters = {"tags.doc_type": "guide"}
-        retrieve("test", client, settings, filters=filters)
+        retrieve("test", conn, settings, filters=filters)
 
         call_kwargs = mock_search.call_args
-        assert call_kwargs[0][4] == filters
+        assert call_kwargs[0][3] == filters

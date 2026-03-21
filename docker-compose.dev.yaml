@@ -1,11 +1,15 @@
 services:
-  qdrant:
-    image: qdrant/qdrant:v1 # use v1-unprivileged in deployments
+  postgres:
+    image: pgvector/pgvector:pg17
     ports:
-      - "6333:6333" # REST API + dashboard UI
-      - "6334:6334" # gRPC
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - qdrant_data:/qdrant/storage
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   retrieval-api:
     build: retrieval-api
@@ -13,13 +17,12 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - qdrant
+      - postgres
     volumes:
       - ./retrieval-api/app:/workspace/app
     environment:
       APP_ENVIRONMENT: development
-      QDRANT_URL: http://qdrant:6333
-      QDRANT_COLLECTION: ${QDRANT_COLLECTION}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL}
       CHAT_MODEL: ${CHAT_MODEL}
       REFORMULATION_MODEL: ${REFORMULATION_MODEL}
@@ -54,5 +57,5 @@ services:
       - "host.docker.internal:host-gateway"
 
 volumes:
-  qdrant_data:
+  postgres_data:
   advisor_ui_node_modules:

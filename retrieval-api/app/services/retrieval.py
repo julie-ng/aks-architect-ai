@@ -1,12 +1,20 @@
+import json
 import math
 
 import ollama
-from fastapi import HTTPException
-from qdrant_client import QdrantClient
-from qdrant_client.http.exceptions import UnexpectedResponse
-from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
+from psycopg import Connection
+from psycopg.rows import dict_row
 
 from app.config import Settings
+
+SEARCH_SQL = """
+    SELECT id::text, text, url, title, description, source_name, priority, tags,
+           1 - (embedding <=> %(vector)s::vector) AS score
+    FROM chunks
+    WHERE 1=1 {filter_clause}
+    ORDER BY embedding <=> %(vector)s::vector
+    LIMIT %(limit)s
+"""
 
 
 def embed_query(question: str, model: str, prefix: str) -> list[float]:
@@ -15,48 +23,49 @@ def embed_query(question: str, model: str, prefix: str) -> list[float]:
     return response["embedding"]
 
 
-def build_filter(tags: dict[str, str | list[str]]) -> Filter:
-    """Build a Qdrant filter from a tag dict.
+def build_filter_clause(filters: dict[str, str | list[str]]) -> tuple[str, dict]:
+    """Build SQL WHERE clause fragments from a tag filter dict.
 
-    Keys are dot-paths into the payload (e.g. "tags.doc_type").
-    Values can be a single string (MatchValue) or a list (MatchAny).
+    Keys are dot-paths like "tags.doc_type" where the first part is the JSONB column
+    and the second is the JSON key. Values can be a string or list of strings.
+
+    Returns (sql_fragment, params_dict).
     """
-    conditions = []
-    for key, value in tags.items():
+    clauses = []
+    params: dict = {}
+    for i, (key, value) in enumerate(filters.items()):
+        parts = key.split(".", 1)
+        if len(parts) != 2:
+            continue
+        col, field = parts
+        param_name = f"f{i}"
         if isinstance(value, list):
-            conditions.append(FieldCondition(key=key, match=MatchAny(any=value)))
+            clauses.append(f"AND {col}->>'{field}' = ANY(%({param_name})s)")
+            params[param_name] = value
         else:
-            conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
-    return Filter(must=conditions)
+            clauses.append(f"AND {col}->>'{field}' = %({param_name})s")
+            params[param_name] = value
+    return " ".join(clauses), params
 
 
 def search_chunks(
-    client: QdrantClient,
+    conn: Connection,
     vector: list[float],
-    collection: str,
     top_k: int,
     filters: dict[str, str | list[str]] | None = None,
-):
-    """Search Qdrant for the nearest chunks, with optional tag filtering."""
-    query_filter = build_filter(filters) if filters else None
+) -> list[dict]:
+    """Search pgvector for the nearest chunks, with optional tag filtering."""
+    filter_clause = ""
+    filter_params: dict = {}
+    if filters:
+        filter_clause, filter_params = build_filter_clause(filters)
 
-    try:
-        response = client.query_points(
-            collection_name=collection,
-            query=vector,
-            limit=top_k,
-            with_payload=True,
-            query_filter=query_filter,
-        )
-    except UnexpectedResponse as e:
-        if e.status_code == 404:
-            raise HTTPException(
-                status_code=503,
-                detail=f"Vector database is online but collection '{collection}' does not exist. "
-                "Run the RAG pipeline to populate it.",
-            )
-        raise
-    return response.points
+    sql = SEARCH_SQL.format(filter_clause=filter_clause)
+    params = {"vector": json.dumps(vector), "limit": top_k, **filter_params}
+
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(sql, params)
+        return cur.fetchall()
 
 
 def boost_by_priority(results: list[dict], weight: float) -> list[dict]:
@@ -78,29 +87,28 @@ def boost_by_priority(results: list[dict], weight: float) -> list[dict]:
 
 def retrieve(
     question: str,
-    client: QdrantClient,
+    conn: Connection,
     settings: Settings,
     filters: dict[str, str | list[str]] | None = None,
 ) -> list[dict]:
-    """High-level: embed question, search Qdrant, re-rank by priority, return results."""
+    """High-level: embed question, search pgvector, re-rank by priority, return results."""
     vector = embed_query(question, settings.embedding_model, settings.embedding_prefix)
 
     # Fetch extra candidates so re-ranking has a larger pool
     fetch_k = settings.retrieval_top_k * 3
-    points = search_chunks(client, vector, settings.qdrant_collection, fetch_k, filters)
+    rows = search_chunks(conn, vector, fetch_k, filters)
 
     results = []
-    for point in points:
-        p = point.payload
+    for row in rows:
         results.append(
             {
-                "id": str(point.id),
-                "title": p.get("title", "(no title)"),
-                "url": p.get("url", ""),
-                "score": point.score,
-                "text": p.get("text", ""),
-                "tags": p.get("tags", {}),
-                "priority": p.get("priority"),
+                "id": row["id"],
+                "title": row.get("title", "(no title)"),
+                "url": row.get("url", ""),
+                "score": row["score"],
+                "text": row.get("text", ""),
+                "tags": row.get("tags", {}),
+                "priority": row.get("priority"),
             }
         )
 
