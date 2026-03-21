@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-
 const route = useRoute()
-const chatSessionsStore = useChatSessionsStore()
-const { sortedSessions } = storeToRefs(chatSessionsStore)
-const { renameSession, deleteSession, getSession } = chatSessionsStore
+const chatsStore = useChatsStore()
 
 
 const { data: guidePages } = await useAsyncData('guide-pages', () => {
@@ -62,7 +58,7 @@ const links = computed(() => [
           icon: 'i-lucide-plus',
           to: '/chat/new',
         },
-        ...sortedSessions.value.map(session => ({
+        ...chatsStore.sortedSessions.map(session => ({
           label: session.title,
           icon: 'i-lucide-messages-square',
           to: `/chat/${session.id}`,
@@ -84,7 +80,7 @@ const renameInput = ref('')
 const renameSessionId = ref('')
 
 function startRename (sessionId: string) {
-  const session = getSession(sessionId)
+  const session = chatsStore.getSession(sessionId)
   if (!session) return
   renameSessionId.value = sessionId
   renameInput.value = session.title
@@ -94,7 +90,7 @@ function startRename (sessionId: string) {
 function confirmRename () {
   const trimmed = renameInput.value.trim()
   if (trimmed && renameSessionId.value) {
-    renameSession(renameSessionId.value, trimmed)
+    chatsStore.renameSession(renameSessionId.value, trimmed)
   }
   renameModalOpen.value = false
 }
@@ -110,7 +106,7 @@ function chatActionItems (sessionId: string) {
       label: 'Delete',
       icon: 'i-lucide-trash-2',
       color: 'error' as const,
-      onSelect: () => deleteSession(sessionId),
+      onSelect: () => chatsStore.deleteSession(sessionId),
     },
   ]]
 }

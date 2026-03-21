@@ -6,14 +6,14 @@ import { ref } from 'vue'
 const route = useRoute()
 const chatId = route.params.id as string
 
-const { getSession, createSession, updateMessages, setTitle } = useChatSessionsStore()
+const chatsStore = useChatsStore()
 
 // Ensure session exists
-const session = getSession(chatId) ?? createSession(chatId)
+const session = chatsStore.getSession(chatId) ?? chatsStore.createSession(chatId)
 
 useHead({
   title: computed(() => {
-    const title = getSession(chatId)?.title
+    const title = chatsStore.getSession(chatId)?.title
     return title && title !== '(untitled chat)' ? title : 'Chat'
   }),
 })
@@ -34,7 +34,7 @@ const chat = new Chat({
     ],
   },
   onFinish ({ messages }) {
-    updateMessages(chatId, messages)
+    chatsStore.updateMessages(chatId, messages)
   },
   onError (error) {
     console.error(error)
@@ -55,14 +55,14 @@ function onSubmit (e: Event) {
     setTimeout(() => {
       chat.sendMessage({ text: message })
       // Sync user message immediately
-      updateMessages(chatId, chat.messages)
+      chatsStore.updateMessages(chatId, chat.messages)
     }, 300)
     // Fire title generation in parallel
     generateChatTitle(message)
   }
   else {
     chat.sendMessage({ text: message })
-    updateMessages(chatId, chat.messages)
+    chatsStore.updateMessages(chatId, chat.messages)
   }
 }
 
@@ -73,7 +73,7 @@ async function generateChatTitle (question: string) {
       body: { question },
     })
     if (title) {
-      setTitle(chatId, title)
+      chatsStore.setTitle(chatId, title)
     }
   }
   catch (err) {
@@ -134,7 +134,7 @@ const errorMessage = computed(() => {
   >
     <template #header>
       <UDashboardNavbar
-        :title="getSession(chatId)?.title ?? 'Chat'"
+        :title="chatsStore.getSession(chatId)?.title ?? 'Chat'"
         :ui="{ title: 'font-normal text-sm text-center text-muted justify-center w-full' }"
       />
     </template>

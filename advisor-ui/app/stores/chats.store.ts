@@ -3,10 +3,11 @@ import type { ChatSession } from '~/types/chat'
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore, skipHydrate } from 'pinia'
 
-const LOCAL_STORAGE_KEY = 'aks-architect:chat-sessions'
+export const useChatsStore = defineStore('chats', () => {
+  const config = useAppConfig()
+  const sessions = useLocalStorage<Record<string, ChatSession>>(config.localStorageKey, {})
 
-export const useChatSessionsStore = defineStore('chatSessions', () => {
-  const sessions = useLocalStorage<Record<string, ChatSession>>(LOCAL_STORAGE_KEY, {})
+  // --- Getters ---
 
   const sortedSessions = computed(() =>
     Object.values(sessions.value).sort(
@@ -14,8 +15,25 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
     ),
   )
 
+  const hasSessions = computed(() => sortedSessions.value.length > 0)
+
+  const latestSession = computed(() => sortedSessions.value[0])
+
+  const getSession = computed(() =>
+    (id: string): ChatSession | undefined => sessions.value[id],
+  )
+
+  const sessionPath = computed(() =>
+    (id: string): string => `/chat/${id}`,
+  )
+
+  // --- Actions ---
+
+  function newSession (): ChatSession {
+    return createSession(crypto.randomUUID())
+  }
+
   function createSession (id: string): ChatSession {
-    console.log(`createSession(${id})`)
     const now = new Date().toISOString()
     const session: ChatSession = {
       id,
@@ -63,18 +81,23 @@ export const useChatSessionsStore = defineStore('chatSessions', () => {
     sessions.value = rest
   }
 
-  function getSession (id: string): ChatSession | undefined {
-    return sessions.value[id]
-  }
-
   return {
+    // State
     sessions: skipHydrate(sessions),
+
+    // Getters
     sortedSessions,
+    hasSessions,
+    latestSession,
+    getSession,
+    sessionPath,
+
+    // Actions
+    newSession,
     createSession,
     updateMessages,
     setTitle,
     renameSession,
     deleteSession,
-    getSession,
   }
 })
