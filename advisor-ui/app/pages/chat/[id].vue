@@ -8,8 +8,45 @@ const chatId = route.params.id as string
 
 const chatsStore = useChatsStore()
 
-// Ensure session exists
-const session = chatsStore.getSession(chatId) ?? chatsStore.createSession(chatId)
+const ready = ref(false)
+let chat: Chat
+
+onMounted(async () => {
+  // Load full session (with messages) if not already in store
+  let session = chatsStore.getSession(chatId)
+  if (!session || session.messages.length === 0) {
+    try {
+      session = await chatsStore.fetchSession(chatId)
+    }
+    catch {
+      session = await chatsStore.createSession(chatId)
+    }
+  }
+
+  chat = new Chat({
+    id: chatId,
+    messages: session.messages,
+    body: {
+      domains: [
+        'cluster-design',
+        'networking',
+        'security',
+        'operations',
+        'observability-and-cost',
+        'resilience',
+      ],
+    },
+    onFinish ({ messages }) {
+      chatsStore.updateMessages(chatId, messages)
+    },
+    onError (error) {
+      console.error(error)
+    },
+  })
+
+  hasSubmitted.value = session.messages.length > 0
+  ready.value = true
+})
 
 useHead({
   title: computed(() => {
@@ -19,29 +56,7 @@ useHead({
 })
 
 const input = ref('')
-
-const chat = new Chat({
-  id: chatId,
-  messages: session.messages,
-  body: {
-    domains: [
-      'cluster-design',
-      'networking',
-      'security',
-      'operations',
-      'observability-and-cost',
-      'resilience',
-    ],
-  },
-  onFinish ({ messages }) {
-    chatsStore.updateMessages(chatId, messages)
-  },
-  onError (error) {
-    console.error(error)
-  },
-})
-
-const hasSubmitted = ref(session.messages.length > 0)
+const hasSubmitted = ref(false)
 
 function onSubmit (e: Event) {
   e.preventDefault()
@@ -85,7 +100,7 @@ const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
 
-function getDisplayText (part: { type: 'text', text: string }, message: typeof chat.messages[number]): string {
+function getDisplayText (part: { type: 'text', text: string }, message: (typeof chat)['messages'][number]): string {
   if (message.role !== 'assistant' || !isMessageComplete(message)) {
     return part.text
   }
@@ -94,14 +109,14 @@ function getDisplayText (part: { type: 'text', text: string }, message: typeof c
   return replaceFootnotesWithCitations(part.text, sources)
 }
 
-function isMessageComplete (message: typeof chat.messages[number]) {
+function isMessageComplete (message: (typeof chat)['messages'][number]) {
   const lastMessage = chat.messages[chat.messages.length - 1]
   if (message !== lastMessage) return true
   return chat.status === 'ready' || chat.status === 'error'
 }
 
 const errorTitle = computed(() => {
-  if (!chat.error) return ''
+  if (!ready.value || !chat?.error) return ''
   try {
     const parsed = JSON.parse(chat.error.message)
     if (parsed?.statusCode && parsed?.statusMessage) {
@@ -115,7 +130,7 @@ const errorTitle = computed(() => {
 })
 
 const errorMessage = computed(() => {
-  if (!chat.error) return null
+  if (!ready.value || !chat?.error) return null
   try {
     const parsed = JSON.parse(chat.error.message)
     return parsed?.data?.error ?? parsed?.statusMessage ?? parsed?.message ?? chat.error.message
@@ -139,7 +154,7 @@ const errorMessage = computed(() => {
       />
     </template>
     <template #body>
-      <UContainer>
+      <UContainer v-if="ready">
         <div class="max-w-2xl w-full mx-auto">
           <UContainer
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"

@@ -1,5 +1,4 @@
 export default defineAppConfig({
-  localStorageKey: 'aks-architect:chat-sessions',
   ui: {
     prose: {
       p: {

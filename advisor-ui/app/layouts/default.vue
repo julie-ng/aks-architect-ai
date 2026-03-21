@@ -2,6 +2,9 @@
 const route = useRoute()
 const chatsStore = useChatsStore()
 
+onMounted(async () => {
+  await chatsStore.fetchSessions()
+})
 
 const { data: guidePages } = await useAsyncData('guide-pages', () => {
   return queryCollection('guide')

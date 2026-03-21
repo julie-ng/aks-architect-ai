@@ -18,6 +18,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     appEnvironment: 'production',
+    databaseUrl: '',
     retrievalApiHost: 'http://localhost:8000',
     ollamaHost: 'http://localhost:11434',
     chatModel: 'gemma3:1b',
