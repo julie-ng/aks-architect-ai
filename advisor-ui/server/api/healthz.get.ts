@@ -99,7 +99,12 @@ export default defineEventHandler(async () => {
   return {
     name: 'advisor-ui',
     status,
-    env: { APP_ENVIRONMENT: config.appEnvironment },
+    env: {
+      APP_ENVIRONMENT: config.appEnvironment,
+      AI_PROVIDER: config.ai.provider,
+      AI_CHAT_MODEL: config.ai.chatModel,
+      AI_LLM_XS_MODEL: config.ai.llmXsModel,
+    },
     uptime: formatUptime(Date.now() - startTime),
     checks,
   }

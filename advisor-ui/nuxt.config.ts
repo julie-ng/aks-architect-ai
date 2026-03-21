@@ -21,10 +21,10 @@ export default defineNuxtConfig({
     databaseUrl: '',
     retrievalApiHost: 'http://localhost:8000',
     ai: {
-      provider: 'ollama',
+      provider: '',
       gatewayApiKey: '',
-      chatModel: 'gemma3:4b',
-      llmXsModel: 'gemma3:1b',
+      chatModel: '',
+      llmXsModel: '',
       chatTemperature: 0.3,
       ollamaBaseUrl: 'http://localhost:11434',
     },
