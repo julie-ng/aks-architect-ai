@@ -1,7 +1,6 @@
-const startTime = Date.now()
+import { sql } from 'drizzle-orm'
 
-// Cached retrieval-api health check (refreshed every 15 minutes)
-let lastCheckedAt = 0
+const startTime = Date.now()
 const CHECK_INTERVAL_MS = 15 * 60 * 1000
 
 interface Check {
@@ -9,11 +8,33 @@ interface Check {
   output?: string
 }
 
-let retrievalApiCheck: Check = { status: 'unknown' }
+let postgresCheck: Check = { status: 'unknown' }
+let postgresCheckedAt = 0
 
-async function checkAdvisorApi (): Promise<Check> {
-  const now = Date.now()
-  if (now - lastCheckedAt < CHECK_INTERVAL_MS) {
+let retrievalApiCheck: Check = { status: 'unknown' }
+let retrievalApiCheckedAt = 0
+
+let ollamaCheck: Check = { status: 'unknown' }
+let ollamaCheckedAt = 0
+
+async function checkPostgres (): Promise<Check> {
+  if (Date.now() - postgresCheckedAt < CHECK_INTERVAL_MS) {
+    return postgresCheck
+  }
+
+  try {
+    await db().execute(sql`SELECT 1`)
+    postgresCheck = { status: 'pass' }
+  }
+  catch (err) {
+    postgresCheck = { status: 'fail', output: err instanceof Error ? err.message : String(err) }
+  }
+  postgresCheckedAt = Date.now()
+  return postgresCheck
+}
+
+async function checkRetrievalApi (): Promise<Check> {
+  if (Date.now() - retrievalApiCheckedAt < CHECK_INTERVAL_MS) {
     return retrievalApiCheck
   }
 
@@ -27,8 +48,25 @@ async function checkAdvisorApi (): Promise<Check> {
   catch (err) {
     retrievalApiCheck = { status: 'fail', output: err instanceof Error ? err.message : String(err) }
   }
-  lastCheckedAt = now
+  retrievalApiCheckedAt = Date.now()
   return retrievalApiCheck
+}
+
+async function checkOllama (): Promise<Check> {
+  if (Date.now() - ollamaCheckedAt < CHECK_INTERVAL_MS) {
+    return ollamaCheck
+  }
+
+  const config = useRuntimeConfig()
+  try {
+    await checkOllamaModel(config.ollamaHost, config.chatModel)
+    ollamaCheck = { status: 'pass' }
+  }
+  catch (err) {
+    ollamaCheck = { status: 'fail', output: err instanceof Error ? err.message : String(err) }
+  }
+  ollamaCheckedAt = Date.now()
+  return ollamaCheck
 }
 
 function formatUptime (ms: number) {
@@ -49,7 +87,12 @@ function formatUptime (ms: number) {
 export default defineEventHandler(async () => {
   const config = useRuntimeConfig()
   const checks: Record<string, Check> = {
-    'retrieval-api': await checkAdvisorApi(),
+    postgres: await checkPostgres(),
+    'retrieval-api': await checkRetrievalApi(),
+  }
+
+  if (config.provider === 'ollama') {
+    checks.ollama = await checkOllama()
   }
   const status = Object.values(checks).every(c => c.status === 'pass') ? 'pass' : 'fail'
 
