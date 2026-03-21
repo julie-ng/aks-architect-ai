@@ -20,7 +20,7 @@ This is a monorepo with many moving parts.
 | [`advisor-ui/`](./advisor-ui) | UI | NuxtJS app with streaming chat, which calls FastAPI endpoints |
 | [`rag-pipeline/`](./rag-pipeline) | RAG Pipeline | Code to convert scraped docs into embeddings |
 | [`web-scraper/`](./web-scraper) | Crawler | [Crawlee](https://github.com/apify/crawlee) JS Library for scraping web |
-| [Qdrant](./docker-compose.dev.yaml) | Vector DB | Where embeddings are saved | 
+| [Postgres + pgvector](./docker-compose.dev.yaml) | Database | Vector search + chat session storage |
 | [Ollama](https://ollama.com/) | LLM | Local LLM for testing purposes. |
 
 ## Commands
@@ -45,7 +45,7 @@ Then re-run RAG Pipeline (chunking, embeddings)
 make rag-pipeline
 ```
 
-And you cam test it worked with `make pipeline/query` and/or the Qdrant Dashboard at [localhost:6333/dashboard](http://localhost:6333/dashboard) 
+And you can test it worked with `make pipeline/query`.
 
 ### Start Dev Environment
 
@@ -62,7 +62,7 @@ Check if it's running with `pgrep -l ollama` or open [localhost:11434](http://lo
 
 #### Step 2 - Start Containers
 
-This command starts up Qdrant db, Python `retrieval-api` backend and Nuxt.js `advisor-ui` frontend.
+This command starts up Postgres, Python `retrieval-api` backend and Nuxt.js `advisor-ui` frontend.
 
 ```bash
 docker-compose -f docker-compose.dev.yaml up --build
@@ -79,6 +79,109 @@ Models used:
 | Provider | Model | Environment | Purpose |
 |:--|:--|:--|:--|
 | Ollama | `nomic-embed-text` | Local | Embedding |
-| Ollama | `gemma3:1b` | Local | Chat |
+| Ollama | `gemma3:4b` | Local | Chat + title generation + query reformulation |
 | Azure Open AI | TBD | Test | Embedding |
 | Azure Open AI | TBD | Test | Chat |
+
+
+## Architecture Diagram
+
+- Last updated 21 March
+- Diagram provides some high level overview - unfortunately too complex for Mermaid
+- Models are configurable, e.g. Ollama for local dev and Azure OpenAI for prod.
+
+```mermaid
+---
+config:
+  theme: base
+  flowchart:
+    curve: stepAfter
+    padding: 20    
+    rankSpacing: 50
+  themeVariables:
+    primaryColor: "#f1f5f9"
+    primaryTextColor: "#1e293b"
+    primaryBorderColor: "#94a3b8"
+    lineColor: "#64748b"
+    secondaryColor: "#f8fafc"
+    tertiaryColor: "#f1f5f9"
+    background: "#ffffff"
+    mainBkg: "#f1f5f9"
+    nodeBorder: "#94a3b8"
+    clusterBkg: "#f8fafc"
+    clusterBorder: "#cbd5e1"
+    titleColor: "#0f172a"
+    edgeLabelBackground: "#ffffff"
+---
+graph TB
+    subgraph pipeline["Data Pipeline (one-time)"]
+        direction LR
+        MS[("Microsoft Learn\ndocs")]
+        WS["Web Scraper\nNode.js / Crawlee"]
+        CP["chunk.py\nMarkdown chunker"]
+        EP["embed.py\nBatch embedder"]
+        OL_E{{"Embedding Model\nnomic-embed-text"}}
+        PG[("Postgres + pgvector\n:5432")]
+
+        MS -->|crawl| WS
+        WS -->|"storage/*.json"| CP
+        CP -->|chunks.jsonl| EP
+        EP -->|"search_document: prefix"| OL_E
+        OL_E -->|768-dim vectors| PG
+    end
+
+    subgraph models["LLM Models"]
+        EMBED{{"Embedding Model\nnomic-embed-text"}}
+        CHAT{{"Chat Model\ngemma3:4b"}}        
+    end
+
+    subgraph ui["advisor-ui :3000"]
+        BR["@ai-sdk/vue"]
+        NR["Nuxt Server Route\nPOST /api/chat"]
+        TG["Title Generator\nPOST /api/chat/title"]
+    end
+
+    subgraph api["retrieval-api :8000"]
+        RF["reformulation.py"]
+        RV["retrieval.py"]
+    end
+
+    BR -->|"messages + history"| NR
+    BR -->|"first message"| TG
+    TG -->|"generate title"| CHAT
+    NR -->|"POST /api/retrieve"| RF
+    RF -->|rewrite query| CHAT
+    RF --> RV
+    RV -->|"search_query: prefix"| EMBED
+    EMBED -->|vector| PG
+    PG -->|"top-K chunks"| RV
+    RV -->|RetrieveResponse| NR
+    NR -->|"prompt + chunks + history"| CHAT
+    NR -->|"save messages"| PG
+    CHAT -->|token stream| BR
+
+
+    %% ── Microsoft Learn ── Azure blue
+    classDef azure fill:#0078D4,stroke:#005A9E,color:#ffffff,stroke-width:2px
+    class MS azure
+
+    %% ── Pipeline data nodes ── sky-100
+    classDef pipeline fill:#dff2ff,stroke:#00A6F4,color:#0c4a6e,stroke-width:1.5px
+    class WS,CP,EP pipeline
+
+    %% ── Databases ── orange
+    classDef db fill:#FF8903,stroke:#F64A00,color:#ffffff,stroke-width:2px
+    class PG db
+
+    %% ── Python services ── yellow
+    classDef python fill:#FFDF22,stroke:#F0B100,color:#1e293b,stroke-width:2px
+    class RF,RV python
+
+    %% ── Web / UI layer ── teal-400
+    classDef web fill:#2dd4bf,stroke:#0d9488,color:#042f2e,stroke-width:1.5px
+    class BR,NR,TG web
+
+    %% ── LLMs & models ── indigo-500
+    classDef llm fill:#6366f1,stroke:#4338ca,color:#ffffff,stroke-width:1.5px
+    class OL_E,EMBED,CHAT llm
+```
