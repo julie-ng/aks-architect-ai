@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { shortenTitle } from '~/utils/citations'
 import microsoftIcon from '~/assets/icons/microsoft.svg'
 
 defineProps<{
@@ -32,7 +31,7 @@ function isMicrosoftSource (url: string): boolean {
         :src="microsoftIcon"
         alt=""
         class="w-3 h-3 shrink-0">
-      <span class="truncate max-w-48">{{ shortenTitle(source.title || 'Source') }}</span>
+      <span class="truncate max-w-48">{{ shortenCitationTitle(source.title || 'Source') }}</span>
       <UIcon name="i-lucide-external-link" class="w-3 h-3 shrink-0" />
     </a>
   </div>

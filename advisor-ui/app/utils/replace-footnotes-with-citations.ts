@@ -1,6 +1,3 @@
-import { citationClasses } from './citation-config'
-import { shortenTitle } from './shorten-title'
-
 export interface SourceMeta {
   url: string
   title: string
@@ -8,28 +5,23 @@ export interface SourceMeta {
 
 /**
  * Returns the CSS class string for a citation link based on URL hostname.
- * Reads from citationClasses config so classes are centrally configurable.
+ * Reads from app config so classes are centrally configurable.
  */
-export function getCitationClass (url: string): string {
+function getCitationClass (url: string): string {
+  const config = useAppConfig().citations
+
   try {
     const hostname = new URL(url).hostname
-    for (const [domain, cls] of Object.entries(citationClasses.domains)) {
+    for (const [domain, cls] of Object.entries(config.domains)) {
       if (hostname === domain || hostname.endsWith(`.${domain}`)) {
-        return `${citationClasses.base} ${cls}`
+        return `${config.base} ${cls}`
       }
     }
   }
   catch {
     // Invalid URL — fall through to fallback
   }
-  return `${citationClasses.base} ${citationClasses.fallback}`
-}
-
-/**
- * Escapes characters that have special meaning in markdown link text.
- */
-function escapeMarkdownLinkText (text: string): string {
-  return text.replace(/[[\]()]/g, '\\$&')
+  return `${config.base} ${config.fallback}`
 }
 
 /**
@@ -38,7 +30,7 @@ function escapeMarkdownLinkText (text: string): string {
  *
  * Code blocks (fenced and inline) are protected from replacement.
  */
-export function replaceCitations (text: string, sources: SourceMeta[]): string {
+export function replaceFootnotesWithCitations (text: string, sources: SourceMeta[]): string {
   if (!sources.length) return text
 
   // Protect code blocks from replacement
@@ -66,7 +58,7 @@ export function replaceCitations (text: string, sources: SourceMeta[]): string {
     if (index < 0 || index >= sources.length) return original
 
     const source = sources[index]
-    const title = escapeMarkdownLinkText(shortenTitle(source.title || 'Source'))
+    const title = escapeMarkdownLinkText(shortenCitationTitle(source.title || 'Source'))
     const classes = getCitationClass(source.url)
     return `[${title}](${source.url}){.${classes.split(' ').join(' .')}}`
   })

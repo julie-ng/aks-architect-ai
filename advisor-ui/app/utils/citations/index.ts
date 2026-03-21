@@ -1,5 +1,0 @@
-export { replaceCitations } from './replace-citations'
-export type { SourceMeta } from './replace-citations'
-export { shortenTitle } from './shorten-title'
-export { citationClasses } from './citation-config'
-export type { CitationClassConfig } from './citation-config'

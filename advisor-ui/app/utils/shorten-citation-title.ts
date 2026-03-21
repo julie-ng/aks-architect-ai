@@ -2,7 +2,7 @@
  * Simplifies verbose documentation titles for citation display.
  * Strips common suffixes and replaces long Azure service names with abbreviations.
  */
-export function shortenTitle (title: string): string {
+export function shortenCitationTitle (title: string): string {
   let result = title
 
   // Strip trailing suffixes

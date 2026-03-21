@@ -2,7 +2,6 @@
 import { isTextUIPart } from 'ai'
 import { Chat } from '@ai-sdk/vue'
 import { ref } from 'vue'
-import { replaceCitations } from '~/utils/citations'
 
 const route = useRoute()
 const chatId = route.params.id as string
@@ -86,35 +85,13 @@ const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
 
-interface SourceMeta {
-  url: string
-  title: string
-}
-
-function getSourcesMeta (message: typeof chat.messages[number]): SourceMeta[] {
-  const meta = message.metadata as Record<string, unknown> | undefined
-  return (meta?.sources ?? []) as SourceMeta[]
-}
-
-function getCitedSources (message: typeof chat.messages[number]): SourceMeta[] {
-  const sources = getSourcesMeta(message)
-  if (!sources.length) return []
-
-  const text = message.parts
-    .filter(p => p.type === 'text')
-    .map(p => (p as { type: 'text', text: string }).text)
-    .join('')
-
-  return sources.filter((_, i) => text.includes(`[${i + 1}]`))
-}
-
 function getDisplayText (part: { type: 'text', text: string }, message: typeof chat.messages[number]): string {
   if (message.role !== 'assistant' || !isMessageComplete(message)) {
     return part.text
   }
   const sources = getSourcesMeta(message)
   if (!sources.length) return part.text
-  return replaceCitations(part.text, sources)
+  return replaceFootnotesWithCitations(part.text, sources)
 }
 
 function isMessageComplete (message: typeof chat.messages[number]) {
@@ -168,6 +145,7 @@ const errorMessage = computed(() => {
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
             :style="messagesWrapperStyle"
           >
+
             <p v-if="chat.messages.length === 0" class="text-gray-400 text-center py-4 my-4">
               Ask a question about AKS architecture to get started.
             </p>
