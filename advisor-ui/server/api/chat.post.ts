@@ -1,10 +1,5 @@
 import type { UIMessage } from 'ai'
 import { streamText, convertToModelMessages } from 'ai'
-import { getChatModel } from '../utils/provider'
-import { buildSystemPrompt } from '../utils/system-prompt'
-import { formatContext, deduplicateChunks } from '../utils/retrieval'
-import { checkOllamaModel } from '../utils/ollama'
-import { handleChatError } from '../utils/errors'
 import type { RetrieveResponse } from '../types/retrieval'
 
 export default defineLazyEventHandler(async () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { deduplicateChunks } from './deduplicate-chunks'
-import type { RetrieveChunk } from '../../types/retrieval'
+import type { RetrieveChunk } from '../types/retrieval'
 
 const chunk = (overrides: Partial<RetrieveChunk> = {}): RetrieveChunk => ({
   id: '1',

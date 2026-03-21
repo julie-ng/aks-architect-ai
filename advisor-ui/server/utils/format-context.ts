@@ -1,4 +1,4 @@
-import type { RetrieveChunk } from '../../types/retrieval'
+import type { RetrieveChunk } from '../types/retrieval'
 
 /**
  * Formats retrieved chunks into a numbered context string for the system prompt.

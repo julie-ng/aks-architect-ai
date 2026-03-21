@@ -1,4 +1,4 @@
-import type { RetrieveChunk } from '../../types/retrieval'
+import type { RetrieveChunk } from '../types/retrieval'
 
 /**
  * Deduplicates chunks by URL, keeping only the first occurrence.
