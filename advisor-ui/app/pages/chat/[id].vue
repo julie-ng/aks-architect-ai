@@ -155,7 +155,7 @@ const errorMessage = computed(() => {
     </template>
     <template #body>
       <UContainer v-if="ready">
-        <div class="max-w-2xl w-full mx-auto">
+        <div class="max-w-3xl w-full mx-auto">
           <UContainer
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
             :style="messagesWrapperStyle"
@@ -173,6 +173,10 @@ const errorMessage = computed(() => {
                 root: chat.error ? '[&>article]:last-of-type:min-h-0' : '',
                 indicator: '*:bg-indigo-500 dark:*:bg-indigo-300',
                 autoScroll: 'bottom-10 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 shadow-md border border-slate-300 ring-transparent',
+              }"
+              :user="{
+                variant: 'soft',
+                ui: { content: 'bg-slate-100 border-1 border-slate-300' }
               }"
               should-auto-scroll
               auto-scroll
