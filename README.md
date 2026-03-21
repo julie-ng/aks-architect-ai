@@ -185,3 +185,13 @@ graph TB
     classDef llm fill:#6366f1,stroke:#4338ca,color:#ffffff,stroke-width:1.5px
     class OL_E,EMBED,CHAT llm
 ```
+
+---
+
+## Misc.
+
+Model Pricing for reference.
+
+- [Anthropic Model Pricing](https://platform.claude.com/docs/en/about-claude/pricing)
+- [Vercel AI Models Pricing](https://vercel.com/ai-gateway/models)
+- [MSFT Foundry Pricing for Anthropic](https://marketplace.microsoft.com/en-us/product/anthropic.anthropic-claude-sonnet-4-6-offer?tab=Overview) - pricing is buried in Foundry portal.
