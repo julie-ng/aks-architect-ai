@@ -1,10 +1,10 @@
 # Advisor UI
 
-Nuxt 3 streaming chat UI for the AKS Architect advisor.
+Nuxt 4 streaming chat UI for the AKS Architect advisor.
 
 ## Stack
 
-- [Advisor UI](./) is a Nuxt 3 app with:
+- [Advisor UI](./) is a Nuxt 4 app with:
   - Frontend UI
   - Nuxt Backend for Frontend `/api/chat` route that handles communications to:
     - RAG Service (Advisor API)
@@ -23,39 +23,39 @@ Nuxt 3 streaming chat UI for the AKS Architect advisor.
 ```mermaid
 sequenceDiagram
     participant Browser
-    participant Nuxt as Advisor UI<br/>(Nuxt.js)
-    participant API as Retrieval API<br/>(Python FastAPI)
+    participant Nuxt as Advisor UI (Nuxt.js)
+    participant API as Retrieval API (FastAPI)
     participant LLM
 
+    rect rgba(240, 245, 255, 0.5)
     Note over Browser: Turn 1
 
-    activate Browser
-    Browser->>+Nuxt: messages: [{ user: "how do I size node pools?" }]
-    Nuxt->>+API: { question, history: [] }
-    API-->>-Nuxt: { chunks, reformulated_query }
+    Browser->>+Nuxt: messages: [user: "how do I size node pools?"]
+    Nuxt->>+API: question + history: []
+    API-->>-Nuxt: chunks + reformulated_query
 
-    Note over Nuxt: Append RAG chunks to<br/>system prompt as &lt;context&gt; block
+    Note over Nuxt: Append RAG chunks to system<br/>prompt as context block
 
-    Nuxt->>+LLM: system: "...&lt;context&gt;[1] Title...[2] Title...&lt;/context&gt;"<br/>messages: [{ user: "how do I size node pools?" }]
+    Nuxt->>+LLM: system prompt with context [1] [2]...<br/>+ user message
     LLM-->>-Nuxt: "For node pool sizing, see [1]..."
     Nuxt-->>-Browser: stream response + source metadata
-    deactivate Browser
 
     Note over Browser: Renders cited sources<br/>as clickable badges
+    end
 
+    rect rgba(240, 245, 255, 0.5)
     Note over Browser: Turn 2
 
-    activate Browser
-    Browser->>+Nuxt: messages: [<br/>{ user: "how do I size node pools?" },<br/>{ assistant: "For node pool sizing..." },<br/>{ user: "what about spot instances?" }]
-    Nuxt->>+API: { question, history: [prior messages] }
-    API-->>-Nuxt: { chunks, reformulated_query }
+    Browser->>+Nuxt: full message history<br/>+ new user message
+    Nuxt->>+API: question + history
+    API-->>-Nuxt: chunks + reformulated_query
 
-    Note over Nuxt: New &lt;context&gt; block with<br/>fresh chunks for this turn
+    Note over Nuxt: New context block with<br/>fresh chunks for this turn
 
-    Nuxt->>+LLM: system: "...&lt;context&gt;[1] Title...[2] Title...&lt;/context&gt;"<br/>messages: [<br/>{ user: "how do I size node pools?" },<br/>{ assistant: "For node pool sizing..." },<br/>{ user: "what about spot instances?" }]
+    Nuxt->>+LLM: system prompt with new context<br/>+ full message history
     LLM-->>-Nuxt: "Spot instances can reduce costs [1]..."
     Nuxt-->>-Browser: stream response + source metadata
-    deactivate Browser
+    end
 
-    Note over LLM: Turn 1's RAG chunks are gone.<br/>LLM sees its prior answer<br/>but not the source documents.
+    Note over LLM: Turn 1 RAG chunks are gone.<br/>LLM sees its prior answer<br/>but not the source documents.
 ```
