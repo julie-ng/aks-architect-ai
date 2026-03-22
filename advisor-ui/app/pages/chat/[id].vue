@@ -6,6 +6,7 @@ import { ref } from 'vue'
 const route = useRoute()
 const chatId = route.params.id as string
 
+const { user } = useUserSession()
 const chatsStore = useChatsStore()
 
 const ready = ref(false)
@@ -176,7 +177,10 @@ const errorMessage = computed(() => {
               }"
               :user="{
                 variant: 'soft',
-                ui: { content: 'bg-slate-100 border-1 border-slate-300' }
+                avatar: user ? { src: user.avatarUrl, alt: user.name } : undefined,
+                ui: {
+                  content: 'bg-slate-100'
+                }
               }"
               should-auto-scroll
               auto-scroll
