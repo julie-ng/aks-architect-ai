@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/fonts',
     '@nuxt/content',
+    'nuxt-auth-utils',
   ],
   css: ['~/assets/css/main.css'],
   app: {

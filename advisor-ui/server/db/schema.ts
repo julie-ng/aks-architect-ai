@@ -1,7 +1,19 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, index } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, timestamp, integer, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core'
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  githubId: integer('github_id').notNull(),
+  name: text('name').notNull(),
+  avatarUrl: text('avatar_url'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('users_github_id_idx').on(table.githubId),
+])
 
 export const chatSessions = pgTable('chat_sessions', {
   id: uuid('id').primaryKey(),
+  userId: uuid('user_id').references(() => users.id),
   title: text('title').notNull().default('(untitled chat)'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

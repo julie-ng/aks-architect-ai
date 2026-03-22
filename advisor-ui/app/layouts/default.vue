@@ -175,6 +175,62 @@ function chatActionItems (sessionId: string) {
           />
         </div>
       </template>
+
+      <!-- Footer: User / Login -->
+      <template #footer="{ collapsed }">
+        <AuthState v-slot="{ loggedIn, user, clear }">
+          <template v-if="loggedIn">
+            <div v-if="!collapsed" class="flex items-center justify-between">
+              <UUser
+                :name="user?.name"
+                :avatar="{ src: user?.avatarUrl, alt: user?.name }"
+                size="sm"
+              />
+              <UButton
+                icon="i-lucide-log-out"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                class="cursor-pointer"
+                @click="clear"
+              />
+            </div>
+            <UButton
+              v-else
+              icon="i-lucide-log-out"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="cursor-pointer"
+              @click="clear"
+            />
+          </template>
+          <template v-else>
+            <UButton
+              v-if="!collapsed"
+              label="Login with GitHub"
+              icon="i-simple-icons-github"
+              to="/api/auth/github"
+              color="neutral"
+              variant="subtle"
+              block
+              external
+              size="sm"
+              class="cursor-pointer"
+            />
+            <UButton
+              v-else
+              icon="i-simple-icons-github"
+              to="/api/auth/github"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="cursor-pointer"
+              external
+            />
+          </template>
+        </AuthState>
+      </template>
     </UDashboardSidebar>
 
     <!-- Rename Modal -->
