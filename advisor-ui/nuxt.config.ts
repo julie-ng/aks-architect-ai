@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     '@nuxt/content',
     'nuxt-auth-utils',
   ],
+
   css: ['~/assets/css/main.css'],
   app: {
     head: {
