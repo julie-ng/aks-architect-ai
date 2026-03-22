@@ -180,6 +180,7 @@ function chatActionItems (sessionId: string) {
 
       <!-- Footer: User / Login -->
       <template #footer="{ collapsed }">
+        <!-- eslint-disable-next-line vue/no-template-shadow -->
         <AuthState v-slot="{ loggedIn, user, clear }">
           <template v-if="loggedIn">
             <div v-if="!collapsed" class="flex items-center justify-between">
