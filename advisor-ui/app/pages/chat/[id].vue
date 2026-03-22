@@ -182,7 +182,6 @@ const errorMessage = computed(() => {
                   content: 'bg-slate-100'
                 }
               }"
-              should-auto-scroll
               auto-scroll
             >
               <template #content="{ message }">
