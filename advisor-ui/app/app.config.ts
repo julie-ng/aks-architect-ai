@@ -1,6 +1,18 @@
 export default defineAppConfig({
   ui: {
     prose: {
+      h1: {
+        base: 'text-2xl font-bold mb-4',
+      },
+      h2: {
+        base: 'text-xl font-bold mt-6 mb-3',
+      },
+      h3: {
+        base: 'text-lg font-bold mt-4 mb-2',
+      },
+      h4: {
+        base: 'text-base font-semibold mt-3 mb-1',
+      },
       p: {
         base: 'my-2 leading-normal text-pretty',
       },
