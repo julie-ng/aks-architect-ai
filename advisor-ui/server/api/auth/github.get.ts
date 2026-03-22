@@ -6,13 +6,15 @@ export default defineOAuthGitHubEventHandler({
       .insert(users)
       .values({
         githubId: user.id,
-        name: user.login,
+        username: user.login,
+        name: user.name || null,
         avatarUrl: user.avatar_url,
       })
       .onConflictDoUpdate({
         target: users.githubId,
         set: {
-          name: user.login,
+          username: user.login,
+          name: user.name || null,
           avatarUrl: user.avatar_url,
           lastLoginAt: new Date(),
         },
@@ -23,6 +25,7 @@ export default defineOAuthGitHubEventHandler({
       user: {
         id: dbUser.id,
         githubId: dbUser.githubId,
+        username: dbUser.username,
         name: dbUser.name,
         avatarUrl: dbUser.avatarUrl,
       },

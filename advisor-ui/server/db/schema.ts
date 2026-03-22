@@ -3,7 +3,8 @@ import { pgTable, uuid, text, timestamp, integer, jsonb, index, uniqueIndex } fr
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   githubId: integer('github_id').notNull(),
-  name: text('name').notNull(),
+  username: text('username').notNull(),
+  name: text('name'),
   avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }).notNull().defaultNow(),

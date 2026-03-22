@@ -4,7 +4,8 @@ declare module '#auth-utils' {
   interface User {
     id: string
     githubId: number
-    name: string
+    username: string
+    name: string | null
     avatarUrl: string | null
   }
 }
