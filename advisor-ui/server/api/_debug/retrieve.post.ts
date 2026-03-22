@@ -1,6 +1,7 @@
 import type { RetrieveResponse } from '../../types/retrieval'
 
 export default defineEventHandler(async (event) => {
+  await requireUserId(event)
   const config = useRuntimeConfig()
   const { question } = await readBody<{ question: string }>(event)
 

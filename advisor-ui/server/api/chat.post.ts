@@ -4,6 +4,7 @@ import type { RetrieveResponse } from '../types/retrieval'
 
 export default defineLazyEventHandler(async () => {
   return defineEventHandler(async (event) => {
+    await requireUserId(event)
     const config = useRuntimeConfig()
 
     try {

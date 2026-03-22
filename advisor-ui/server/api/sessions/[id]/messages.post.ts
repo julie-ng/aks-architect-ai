@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { eq, max } from 'drizzle-orm'
+import { eq, and, max } from 'drizzle-orm'
 import { appendMessagesSchema } from '~~/shared/utils/zod-schemas'
 import { chatMessages, chatSessions } from '../../../db/schema'
 
@@ -8,7 +8,16 @@ import { chatMessages, chatSessions } from '../../../db/schema'
  * Deduplicates by message ID so repeated calls are safe.
  */
 export default defineEventHandler(async (event) => {
+  const userId = await requireUserId(event)
   const sessionId = getRouterParam(event, 'id')!
+
+  // Verify session belongs to user
+  const [session] = await db().select({ id: chatSessions.id })
+    .from(chatSessions)
+    .where(and(eq(chatSessions.id, sessionId), eq(chatSessions.userId, userId)))
+  if (!session) {
+    throw createError({ statusCode: 404, message: 'Session not found' })
+  }
 
   const result = await readValidatedBody(event, body => appendMessagesSchema.safeParse(body))
   if (!result.success) {

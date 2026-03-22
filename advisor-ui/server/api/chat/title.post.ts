@@ -6,6 +6,7 @@ const TITLE_PROMPT = [
 ].join(' ')
 
 export default defineEventHandler(async (event) => {
+  await requireUserId(event)
   const { question } = await readBody<{ question: string }>(event)
 
   if (!question?.trim()) {

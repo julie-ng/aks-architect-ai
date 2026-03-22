@@ -1,6 +1,7 @@
 import { buildSystemPrompt } from '../../utils/system-prompt'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
+  await requireUserId(event)
   const config = useRuntimeConfig()
   if (config.appEnvironment !== 'development') {
     throw createError({ statusCode: 404, message: 'Not Found' })

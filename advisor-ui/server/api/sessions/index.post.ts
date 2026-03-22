@@ -6,6 +6,8 @@ import { chatSessions } from '../../db/schema'
  * POST /api/sessions — create a new chat session.
  */
 export default defineEventHandler(async (event) => {
+  const userId = await requireUserId(event)
+
   const result = await readValidatedBody(event, body => createSessionSchema.safeParse(body))
   if (!result.success) {
     setResponseStatus(event, 400)
@@ -20,6 +22,7 @@ export default defineEventHandler(async (event) => {
 
   const [session] = await db().insert(chatSessions).values({
     id,
+    userId,
     ...(title ? { title } : {}),
   }).returning()
 

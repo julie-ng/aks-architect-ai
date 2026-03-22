@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { updateSessionSchema } from '~~/shared/utils/zod-schemas'
 import { chatSessions } from '../../db/schema'
 
@@ -7,6 +7,7 @@ import { chatSessions } from '../../db/schema'
  * PATCH /api/sessions/:id — update session title.
  */
 export default defineEventHandler(async (event) => {
+  const userId = await requireUserId(event)
   const id = getRouterParam(event, 'id')!
 
   const result = await readValidatedBody(event, body => updateSessionSchema.safeParse(body))
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
 
   const [session] = await db().update(chatSessions)
     .set({ title: result.data.title, updatedAt: new Date() })
-    .where(eq(chatSessions.id, id))
+    .where(and(eq(chatSessions.id, id), eq(chatSessions.userId, userId)))
     .returning()
 
   if (!session) {

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 const route = useRoute()
+const { loggedIn } = useUserSession()
 const chatsStore = useChatsStore()
 
 onMounted(async () => {
-  await chatsStore.fetchSessions()
+  if (loggedIn.value) {
+    await chatsStore.fetchSessions()
+  }
 })
 
 const { data: guidePages } = await useAsyncData('guide-pages', () => {
@@ -12,66 +15,67 @@ const { data: guidePages } = await useAsyncData('guide-pages', () => {
     .all()
 })
 
-const links = computed(() => [
-  [
-    {
-      label: 'Home',
-      to: '/',
-      icon: 'i-lucide-home',
-    },
-    {
-      label: 'AKS Guide',
-      to: '/guide',
-      icon: 'i-lucide-book-text', // noteboook-text
-      defaultOpen: route.path.startsWith('/guide'),
-      children: guidePages.value?.map(p => ({
-        label: p.title,
-        to: p.path,
-      })),
-    },
-    {
-      label: 'Design Wizard',
-      to: '/designer',
-      icon: 'i-lucide-origami', // goal
-    },
-  ],
-  [
-    {
-      label: 'Debug - Retrieval',
-      to: '/_debug/retrieval',
-      icon: 'i-lucide-database-search',
-    },
-    // {
-    //   label: 'Debug - System Prompt',
-    //   to: '/api/_debug/system-prompt',
-    //   target: '_blank',
-    //   icon: 'i-lucide-text-select',
-    // },
-  ],
-  [
-    {
-      label: 'Chat',
-      to: '/chat',
-      icon: 'i-lucide-bot-message-square',
-      defaultOpen: true,
-      active: route.path.startsWith('/chat'),
-      children: [
-        {
-          label: 'New Chat',
-          icon: 'i-lucide-plus',
-          to: '/chat/new',
-        },
-        ...chatsStore.sortedSessions.map(session => ({
-          label: session.title,
-          icon: 'i-lucide-messages-square',
-          to: `/chat/${session.id}`,
-          slot: 'chat-session' as const,
-          sessionId: session.id,
+const links = computed(() => {
+  const groups = [
+    [
+      {
+        label: 'Home',
+        to: '/',
+        icon: 'i-lucide-home',
+      },
+      {
+        label: 'AKS Guide',
+        to: '/guide',
+        icon: 'i-lucide-book-text', // noteboook-text
+        defaultOpen: route.path.startsWith('/guide'),
+        children: guidePages.value?.map(p => ({
+          label: p.title,
+          to: p.path,
         })),
-      ],
-    },
-  ],
-])
+      },
+      {
+        label: 'Design Wizard',
+        to: '/designer',
+        icon: 'i-lucide-origami', // goal
+      },
+    ],
+    [
+      {
+        label: 'Debug - Retrieval',
+        to: '/_debug/retrieval',
+        icon: 'i-lucide-database-search',
+      },
+    ],
+  ]
+
+  if (loggedIn.value) {
+    groups.push([
+      {
+        label: 'Chat',
+        to: '/chat',
+        icon: 'i-lucide-bot-message-square',
+        defaultOpen: true,
+        active: route.path.startsWith('/chat'),
+        children: [
+          {
+            label: 'New Chat',
+            icon: 'i-lucide-plus',
+            to: '/chat/new',
+          },
+          ...chatsStore.sortedSessions.map(session => ({
+            label: session.title,
+            icon: 'i-lucide-messages-square',
+            to: `/chat/${session.id}`,
+            slot: 'chat-session' as const,
+            sessionId: session.id,
+          })),
+        ],
+      },
+    ])
+  }
+
+  return groups
+})
 
 function newChat () {
   navigateTo('/chat/new')
@@ -144,26 +148,24 @@ function chatActionItems (sessionId: string) {
 
       <!-- Navigation Menu + Chat List -->
       <template #default="{ collapsed }">
-        <ClientOnly>
-          <UNavigationMenu
-            :items="links"
-            orientation="vertical"
-            :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : { childLink: 'group' }"
-          >
-            <template #chat-session-trailing="{ item }">
-              <UDropdownMenu :items="chatActionItems((item as any).sessionId)">
-                <UButton
-                  icon="i-lucide-ellipsis"
-                  color="neutral"
-                  variant="ghost"
-                  size="2xs"
-                  class="opacity-0 group-hover:opacity-100 cursor-pointer"
-                />
-              </UDropdownMenu>
-            </template>
-          </UNavigationMenu>
-        </ClientOnly>
-        <div v-if="!collapsed" class="mt-1 px-2">
+        <UNavigationMenu
+          :items="links"
+          orientation="vertical"
+          :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : { childLink: 'group' }"
+        >
+          <template #chat-session-trailing="{ item }">
+            <UDropdownMenu :items="chatActionItems((item as any).sessionId)">
+              <UButton
+                icon="i-lucide-ellipsis"
+                color="neutral"
+                variant="ghost"
+                size="2xs"
+                class="opacity-0 group-hover:opacity-100 cursor-pointer"
+              />
+            </UDropdownMenu>
+          </template>
+        </UNavigationMenu>
+        <div v-if="loggedIn && !collapsed" class="mt-1 px-2">
           <UButton
             label="New Chat"
             color="secondary"

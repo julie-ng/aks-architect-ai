@@ -1,10 +1,11 @@
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, and } from 'drizzle-orm'
 import { chatSessions, chatMessages } from '../../db/schema'
 
 /**
  * GET /api/sessions/:id — get a single session with its messages.
  */
 export default defineEventHandler(async (event) => {
+  const userId = await requireUserId(event)
   const id = getRouterParam(event, 'id')!
 
   const [session] = await db().select({
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
     title: chatSessions.title,
     createdAt: chatSessions.createdAt,
     updatedAt: chatSessions.updatedAt,
-  }).from(chatSessions).where(eq(chatSessions.id, id))
+  }).from(chatSessions).where(and(eq(chatSessions.id, id), eq(chatSessions.userId, userId)))
 
   if (!session) {
     throw createError({ statusCode: 404, message: 'Session not found' })

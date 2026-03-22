@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RetrieveResponse } from '~/types/retrieval'
 
+definePageMeta({ middleware: 'require-user-id' })
 useHead({ title: 'Retrieval Debug' })
 
 const question = ref('')
