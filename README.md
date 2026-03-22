@@ -8,6 +8,8 @@ A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster 
 
 - [X] Chatbot interface to answer questions - uses RAG of official docs.
 - [ ] Interactive UI with questions for user to determine fundamental requirements, i.e. compliant industry vs startup, etc.
+  - [x] Separate form UI
+  - [ ] UI integrated into chat
 - [ ] Architectural Decisions for specific components made by AI Agents.
 
 ## Components
@@ -79,16 +81,15 @@ Models used:
 | Provider | Model | Environment | Purpose |
 |:--|:--|:--|:--|
 | Ollama | `nomic-embed-text` | Local | Embedding |
-| Ollama | `gemma3:4b` | Local | Chat + title generation + query reformulation |
-| Azure Open AI | TBD | Test | Embedding |
-| Azure Open AI | TBD | Test | Chat |
-
+| Ollama | `gemma3:4b` | Local | Chat, title generation,  query reformulation |
+| Anthropic | Sonnet 4.6 | Test | Chat LLM |
+| Anthropic | Haiku 4.5 | Test | Title generation |
 
 ## Architecture Diagram
 
 - Last updated 21 March
-- Diagram provides some high level overview - unfortunately too complex for Mermaid
-- Models are configurable, e.g. Ollama for local dev and Azure OpenAI for prod.
+- Diagram provides some high level overview - unfortunately too complex for Mermaid.
+- Models are configurable for different environemnts, e.g. dev vs prod.
 
 ```mermaid
 ---
@@ -190,8 +191,8 @@ graph TB
 
 ## Misc.
 
-Model Pricing for reference.
+Model Pricing for personal reference.
 
 - [Anthropic Model Pricing](https://platform.claude.com/docs/en/about-claude/pricing)
 - [Vercel AI Models Pricing](https://vercel.com/ai-gateway/models)
-- [MSFT Foundry Pricing for Anthropic](https://marketplace.microsoft.com/en-us/product/anthropic.anthropic-claude-sonnet-4-6-offer?tab=Overview) - pricing is buried in Foundry portal.
+- [MSFT Foundry Pricing for Anthropic](https://marketplace.microsoft.com/en-us/product/anthropic.anthropic-claude-sonnet-4-6-offer?tab=Overview) - pricing is buried in Foundry portal
