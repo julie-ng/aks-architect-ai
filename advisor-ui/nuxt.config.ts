@@ -10,7 +10,11 @@ export default defineNuxtConfig({
     '@nuxt/content',
     'nuxt-auth-utils',
   ],
-
+  content: {
+    renderer: {
+      anchorLinks: false // Disables anchor links globally
+    }
+  },
   css: ['~/assets/css/main.css'],
   app: {
     head: {
