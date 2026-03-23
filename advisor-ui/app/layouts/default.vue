@@ -74,10 +74,6 @@ const links = computed(() => {
 
   return groups
 })
-
-function newChat () {
-  navigateTo('/chat/new')
-}
 </script>
 
 <template>
@@ -92,7 +88,7 @@ function newChat () {
       class="bg-elevated/25"
       :ui="{ header: 'lg:border-b lg:border-default', footer: 'lg:border-t lg:border-default' }"
     >
-      <!-- Header -->
+      <!-- [Sidebar] Header -->
       <template #header="{ collapsed }">
         <UDashboardSidebarCollapse
           icon="i-lucide-menu"
@@ -107,7 +103,7 @@ function newChat () {
         </div>
       </template>
 
-      <!-- Navigation Menu + Chat List -->
+      <!-- [Sidebar] Navigation Menu + Chat List -->
       <template #default="{ collapsed }">
         <UNavigationMenu
           :items="links"
@@ -117,71 +113,29 @@ function newChat () {
         <div v-if="loggedIn && !collapsed" class="mt-1 px-2">
           <UButton
             label="New Chat"
+            to="/chat/new"
             color="secondary"
             variant="subtle"
             block
             size="sm"
             class="cursor-pointer"
-            @click="newChat"
+          />
+        </div>
+        <div v-if="loggedIn && collapsed" class="-mt-2 flex justify-center">
+          <UButton
+            icon="i-lucide-plus"
+            to="/chat/new"
+            color="primary"
+            variant="solid"
+            size="xs"
+            class="cursor-pointer"
           />
         </div>
       </template>
 
-      <!-- Footer: User / Login -->
+      <!-- [Sidebar] Footer: User / Login -->
       <template #footer="{ collapsed }">
-        <!-- eslint-disable-next-line vue/no-template-shadow -->
-        <AuthState v-slot="{ loggedIn, user, clear }">
-          <template v-if="loggedIn">
-            <div v-if="!collapsed" class="flex items-center justify-between">
-              <UUser
-                :name="user?.name"
-                :avatar="{ src: user?.avatarUrl, alt: user?.name }"
-                size="sm"
-              />
-              <UButton
-                icon="i-lucide-log-out"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                class="cursor-pointer"
-                @click="clear"
-              />
-            </div>
-            <UButton
-              v-else
-              icon="i-lucide-log-out"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              class="cursor-pointer"
-              @click="clear"
-            />
-          </template>
-          <template v-else>
-            <UButton
-              v-if="!collapsed"
-              label="Login with GitHub"
-              icon="i-simple-icons-github"
-              to="/api/auth/github"
-              color="neutral"
-              variant="subtle"
-              block
-              external
-              size="sm"
-              class="cursor-pointer"
-            />
-            <UButton
-              v-else
-              icon="i-simple-icons-github"
-              to="/api/auth/github"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              class="cursor-pointer"
-              external
-            />
-          </template>
-        </AuthState>
+        <SidebarFooter :collapsed="collapsed" />
       </template>
     </UDashboardSidebar>
 
