@@ -2,6 +2,14 @@
 defineProps<{
   collapsed: boolean
 }>()
+
+const chatsStore = useChatsStore()
+
+async function logout (clear: () => Promise<void>) {
+  await clear()
+  chatsStore.reset()
+  await navigateTo('/')
+}
 </script>
 
 <template>
@@ -30,7 +38,7 @@ defineProps<{
             variant="ghost"
             size="xs"
             class="cursor-pointer"
-            @click="clear"
+            @click="logout(clear)"
           />
         </UTooltip>
       </div>
@@ -51,7 +59,7 @@ defineProps<{
           variant="ghost"
           size="sm"
           class="cursor-pointer"
-          @click="clear"
+          @click="logout(clear)"
         />
       </UTooltip>
     </template>

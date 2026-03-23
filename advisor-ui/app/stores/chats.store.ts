@@ -111,6 +111,11 @@ export const useChatsStore = defineStore('chats', () => {
     })
   }
 
+  function reset () {
+    sessions.value = {}
+    loaded.value = false
+  }
+
   async function deleteSession (id: string): Promise<void> {
     // eslint-disable-next-line no-unused-vars
     const { [id]: _removed, ...rest } = sessions.value
@@ -133,6 +138,7 @@ export const useChatsStore = defineStore('chats', () => {
     sessionPath,
 
     // Actions
+    reset,
     fetchSessions,
     fetchSession,
     newSession,
