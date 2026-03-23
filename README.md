@@ -2,8 +2,6 @@
 
 Prototype and Capstone Project for AI Engineering Bootcamp.
 
-<img src="./docs/screenshots/app-preview.png" alt="App Preview" width="800">
-
 ## Use Case
 
 A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster but needs help defining an architecture. This AI application combines RAG of official documents with human curation to advise the user:
@@ -17,7 +15,13 @@ A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster 
 > [!IMPORTANT]
 > This is a prototype application for experimenting with AI engineering, especially context engineering to provide new business value. It is **not official Microsoft guidance**. Always verify AI recommendations against sources.
 
-## Components
+## Architecture
+
+![Architecture](./docs/architecture-v1.png)
+
+N.B. Models are configurable for different environments, e.g. dev vs prod.
+
+## Project Structure
 
 This is a monorepo with many moving parts.
 
@@ -29,13 +33,6 @@ This is a monorepo with many moving parts.
 | [`web-scraper/`](./web-scraper) | Crawler | [Crawlee](https://github.com/apify/crawlee) JS Library for scraping web |
 | [Postgres + pgvector](./docker-compose.dev.yaml) | Database | Vector search + chat session storage |
 | [Ollama](https://ollama.com/) | LLM | Local LLM for testing purposes. |
-
-## Architecture Diagram
-
-- Last updated 22 March
-- Models are configurable for different environments, e.g. dev vs prod.
-
-![Architecture](./docs/architecture-v1.png)
 
 ## LLMs
 
@@ -121,4 +118,6 @@ make scraper/crawl && make rag-pipeline
 
 ### Step 6 - Open Browser
 
-Finally, open [http://localhost:3000](http://localhost:3000) and use the chat interface.
+Finally, open [http://localhost:3000](http://localhost:3000) and use the chat interface, which should look something like this:
+
+<img src="./docs/screenshots/app-preview.png" alt="App Preview" width="800">
