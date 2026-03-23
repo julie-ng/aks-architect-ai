@@ -2,6 +2,8 @@
 
 Prototype and Capstone Project for AI Engineering Bootcamp.
 
+<img src="./docs/screenshots/app-preview.png" alt="App Preview" width="800">
+
 ## Use Case
 
 A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster but needs help defining an architecture. This AI application combines RAG of official documents with human curation to advise the user:

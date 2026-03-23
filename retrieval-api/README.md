@@ -7,6 +7,15 @@ This is the **retrieval** backend service powered by FastAPI.
 > [!NOTE]
 > This component has dependencies. See parent [README.md](./../README.md) about using the `docker-compose.dev.yaml` file to start up the entire stack.
 
+### Demo
+
+> [!TIP]
+> You can see how this works at [http://localhost:3000/_debug/retrieval](http://localhost:3000/_debug/retrieval). Type in queries and see which chunks are returned with scores, etc.
+
+<img src="./../docs/screenshots/retrieval-api.png" alt="Web UI for previewing chunks" width="800">
+  
+N.B. the colored squares are the first 6 characters of the chunk UUID as a HEX color - to help visualize **distinct chunks** from the _same document_, esp. long AKS baseline architecture document.
+
 ## API Endpoints
 
 | Method | Path | Description |
