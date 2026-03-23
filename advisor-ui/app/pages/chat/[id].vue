@@ -115,9 +115,9 @@ const chatActionItems = [[
     label: 'Delete',
     icon: 'i-lucide-trash-2',
     color: 'error' as const,
-    onSelect () {
-      chatsStore.deleteSession(chatId)
-      navigateTo('/chat/new')
+    async onSelect () {
+      await chatsStore.deleteSession(chatId)
+      await navigateTo('/chat')
     },
   },
 ]]

@@ -66,8 +66,6 @@ const links = computed(() => {
             label: session.title,
             icon: 'i-lucide-messages-square',
             to: `/chat/${session.id}`,
-            slot: 'chat-session' as const,
-            sessionId: session.id,
           })),
         ],
       },
@@ -79,43 +77,6 @@ const links = computed(() => {
 
 function newChat () {
   navigateTo('/chat/new')
-}
-
-// Rename modal state
-const renameModalOpen = ref(false)
-const renameInput = ref('')
-const renameSessionId = ref('')
-
-function startRename (sessionId: string) {
-  const session = chatsStore.getSession(sessionId)
-  if (!session) return
-  renameSessionId.value = sessionId
-  renameInput.value = session.title
-  renameModalOpen.value = true
-}
-
-function confirmRename () {
-  const trimmed = renameInput.value.trim()
-  if (trimmed && renameSessionId.value) {
-    chatsStore.renameSession(renameSessionId.value, trimmed)
-  }
-  renameModalOpen.value = false
-}
-
-function chatActionItems (sessionId: string) {
-  return [[
-    {
-      label: 'Rename',
-      icon: 'i-lucide-pencil',
-      onSelect: () => startRename(sessionId),
-    },
-    {
-      label: 'Delete',
-      icon: 'i-lucide-trash-2',
-      color: 'error' as const,
-      onSelect: () => chatsStore.deleteSession(sessionId),
-    },
-  ]]
 }
 </script>
 
@@ -151,20 +112,8 @@ function chatActionItems (sessionId: string) {
         <UNavigationMenu
           :items="links"
           orientation="vertical"
-          :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : { childLink: 'group' }"
-        >
-          <template #chat-session-trailing="{ item }">
-            <UDropdownMenu :items="chatActionItems((item as any).sessionId)">
-              <UButton
-                icon="i-lucide-ellipsis"
-                color="neutral"
-                variant="ghost"
-                size="2xs"
-                class="opacity-0 group-hover:opacity-100 cursor-pointer"
-              />
-            </UDropdownMenu>
-          </template>
-        </UNavigationMenu>
+          :ui="collapsed ? { link: 'overflow-hidden px-1.5' } : {}"
+        />
         <div v-if="loggedIn && !collapsed" class="mt-1 px-2">
           <UButton
             label="New Chat"
@@ -235,30 +184,6 @@ function chatActionItems (sessionId: string) {
         </AuthState>
       </template>
     </UDashboardSidebar>
-
-    <!-- Rename Modal -->
-    <UModal v-model:open="renameModalOpen" title="Rename chat">
-      <template #body>
-        <div class="flex flex-col gap-4">
-          <!-- <p class="font-medium">
-            Rename chat
-          </p> -->
-          <UInput
-            v-model="renameInput"
-            placeholder="Chat title"
-            autofocus
-            @keydown.enter="confirmRename" />
-          <div class="flex justify-end gap-2">
-            <UButton
-              label="Cancel"
-              color="neutral"
-              variant="ghost"
-              @click="renameModalOpen = false" />
-            <UButton label="Rename" @click="confirmRename" />
-          </div>
-        </div>
-      </template>
-    </UModal>
 
     <!-- Main Content -->
     <slot />

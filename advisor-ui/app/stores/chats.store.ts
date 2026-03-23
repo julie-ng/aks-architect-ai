@@ -67,7 +67,7 @@ export const useChatsStore = defineStore('chats', () => {
     return session
   }
 
-  function updateMessages (id: string, messages: UIMessage[]): void {
+  async function updateMessages (id: string, messages: UIMessage[]): Promise<void> {
     const session = sessions.value[id]
     if (!session) return
     // Deep clone to strip Vue reactivity proxies before serialization
@@ -76,45 +76,45 @@ export const useChatsStore = defineStore('chats', () => {
       ...sessions.value,
       [id]: { ...session, messages: plainMessages, updatedAt: new Date().toISOString() },
     }
-    $fetch(`/api/sessions/${id}/messages`, {
+    await $fetch(`/api/sessions/${id}/messages`, {
       method: 'POST',
       body: { messages: plainMessages },
-    }).catch(err => console.warn('[chats] failed to sync messages:', err))
+    })
   }
 
-  function setTitle (id: string, title: string): void {
+  async function setTitle (id: string, title: string): Promise<void> {
     const session = sessions.value[id]
     if (!session || session.title !== chatConfig.untitledLabel) return
     sessions.value = {
       ...sessions.value,
       [id]: { ...session, title },
     }
-    $fetch(`/api/sessions/${id}`, {
+    await $fetch(`/api/sessions/${id}`, {
       method: 'PATCH',
       body: { title },
-    }).catch(err => console.warn('[chats] failed to sync title:', err))
+    })
   }
 
-  function renameSession (id: string, title: string): void {
+  async function renameSession (id: string, title: string): Promise<void> {
     const session = sessions.value[id]
     if (!session) return
     sessions.value = {
       ...sessions.value,
       [id]: { ...session, title },
     }
-    $fetch(`/api/sessions/${id}`, {
+    await $fetch(`/api/sessions/${id}`, {
       method: 'PATCH',
       body: { title },
-    }).catch(err => console.warn('[chats] failed to sync rename:', err))
+    })
   }
 
-  function deleteSession (id: string): void {
+  async function deleteSession (id: string): Promise<void> {
     // eslint-disable-next-line no-unused-vars
     const { [id]: _removed, ...rest } = sessions.value
     sessions.value = rest
-    $fetch(`/api/sessions/${id}`, {
+    await $fetch(`/api/sessions/${id}`, {
       method: 'DELETE',
-    }).catch(err => console.warn('[chats] failed to sync delete:', err))
+    })
   }
 
   return {
