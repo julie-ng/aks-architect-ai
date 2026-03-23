@@ -81,13 +81,16 @@ export default defineLazyEventHandler(async () => {
 
       return result.toUIMessageStreamResponse({
         messageMetadata: ({ part }) => {
+          if (part.type === 'start') {
+            return { sources }
+          }
           if (part.type === 'text-delta' && firstToken) {
             firstToken = false
             console.timeEnd('[chat] ttfb')
             console.time('[chat] streaming')
           }
           if (part.type === 'finish') {
-            return { reformulatedQuery, sources }
+            return { reformulatedQuery }
           }
         },
       })

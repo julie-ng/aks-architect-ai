@@ -107,10 +107,8 @@ const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
 
-function getDisplayText (part: { type: 'text', text: string }, message: (typeof chat)['messages'][number]): string {
-  if (message.role !== 'assistant' || !isMessageComplete(message)) {
-    return part.text
-  }
+function renderCitedText (part: { type: 'text', text: string }, message: (typeof chat)['messages'][number]): string {
+  if (message.role !== 'assistant') return part.text
   const sources = getSourcesMeta(message)
   if (!sources.length) return part.text
   return replaceFootnotesWithCitations(part.text, sources)
@@ -191,8 +189,8 @@ const errorMessage = computed(() => {
                 <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
                   <MDC
                     v-if="isTextUIPart(part)"
-                    :value="getDisplayText(part, message)"
-                    :cache-key="`${message.id}-${index}-${isMessageComplete(message)}`"
+                    :value="renderCitedText(part, message)"
+                    :cache-key="`${message.id}-${index}-${part.text.length}`"
                     class="*:first:mt-0 *:last:mb-0"
                   />
                 </template>
