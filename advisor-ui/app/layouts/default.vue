@@ -237,12 +237,12 @@ function chatActionItems (sessionId: string) {
     </UDashboardSidebar>
 
     <!-- Rename Modal -->
-    <UModal v-model:open="renameModalOpen">
+    <UModal v-model:open="renameModalOpen" title="Rename chat">
       <template #body>
         <div class="flex flex-col gap-4">
-          <p class="font-medium">
+          <!-- <p class="font-medium">
             Rename chat
-          </p>
+          </p> -->
           <UInput
             v-model="renameInput"
             placeholder="Chat title"
