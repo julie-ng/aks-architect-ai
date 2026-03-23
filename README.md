@@ -13,7 +13,7 @@ A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster 
 - [ ] Architectural Decisions for specific components made by AI Agents.
 
 > [!IMPORTANT]
-> This is a prototype application for experimenting with AI engineering, especially context engineering to provide new business value. It is not official Microsoft guidance. Always verify AI recommendations against sources.
+> This is a prototype application for experimenting with AI engineering, especially context engineering to provide new business value. It is **not official Microsoft guidance**. Always verify AI recommendations against sources.
 
 ## Components
 
@@ -120,11 +120,3 @@ make scraper/crawl && make rag-pipeline
 ### Step 6 - Open Browser
 
 Finally, open [http://localhost:3000](http://localhost:3000) and use the chat interface.
-
-## Misc.
-
-Model Pricing for personal reference.
-
-- [Anthropic Model Pricing](https://platform.claude.com/docs/en/about-claude/pricing)
-- [Vercel AI Models Pricing](https://vercel.com/ai-gateway/models)
-- [MSFT Foundry Pricing for Anthropic](https://marketplace.microsoft.com/en-us/product/anthropic.anthropic-claude-sonnet-4-6-offer?tab=Overview) - pricing is buried in Foundry portal
