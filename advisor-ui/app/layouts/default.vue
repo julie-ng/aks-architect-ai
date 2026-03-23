@@ -3,11 +3,8 @@ const route = useRoute()
 const { loggedIn } = useUserSession()
 const chatsStore = useChatsStore()
 
-onMounted(async () => {
-  if (loggedIn.value) {
-    await chatsStore.fetchSessions()
-  }
-})
+// SSR: fetch chat sessions on server, hydrate on client (no layout shift)
+await callOnce('chat-sessions', () => chatsStore.fetchSessions())
 
 const { data: guidePages } = await useAsyncData('guide-pages', () => {
   return queryCollection('guide')

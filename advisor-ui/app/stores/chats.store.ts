@@ -4,6 +4,9 @@ import { defineStore } from 'pinia'
 
 export const useChatsStore = defineStore('chats', () => {
   const { chat: chatConfig } = useAppConfig()
+  const { loggedIn } = useUserSession()
+  const requestFetch = useRequestFetch()
+
   const sessions = ref<Record<string, ChatSession>>({})
   const loaded = ref(false)
 
@@ -30,8 +33,8 @@ export const useChatsStore = defineStore('chats', () => {
   // --- Actions ---
 
   async function fetchSessions (): Promise<void> {
-    if (loaded.value) return
-    const data = await $fetch<Array<{ id: string, title: string, createdAt: string, updatedAt: string }>>('/api/sessions')
+    if (!loggedIn.value) return
+    const data = await requestFetch<Array<{ id: string, title: string, createdAt: string, updatedAt: string }>>('/api/sessions')
     const record: Record<string, ChatSession> = {}
     for (const s of data) {
       record[s.id] = { ...s, messages: [] }
@@ -41,7 +44,7 @@ export const useChatsStore = defineStore('chats', () => {
   }
 
   async function fetchSession (id: string): Promise<ChatSession> {
-    const data = await $fetch<ChatSession>(`/api/sessions/${id}`)
+    const data = await requestFetch<ChatSession>(`/api/sessions/${id}`)
     sessions.value = {
       ...sessions.value,
       [id]: data,

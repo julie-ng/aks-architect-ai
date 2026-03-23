@@ -10,20 +10,25 @@ const { user } = useUserSession()
 const { chat: chatConfig } = useAppConfig()
 const chatsStore = useChatsStore()
 
+// SSR: fetch full session (with messages) — data is ready before hydration
+await callOnce(`chat-session-${chatId}`, async () => {
+  const existing = chatsStore.getSession(chatId)
+  if (!existing || existing.messages.length === 0) {
+    try {
+      await chatsStore.fetchSession(chatId)
+    }
+    catch {
+      await chatsStore.createSession(chatId)
+    }
+  }
+})
+
+// Client-only: Chat class manages streaming connections and reactive DOM state
 const ready = ref(false)
 let chat: Chat
 
-onMounted(async () => {
-  // Load full session (with messages) if not already in store
-  let session = chatsStore.getSession(chatId)
-  if (!session || session.messages.length === 0) {
-    try {
-      session = await chatsStore.fetchSession(chatId)
-    }
-    catch {
-      session = await chatsStore.createSession(chatId)
-    }
-  }
+onMounted(() => {
+  const session = chatsStore.getSession(chatId)!
 
   chat = new Chat({
     id: chatId,

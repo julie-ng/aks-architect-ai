@@ -89,7 +89,85 @@ export const useWidgetsStore = defineStore('widgets', () => {
 })
 ```
 
-## 3. Key Rules
+## 3. SSR-Compatible Data Fetching
+
+This app uses Nuxt's universal rendering (SSR + client hydration). Stores must work correctly during SSR so that authenticated data is rendered on the server — no layout shift, no client-only `onMounted` fetches for initial data.
+
+### The Problem
+
+During SSR, Nuxt server-renders the page on behalf of the browser. But when store actions call `$fetch('/api/sessions')` during SSR, the request goes from the Nuxt server process to itself — and the browser's auth cookies are NOT automatically forwarded. The API route sees no session cookie → 401.
+
+### The Solution: `useRequestFetch()`
+
+`useRequestFetch()` returns a fetch function that automatically forwards the incoming request's headers (including cookies) during SSR. On the client, it behaves like regular `$fetch`.
+
+Call it once in the store's setup scope (not inside an action — it's a Nuxt composable):
+
+```ts
+export const useChatsStore = defineStore('chats', () => {
+  const requestFetch = useRequestFetch()  // must be in setup scope
+
+  async function fetchSessions () {
+    const { loggedIn } = useUserSession()
+    if (!loggedIn.value) return
+
+    const data = await requestFetch('/api/sessions')  // cookies forwarded during SSR
+    // ...populate state
+  }
+})
+```
+
+### Which actions need `requestFetch` vs `$fetch`?
+
+| Action type | Fetch function | Why |
+|-------------|---------------|-----|
+| **GET (initial load)** — may run during SSR | `requestFetch()` | SSR needs cookie forwarding |
+| **POST/PATCH/DELETE (mutations)** — always user-initiated | `$fetch()` | Browser sends cookies natively, these never run during SSR |
+
+### Calling store actions from components: `callOnce`
+
+**Do NOT wrap Pinia actions in `useAsyncData()`** — the Nuxt docs explicitly warn against it:
+
+> "useAsyncData is for fetching and caching data, not triggering side effects like calling Pinia actions, as this can cause unintended behavior such as repeated executions with nullish values"
+
+Instead, use `callOnce()` which runs exactly once during SSR and skips re-execution on client hydration:
+
+```vue
+<!-- In a layout or page -->
+<script setup lang="ts">
+const chatsStore = useChatsStore()
+await callOnce('chat-sessions', () => chatsStore.fetchSessions())
+</script>
+```
+
+### Why not `useFetch` inside stores?
+
+`useFetch` is a composable that must be called in setup scope and returns reactive `data`/`error` refs. It's designed for component-level data binding. Stores already manage their own reactive state, so using `useFetch` inside a store would create two competing reactive layers. Use `requestFetch()` (for SSR reads) or `$fetch()` (for mutations) instead.
+
+### Client-only code that depends on fetched data
+
+Some things genuinely can't run during SSR (e.g. AI SDK's `Chat` class which manages streaming connections). Split the page into:
+
+1. **SSR-safe data fetch** — `callOnce` + store action with `requestFetch`
+2. **Client-only initialization** — stays in `onMounted`, uses data already in the store
+
+```vue
+<script setup lang="ts">
+const chatsStore = useChatsStore()
+
+// 1. SSR: fetch session data (rendered on server, hydrated on client)
+await callOnce(`chat-${chatId}`, () => chatsStore.fetchSession(chatId))
+
+// 2. Client-only: initialize streaming chat class
+let chat: Chat
+onMounted(() => {
+  const session = chatsStore.getSession(chatId)
+  chat = new Chat({ id: chatId, messages: session.messages, ... })
+})
+</script>
+```
+
+## 4. Key Rules
 
 - **Stores must not reference each other** — keep stores independent
 - **Stores validate data via zod** before sending to backend — not components
