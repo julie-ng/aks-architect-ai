@@ -7,6 +7,7 @@ const route = useRoute()
 const chatId = route.params.id as string
 
 const { user } = useUserSession()
+const { chat: chatConfig } = useAppConfig()
 const chatsStore = useChatsStore()
 
 const ready = ref(false)
@@ -52,7 +53,7 @@ onMounted(async () => {
 useHead({
   title: computed(() => {
     const title = chatsStore.getSession(chatId)?.title
-    return title && title !== '(untitled chat)' ? title : 'Chat'
+    return title && title !== chatConfig.untitledLabel ? title : 'Chat'
   }),
 })
 

@@ -3,6 +3,7 @@ import type { ChatSession } from '~/types/chat'
 import { defineStore } from 'pinia'
 
 export const useChatsStore = defineStore('chats', () => {
+  const { chat: chatConfig } = useAppConfig()
   const sessions = ref<Record<string, ChatSession>>({})
   const loaded = ref(false)
 
@@ -56,7 +57,7 @@ export const useChatsStore = defineStore('chats', () => {
     const now = new Date().toISOString()
     const session: ChatSession = {
       id,
-      title: '(untitled chat)',
+      title: 'New Chat',
       createdAt: now,
       updatedAt: now,
       messages: [],
@@ -83,7 +84,7 @@ export const useChatsStore = defineStore('chats', () => {
 
   function setTitle (id: string, title: string): void {
     const session = sessions.value[id]
-    if (!session || session.title !== '(untitled chat)') return
+    if (!session || session.title !== chatConfig.untitledLabel) return
     sessions.value = {
       ...sessions.value,
       [id]: { ...session, title },

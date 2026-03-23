@@ -18,6 +18,9 @@ export default defineAppConfig({
       },
     },
   },
+  chat: {
+    untitledLabel: '(untitled chat)',
+  },
   citations: {
     /** Class(es) always applied to citation links */
     base: 'citation',
