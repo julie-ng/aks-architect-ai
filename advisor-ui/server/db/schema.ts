@@ -34,3 +34,16 @@ export const chatMessages = pgTable('chat_messages', {
 }, (table) => [
   index('chat_messages_session_idx').on(table.sessionId, table.sortOrder),
 ])
+
+export const designs = pgTable('designs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  title: text('title').notNull().default('Untitled Design'),
+  description: text('description'),
+  requirements: jsonb('requirements').notNull().default({}),
+  decisions: jsonb('decisions').notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('designs_user_updated_idx').on(table.userId, table.updatedAt.desc()),
+])

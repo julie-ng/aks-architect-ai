@@ -32,7 +32,7 @@ const links = computed(() => {
       },
       {
         label: 'Design Wizard',
-        to: '/designer',
+        to: '/designs',
         icon: 'i-lucide-origami', // goal
       },
     ],

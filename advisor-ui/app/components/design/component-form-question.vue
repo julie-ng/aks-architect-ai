@@ -1,27 +1,12 @@
 <script setup lang="ts">
-type DesignerAnswer = {
-  key: string
-  label?: string
-  title?: string
-  description?: string
-  highlights?: string[]
-  highglights?: string[]
-  disabled?: boolean
-}
-
-type DesignerQuestion = {
-  id: string
-  title?: string
-  description?: string
-  question?: string
-  question_type?: string
-  answers?: DesignerAnswer[]
-}
+import type { DesignerQuestion } from '~/types/designer'
 
 defineProps<{
   question: DesignerQuestion
   index: number
 }>()
+
+const selected = defineModel<string | string[] | null>({ default: null })
 </script>
 
 <template>
@@ -35,13 +20,17 @@ defineProps<{
         {{ question.description }}
       </p>
     </header>
-    <!--
-    <p v-if="question.question" class="">
-      {{ question.question }}
-    </p> -->
 
-    <designer-input-radio
+    <DesignComponentFormInputRadio
       v-if="question.question_type === 'radio'"
+      v-model="selected"
+      :name="question.id"
+      :answers="question.answers || []"
+    />
+
+    <DesignComponentFormInputCheckbox
+      v-else-if="question.question_type === 'checkbox'"
+      v-model="selected"
       :name="question.id"
       :answers="question.answers || []"
     />

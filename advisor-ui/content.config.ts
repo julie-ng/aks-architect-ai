@@ -32,6 +32,23 @@ export default defineContentConfig({
         })
       })
     }),
+    requirements: defineCollection({
+      type: 'page',
+      source: 'aks/requirements/**/*.md',
+      schema: z.object({
+        title: z.string(),
+        designer: z.object({
+          title: z.string(),
+          description: z.string().optional(),
+          question_type: z.enum(['radio', 'checkbox']),
+          answers: z.array(z.object({
+            key: z.string(),
+            label: z.string().optional(),
+            description: z.string().optional(),
+          }))
+        })
+      })
+    }),
     systemPrompt: defineCollection({
       type: 'page',
       source: 'system-prompt/*.md',

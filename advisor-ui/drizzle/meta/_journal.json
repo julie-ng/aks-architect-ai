@@ -15,6 +15,20 @@
       "when": 1774172262562,
       "tag": "0001_material_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774275638004,
+      "tag": "0002_large_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774276146637,
+      "tag": "0003_cold_madripoor",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,21 @@ export default defineAppConfig({
         base: 'my-2 leading-normal text-pretty',
       },
     },
+    breadcrumb: {
+      slots: {
+        separatorIcon: 'text-dimmed',
+      },
+      variants: {
+        active: {
+          true: {
+            link: 'font-normal text-slate-500',
+          },
+          false: {
+            link: 'font-normal text-slate-500',
+          },
+        },
+      },
+    },
   },
   chat: {
     untitledLabel: '(untitled chat)',

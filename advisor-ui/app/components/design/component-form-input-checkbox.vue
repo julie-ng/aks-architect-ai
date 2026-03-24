@@ -1,20 +1,14 @@
 <script setup lang="ts">
-type DesignerAnswer = {
-  key: string
-  label?: string
-  title?: string
-  description?: string
-  highlights?: string[]
-  highglights?: string[]
-  disabled?: boolean
-}
+import type { DesignerAnswer } from '~/types/designer'
 
 const props = defineProps<{
   name: string
   answers: DesignerAnswer[]
 }>()
 
-const selectedKey = ref<string | null>(null)
+const modelValue = defineModel<string[] | null>({ default: () => [] })
+
+const selectedKeys = computed(() => Array.isArray(modelValue.value) ? modelValue.value : [])
 
 function getAnswerTitle (answer: DesignerAnswer) {
   return answer.label || answer.title || answer.key
@@ -23,6 +17,19 @@ function getAnswerTitle (answer: DesignerAnswer) {
 function getHighlights (answer: DesignerAnswer) {
   const values = answer.highlights ?? answer.highglights
   return Array.isArray(values) ? values : []
+}
+
+function isSelected (key: string) {
+  return selectedKeys.value.includes(key)
+}
+
+function toggle (key: string) {
+  if (isSelected(key)) {
+    modelValue.value = selectedKeys.value.filter(k => k !== key)
+  }
+  else {
+    modelValue.value = [...selectedKeys.value, key]
+  }
 }
 </script>
 
@@ -34,16 +41,19 @@ function getHighlights (answer: DesignerAnswer) {
       class="flex items-start gap-3 rounded-md border border-default p-3 transition-colors"
       :class="[
         answer.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-elevated/40',
-        selectedKey === answer.key ? 'bg-blue-50 hover:bg-blue-50' : ''
+        isSelected(answer.key) ? 'bg-blue-50 hover:bg-blue-50' : ''
       ]"
+      @click.prevent="!answer.disabled && toggle(answer.key)"
     >
       <input
-        v-model="selectedKey"
-        type="radio"
+        type="checkbox"
         :name="name"
         :value="answer.key"
+        :checked="isSelected(answer.key)"
         :disabled="answer.disabled"
         class="mt-1"
+        @click.stop
+        @change="toggle(answer.key)"
       >
 
       <div class="space-y-2">
