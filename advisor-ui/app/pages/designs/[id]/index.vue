@@ -7,6 +7,8 @@ await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
 const { design } = useDesign(designId)
 
+const editOpen = ref(false)
+
 const breadcrumbItems = getDesignBreadcrumbs({
   id: designId,
   title: design.value?.title ?? ''
@@ -33,13 +35,24 @@ useHead({
         {{ design.description }}
       </p>
 
-      <UButton
-        label="Edit"
-        icon="i-lucide-pencil"
-        :to="designsStore.getEditPathById(designId)"
-        variant="subtle"
-        color="neutral"
-      />
+      <div class="flex gap-2">
+        <UButton
+          label="Edit"
+          icon="i-lucide-pencil"
+          variant="subtle"
+          color="neutral"
+          @click="editOpen = true"
+        />
+        <UButton
+          label="Configure"
+          icon="i-lucide-settings-2"
+          :to="design.configurePath"
+          variant="subtle"
+          color="neutral"
+        />
+      </div>
+
+      <DesignEditModal :id="designId" v-model:open="editOpen" />
 
       <USeparator class="my-5" />
 

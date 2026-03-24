@@ -22,14 +22,6 @@ export const useDesignsStore = defineStore('designs', () => {
     (id: string): DesignData | undefined => designs.value[id],
   )
 
-  const getPathById = computed(() =>
-    (id: string): string => `/designs/${id}`,
-  )
-
-  const getEditPathById = computed(() =>
-    (id: string): string => `/designs/${id}/edit`,
-  )
-
   // --- Read actions ---
 
   async function fetchDesigns (): Promise<void> {
@@ -140,8 +132,6 @@ export const useDesignsStore = defineStore('designs', () => {
     sortedDesigns,
     hasDesigns,
     getDesign,
-    getPathById,
-    getEditPathById,
 
     // Read actions
     get,

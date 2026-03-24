@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const designsStore = useDesignsStore()
 const { design } = useNewDesign()
 
 useHead({
@@ -10,8 +9,8 @@ const breadcrumbItems = getDesignBreadcrumbs(null, { action: 'New' })
 
 async function onCreate () {
   await design.save()
-  if (design.id) {
-    navigateTo(designsStore.getEditPathById(design.id), { replace: true })
+  if (design.configurePath) {
+    navigateTo(design.configurePath, { replace: true })
   }
 }
 </script>

@@ -58,6 +58,16 @@ export class Design {
     return this._saving
   }
 
+  // --- Derived paths ---
+
+  get path (): string | null {
+    return this.id ? `/designs/${this.id}` : null
+  }
+
+  get configurePath (): string | null {
+    return this.id ? `/designs/${this.id}/configure` : null
+  }
+
   // --- Setters (mark dirty) ---
 
   set title (v: string) {

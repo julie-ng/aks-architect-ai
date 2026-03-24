@@ -20,10 +20,10 @@ async function refreshWafScores () {
 refreshWafScores()
 
 useHead({
-  title: computed(() => `Edit - ${design.value?.title ?? 'Design'}`),
+  title: computed(() => `Configure - ${design.value?.title ?? 'Design'}`),
 })
 
-const breadcrumbItems = getDesignBreadcrumbs({ title: design.value?.title ?? '', id: designId }, { action: 'Edit' })
+const breadcrumbItems = getDesignBreadcrumbs({ title: design.value?.title ?? '', id: designId }, { action: 'Configure' })
 
 const autosaveStatus = ref<SavingStatus>(null)
 const manualSaveStatus = ref<SavingStatus>(null)

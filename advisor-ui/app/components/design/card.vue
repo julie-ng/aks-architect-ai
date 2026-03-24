@@ -3,39 +3,24 @@ const props = defineProps<{
   id: string
 }>()
 
-const designsStore = useDesignsStore()
 const { design } = useDesign(props.id)
 
-const renameOpen = ref(false)
-const renameInput = ref('')
+const editOpen = ref(false)
 const deleteOpen = ref(false)
 
 const actionItems = [[
   {
-    label: 'Rename',
+    label: 'Edit',
     icon: 'i-lucide-pencil',
-    onSelect () {
-      renameInput.value = design.value?.title ?? ''
-      renameOpen.value = true
-    },
+    onSelect () { editOpen.value = true },
   },
   {
     label: 'Delete',
     icon: 'i-lucide-trash-2',
     color: 'error' as const,
-    onSelect () {
-      deleteOpen.value = true
-    },
+    onSelect () { deleteOpen.value = true },
   },
 ]]
-
-async function confirmRename () {
-  const trimmed = renameInput.value.trim()
-  if (trimmed && design.value) {
-    await designsStore.update(design.value.id!, { title: trimmed })
-  }
-  renameOpen.value = false
-}
 
 async function confirmDelete () {
   if (design.value) {
@@ -50,7 +35,7 @@ async function confirmDelete () {
     <template #header>
       <div class="flex items-center justify-between">
         <h1 class="font-bold">
-          <NuxtLink :to="designsStore.getPathById(id)" class="text-primary">
+          <NuxtLink :to="design.path" class="text-primary">
             {{ design.title }}
           </NuxtLink>
         </h1>
@@ -66,7 +51,7 @@ async function confirmDelete () {
       </div>
     </template>
 
-    <div class="text-sm">
+    <div class="mb-2 text-sm">
       {{ design.description }}
     </div>
     <p class="text-xs text-muted">
@@ -74,31 +59,7 @@ async function confirmDelete () {
     </p>
   </UCard>
 
-  <UModal
-    v-model:open="renameOpen"
-    title="Rename"
-    description="Enter a new name"
-  >
-    <template #body>
-      <div class="flex flex-col gap-4">
-        <UInput
-          v-model="renameInput"
-          placeholder="Design title"
-          autofocus
-          @keydown.enter="confirmRename"
-        />
-        <div class="flex justify-end gap-2">
-          <UButton
-            label="Cancel"
-            color="neutral"
-            variant="ghost"
-            @click="renameOpen = false"
-          />
-          <UButton label="Rename" @click="confirmRename" />
-        </div>
-      </div>
-    </template>
-  </UModal>
+  <DesignEditModal :id="id" v-model:open="editOpen" />
 
   <UModal v-model:open="deleteOpen" title="Confirm Deletion">
     <template #body>
