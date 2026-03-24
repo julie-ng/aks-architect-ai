@@ -65,11 +65,10 @@ export const useDesignsStore = defineStore('designs', () => {
   }
 
   async function update (id: string, changes: Partial<DesignData>): Promise<DesignData> {
-    await $fetch(`/api/designs/${id}`, {
+    const updated = await $fetch<DesignData>(`/api/designs/${id}`, {
       method: 'PATCH',
       body: changes,
     })
-    const updated = { ...designs.value[id], ...changes, updatedAt: new Date().toISOString() }
     designs.value = { ...designs.value, [id]: updated }
     return updated
   }
