@@ -65,7 +65,54 @@ Wrap content that should not be server-rendered in `<ClientOnly>`:
 
 Reference: `app/components/Upload/OverviewTabContent.vue`
 
-### Pinia — Store Usage
+### Pinia — Store as Data Abstraction Layer
+
+Stores are the single source of truth for all data access and URL construction. Components and pages never construct API URLs, route paths, or interact with `$fetch` directly — they go through the store.
+
+#### Route Path Construction
+
+All route paths for a model live in the store as computed getters. Never construct URLs inline in templates or pages:
+
+```ts
+// ✅ In the store
+const getPathById = computed(() => (id: string): string => `/designs/${id}`)
+const getEditPathById = computed(() => (id: string): string => `/designs/${id}/edit`)
+
+// ✅ In a template
+:to="designsStore.getPathById(design.id)"
+
+// ❌ Never construct paths outside the store
+:to="`/designs/${design.id}`"
+:to="`${designsStore.getPathById(id)}/edit`"
+```
+
+#### SSR-Compatible Data Fetching
+
+This app uses Nuxt's universal rendering (SSR + client hydration). Use `callOnce()` for initial data fetching — never `onMounted` for GET requests that benefit from SSR:
+
+```vue
+<!-- ✅ SSR-safe: runs once on server, skips on client hydration -->
+<script setup lang="ts">
+const designsStore = useDesignsStore()
+await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
+</script>
+
+<!-- ❌ Client-only: causes layout shift, no SSR benefit -->
+<script setup lang="ts">
+onMounted(async () => {
+  await designsStore.fetchDesign(designId)
+})
+</script>
+```
+
+**Exception:** `onMounted` is correct for purely client-side actions with no SSR benefit — e.g. POST + redirect pages, or initializing browser-only APIs (AI SDK `Chat` class).
+
+**Do NOT wrap Pinia actions in `useAsyncData()`** — use `callOnce()` instead. See `pinia-stores` skill for details.
+
+| Fetch function | When to use |
+|---------------|-------------|
+| `requestFetch()` | GET actions that may run during SSR (needs cookie forwarding) |
+| `$fetch()` | POST/PATCH/DELETE mutations (always user-initiated, browser sends cookies) |
 
 #### Setup Stores
 
