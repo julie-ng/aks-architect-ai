@@ -1,64 +1,10 @@
 <script setup lang="ts">
-import type { DesignerQuestion } from '~/types/designer'
 import type { SavingStatus } from '~/components/ui/saving-indicator.vue'
 import type { TabsItem } from '@nuxt/ui'
 
 const route = useRoute()
 const designId = route.params.id as string
 const designsStore = useDesignsStore()
-
-
-const { data: componentEntries } = await useAsyncData('designer-components', () => {
-  return queryCollection('components')
-    .select('title', 'path', 'designer')
-    .all()
-})
-
-const questions = computed<DesignerQuestion[]>(() => {
-  return (componentEntries.value || [])
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((entry: any, index: number) => {
-      const designer = entry?.designer || {}
-
-      return {
-        id: entry?.path || `designer-question-${index}`,
-        title: designer.title || entry?.title,
-        description: designer.description,
-        question: designer.question,
-        question_type: designer.question_type,
-        answers: designer.answers || [],
-      } satisfies DesignerQuestion
-    })
-    .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
-})
-
-const { data: requirementEntries } = await useAsyncData('designer-requirements', () => {
-  return queryCollection('requirements')
-    .select('title', 'path', 'designer')
-    .all()
-})
-
-const requirementQuestions = computed<DesignerQuestion[]>(() => {
-  return (requirementEntries.value || [])
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((entry: any, index: number) => {
-      const designer = entry?.designer || {}
-
-      return {
-        id: entry?.path || `designer-requirement-${index}`,
-        title: designer.title || entry?.title,
-        description: designer.description,
-        question: designer.title,
-        question_type: designer.question_type,
-        answers: designer.answers || [],
-      } satisfies DesignerQuestion
-    })
-    .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
-})
-
-function entryKey (questionId: string): string {
-  return questionId.split('/').pop() || questionId
-}
 
 await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
@@ -70,16 +16,6 @@ useHead({
 })
 
 const breadcrumbItems = getDesignBreadcrumbs({ title: design.title.value, id: designId }, { action: 'Edit' })
-
-function getDecision (questionId: string): string | string[] | null {
-  const key = entryKey(questionId)
-  return design.decisions.value[key] ?? null
-}
-
-function getRequirement (questionId: string): string | string[] | null {
-  const key = entryKey(questionId)
-  return design.requirements.value[key] ?? null
-}
 
 const autosaveStatus = ref<SavingStatus>(null)
 const manualSaveStatus = ref<SavingStatus>(null)
@@ -102,13 +38,13 @@ function onManualSave () {
 }, 2000)
 }
 
-function onDecisionChange (questionId: string, value: string | string[]) {
-  design.setDecision(entryKey(questionId), value)
+function onDecisionChange (key: string, value: string | string[]) {
+  design.setDecision(key, value)
   showAutosaved()
 }
 
-function onRequirementChange (questionId: string, value: string | string[]) {
-  design.setRequirement(entryKey(questionId), value)
+function onRequirementChange (key: string, value: string | string[]) {
+  design.setRequirement(key, value)
   showAutosaved()
 }
 
@@ -161,47 +97,17 @@ const selectedTab = ref('requirements')
     </template>
 
     <template #body>
-      <!-- <h1 class="text-2xl font-bold">
-        Edit Design
-      </h1> -->
+      <DesignRequirementsForm
+        v-if="selectedTab === 'requirements'"
+        :requirements="design.requirements.value"
+        @update:requirement="onRequirementChange"
+      />
 
-      <section v-if="selectedTab === 'requirements' && requirementQuestions.length > 0" class="mb-8">
-        <h2 class="text-xl font-semibold mb-2">
-          Business Requirements
-        </h2>
-        <p class="text-lg text-muted">
-          Answer 5 quick questions to personalize your guidance and results.
-        </p>
-        <DesignComponentFormQuestion
-          v-for="(question, index) in requirementQuestions"
-          :key="question.id"
-          :question="question"
-          :index="index"
-          :model-value="getRequirement(question.id)"
-          @update:model-value="onRequirementChange(question.id, $event as string | string[])"
-        />
-      </section>
-
-      <section v-if="selectedTab === 'decisions' && questions.length > 0">
-        <h2 class="text-xl font-semibold mb-2">
-          Architectural Decisions
-        </h2>
-        <p class="text-lg text-muted">
-          Answer 8 quick questions to prioritze most relevant official documentation and best practices.
-        </p>
-        <DesignComponentFormQuestion
-          v-for="(question, index) in questions"
-          :key="question.id"
-          :question="question"
-          :index="index"
-          :model-value="getDecision(question.id)"
-          @update:model-value="onDecisionChange(question.id, $event as string | string[])"
-        />
-      </section>
-
-      <p v-if="questions.length === 0 && requirementQuestions.length === 0" class="text-sm text-muted">
-        No questions found in the content collections.
-      </p>
+      <DesignDecisionsForm
+        v-if="selectedTab === 'decisions'"
+        :decisions="design.decisions.value"
+        @update:decision="onDecisionChange"
+      />
     </template>
 
     <template #sticky-sidebar>
