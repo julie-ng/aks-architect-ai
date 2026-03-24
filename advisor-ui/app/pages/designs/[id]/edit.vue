@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DesignerQuestion } from '~/types/designer'
 import type { SavingStatus } from '~/components/ui/saving-indicator.vue'
+import type { TabsItem } from '@nuxt/ui'
 
 const route = useRoute()
 const designId = route.params.id as string
@@ -109,6 +110,19 @@ function onRequirementChange (questionId: string, value: string | string[]) {
   design.setRequirement(entryKey(questionId), value)
   showAutosaved()
 }
+
+const tabItems = ref<TabsItem[]>([
+  {
+    label: 'Business Requirements',
+    value: 'requirements'
+  },
+  {
+    label: 'Architectural Decisions',
+    value: 'decisions'
+  }
+])
+
+const selectedTab = ref('requirements')
 </script>
 
 <template>
@@ -119,7 +133,19 @@ function onRequirementChange (questionId: string, value: string | string[]) {
     </template>
 
     <template #toolbar-left>
-      Left
+      <UTabs
+        v-model="selectedTab"
+        :items="tabItems"
+        :content="false"
+        color="primary"
+        variant="link"
+        :ui="{
+          label: 'cursor-pointer font-medium',
+          indicator: 'border-2 border-primary',
+          list: '-bottom-1',
+          root: 'pl-4'
+        }"
+      />
     </template>
 
     <template #toolbar-right>
@@ -134,15 +160,17 @@ function onRequirementChange (questionId: string, value: string | string[]) {
     </template>
 
     <template #body>
-      <h1 class="text-2xl font-bold">
+      <!-- <h1 class="text-2xl font-bold">
         Edit Design
-      </h1>
+      </h1> -->
 
-      <section v-if="requirementQuestions.length > 0" class="mb-8">
-        <h2 class="text-xl font-semibold mt-6 mb-2">
-          Requirements
+      <section v-if="selectedTab === 'requirements' && requirementQuestions.length > 0" class="mb-8">
+        <h2 class="text-xl font-semibold mb-2">
+          Business Requirements
         </h2>
-
+        <p class="text-lg text-muted">
+          Answer 5 quick questions to personalize your guidance and results.
+        </p>
         <DesignComponentFormQuestion
           v-for="(question, index) in requirementQuestions"
           :key="question.id"
@@ -153,11 +181,13 @@ function onRequirementChange (questionId: string, value: string | string[]) {
         />
       </section>
 
-      <section v-if="questions.length > 0">
-        <h2 class="text-xl font-semibold mt-6 mb-2">
-          Component Decisions
+      <section v-if="selectedTab === 'decisions' && questions.length > 0">
+        <h2 class="text-xl font-semibold mb-2">
+          Architectural Decisions
         </h2>
-
+        <p class="text-lg text-muted">
+          Answer 8 quick questions to prioritze most relevant official documentation and best practices.
+        </p>
         <DesignComponentFormQuestion
           v-for="(question, index) in questions"
           :key="question.id"

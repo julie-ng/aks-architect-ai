@@ -27,7 +27,12 @@ export default defineContentConfig({
             key: z.string(),
             title: z.string(),
             description: z.string().optional(),
-            highlights: z.array(z.string()).optional()
+            highlights: z.array(z.string()).optional(),
+            tag: z.object({
+              text: z.string(),
+              color: z.string().optional(),
+              variant: z.string().optional()
+            }).optional()
           }))
         })
       })

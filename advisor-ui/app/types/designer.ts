@@ -6,6 +6,11 @@ export type DesignerAnswer = {
   highlights?: string[]
   highglights?: string[]
   disabled?: boolean
+  tag?: {
+    text: string
+    color?: string
+    variant?: string
+  }
 }
 
 export type DesignerQuestion = {

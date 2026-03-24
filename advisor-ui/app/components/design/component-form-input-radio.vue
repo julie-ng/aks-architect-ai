@@ -39,13 +39,18 @@ function getHighlights (answer: DesignerAnswer) {
       >
 
       <div class="space-y-2">
-        <p class="text-sm font-semibold">
+        <p class="text-sm font-semibold inline-flex items-center gap-2">
           {{ getAnswerTitle(answer) }}
+          <UBadge
+            v-if="answer.tag"
+            :label="answer.tag.text"
+            :color="(answer.tag.color as any) || 'neutral'"
+            :variant="(answer.tag.variant as any) || 'soft'"
+            size="sm"
+          />
         </p>
 
-        <p v-if="answer.description" class="text-sm text-muted">
-          {{ answer.description }}
-        </p>
+        <p v-if="answer.description" class="text-sm text-muted" v-html="renderInlineBoldText(answer.description)" />
 
         <ul
           v-if="getHighlights(answer).length"
