@@ -32,6 +32,13 @@ export default defineContentConfig({
               text: z.string(),
               color: z.string().optional(),
               variant: z.string().optional()
+            }).optional(),
+            waf_impact: z.object({
+              reliability: z.number().optional(),
+              security: z.number().optional(),
+              cost: z.number().optional(),
+              operations: z.number().optional(),
+              performance: z.number().optional()
             }).optional()
           }))
         })

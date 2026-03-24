@@ -11,6 +11,7 @@ export class DesignRecord {
   description = ref<string | null>(null)
   decisions = ref<Record<string, string | string[]>>({})
   requirements = ref<Record<string, string | string[]>>({})
+  wafScores = ref<Record<string, number>>({})
   saving = ref(false)
 
   private _snapshot: { title: string, description: string | null }
@@ -75,6 +76,8 @@ export class DesignRecord {
       })
       this._syncToStore()
     }
+
+    this.fetchWafScores()
   }
 
   async setRequirement (key: string, value: string | string[] | null): Promise<void> {
@@ -95,6 +98,14 @@ export class DesignRecord {
       })
       this._syncToStore()
     }
+  }
+
+  async fetchWafScores (): Promise<void> {
+    const { scores } = await $fetch<{ scores: Record<string, number> }>('/api/waf-scores', {
+      method: 'POST',
+      body: { decisions: this.decisions.value }
+    })
+    this.wafScores.value = scores
   }
 
   async delete (): Promise<void> {

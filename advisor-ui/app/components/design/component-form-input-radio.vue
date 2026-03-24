@@ -50,6 +50,7 @@ function getHighlights (answer: DesignerAnswer) {
           />
         </p>
 
+        <!-- eslint-disable-next-line vue/no-v-html -->
         <p v-if="answer.description" class="text-sm text-muted" v-html="renderInlineBoldText(answer.description)" />
 
         <ul

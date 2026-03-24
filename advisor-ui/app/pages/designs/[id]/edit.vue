@@ -63,6 +63,7 @@ function entryKey (questionId: string): string {
 await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
 const design = designsStore.getRecord(designId)!
+design.fetchWafScores()
 
 useHead({
   title: computed(() => `Edit - ${design.title.value}`),
@@ -152,7 +153,7 @@ const selectedTab = ref('requirements')
       <UiSavingIndicator :status="autosaveStatus" is-automatic />
       <UiSavingIndicator :status="manualSaveStatus" />
       <UButton
-        label="Save"
+        label="Save Design"
         color="neutral"
         size="sm"
         class="cursor-pointer"
@@ -201,7 +202,26 @@ const selectedTab = ref('requirements')
       <p v-if="questions.length === 0 && requirementQuestions.length === 0" class="text-sm text-muted">
         No questions found in the content collections.
       </p>
+    </template>
 
+    <template #sticky-sidebar>
+      <div class="p-4">
+        <div v-if="Object.keys(design.wafScores.value).length > 0">
+          <DesignWafScores :scores="design.wafScores.value" />
+          <USeparator class="my-5" />
+          <UButton
+            label="Discuss with AI"
+            color="primary"
+            size="lg"
+            class="cursor-pointer w-full justify-center"
+            icon="i-lucide-bot-message-square"
+          />
+          <p class="text-xs text-dimmed my-2 text-center">Feature TODO</p>
+        </div>
+        <p v-else class="text-xs text-muted">
+          Make architectural decisions to see scores.
+        </p>
+      </div>
     </template>
   </DesignPanel>
 </template>

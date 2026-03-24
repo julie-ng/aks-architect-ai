@@ -11,6 +11,15 @@ export type DesignerAnswer = {
     color?: string
     variant?: string
   }
+  waf_impact?: WafImpact
+}
+
+export type WafImpact = {
+  reliability?: number
+  security?: number
+  cost?: number
+  operations?: number
+  performance?: number
 }
 
 export type DesignerQuestion = {
