@@ -1,9 +1,22 @@
 <script setup>
+const props = defineProps({
+  hasNavbar: {
+    type: Boolean,
+    required: false,
+    default: true
+  },
+  hasToolbar: {
+    type: Boolean,
+    required: false,
+    default: false
+  }
+})
 </script>
+
 <template>
   <UDashboardPanel id="designs-panel">
     <template #header>
-      <UDashboardNavbar icon="i-lucide-origami">
+      <UDashboardNavbar v-if="props.hasNavbar" icon="i-lucide-origami">
         <template #title>
           <!-- [Slot] Navbar (title) -->
           <slot name="navbar-title">
@@ -25,9 +38,22 @@
           <slot name="navbar-right"/>
         </template>
       </UDashboardNavbar>
+
+      <UDashboardToolbar v-if="props.hasToolbar">
+        <template #left>
+          <!-- [Slot] Toolbar (left) -->
+          <slot name="toolbar-left" />
+        </template>
+        <template #right>
+          <!-- [Slot] Toolbar (right) -->
+          <slot name="toolbar-right" />
+        </template>
+      </UDashboardToolbar>
     </template>
 
     <template #body>
+
+
       <div class="w-full overflow-y-auto scroll-smooth">
         <UContainer class="overflow-y-auto">
           <div class="max-w-3xl">

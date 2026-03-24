@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { DesignerQuestion } from '~/types/designer'
+import type { SavingStatus } from '~/components/ui/saving-indicator.vue'
 
 const route = useRoute()
 const designId = route.params.id as string
 const designsStore = useDesignsStore()
 
-// useHead is set after design is fetched below
 
 const { data: componentEntries } = await useAsyncData('designer-components', () => {
   return queryCollection('components')
@@ -79,37 +79,58 @@ function getRequirement (questionId: string): string | string[] | null {
   return design.requirements.value[key] ?? null
 }
 
-const saved = ref(false)
+const autosaveStatus = ref<SavingStatus>(null)
+const manualSaveStatus = ref<SavingStatus>(null)
+let autosaveTimer: ReturnType<typeof setTimeout> | undefined
+let manualSaveTimer: ReturnType<typeof setTimeout> | undefined
 
-function showSaved () {
-  saved.value = true
-  setTimeout(() => {
-    saved.value = false
-  }, 2000)
+function showAutosaved () {
+  autosaveStatus.value = 'success'
+  clearTimeout(autosaveTimer)
+  autosaveTimer = setTimeout(() => {
+ autosaveStatus.value = null
+}, 2000)
+}
+
+function onManualSave () {
+  manualSaveStatus.value = 'success'
+  clearTimeout(manualSaveTimer)
+  manualSaveTimer = setTimeout(() => {
+ manualSaveStatus.value = null
+}, 2000)
 }
 
 function onDecisionChange (questionId: string, value: string | string[]) {
   design.setDecision(entryKey(questionId), value)
-  showSaved()
+  showAutosaved()
 }
 
 function onRequirementChange (questionId: string, value: string | string[]) {
   design.setRequirement(entryKey(questionId), value)
-  showSaved()
+  showAutosaved()
 }
 </script>
 
 <template>
-  <DesignPanel>
+  <DesignPanel :has-toolbar="true">
 
     <template #navbar-title>
       <UBreadcrumb :items="breadcrumbItems" />
     </template>
 
-    <template #navbar-right>
-      <p v-if="saved" class="text-xs text-green-600">
-        Auto-saved
-      </p>
+    <template #toolbar-left>
+      Left
+    </template>
+
+    <template #toolbar-right>
+      <UiSavingIndicator :status="autosaveStatus" is-automatic />
+      <UiSavingIndicator :status="manualSaveStatus" />
+      <UButton
+        label="Save"
+        color="neutral"
+        size="sm"
+        class="cursor-pointer"
+        @click="onManualSave" />
     </template>
 
     <template #body>
