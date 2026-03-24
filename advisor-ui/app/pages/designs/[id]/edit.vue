@@ -8,14 +8,22 @@ const designsStore = useDesignsStore()
 
 await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
-const design = designsStore.getRecord(designId)!
-design.fetchWafScores()
+const { design } = useDesign(designId)
+
+const wafScores = ref<Record<string, number>>({})
+
+async function refreshWafScores () {
+  if (!design.value) return
+  wafScores.value = await designsStore.fetchWafScores(design.value.decisions)
+}
+
+refreshWafScores()
 
 useHead({
-  title: computed(() => `Edit - ${design.title.value}`),
+  title: computed(() => `Edit - ${design.value?.title ?? 'Design'}`),
 })
 
-const breadcrumbItems = getDesignBreadcrumbs({ title: design.title.value, id: designId }, { action: 'Edit' })
+const breadcrumbItems = getDesignBreadcrumbs({ title: design.value?.title ?? '', id: designId }, { action: 'Edit' })
 
 const autosaveStatus = ref<SavingStatus>(null)
 const manualSaveStatus = ref<SavingStatus>(null)
@@ -38,13 +46,16 @@ function onManualSave () {
 }, 2000)
 }
 
-function onDecisionChange (key: string, value: string | string[]) {
-  design.setDecision(key, value)
+async function onDecisionChange (key: string, value: string | string[]) {
+  if (!design.value) return
+  await design.value.setDecision(key, value)
   showAutosaved()
+  refreshWafScores()
 }
 
-function onRequirementChange (key: string, value: string | string[]) {
-  design.setRequirement(key, value)
+async function onRequirementChange (key: string, value: string | string[]) {
+  if (!design.value) return
+  await design.value.setRequirement(key, value)
   showAutosaved()
 }
 
@@ -63,7 +74,7 @@ const selectedTab = ref('requirements')
 </script>
 
 <template>
-  <DesignPanel :has-toolbar="true">
+  <DesignPanel v-if="design" :has-toolbar="true">
 
     <template #navbar-title>
       <UBreadcrumb :items="breadcrumbItems" />
@@ -99,21 +110,21 @@ const selectedTab = ref('requirements')
     <template #body>
       <DesignRequirementsForm
         v-if="selectedTab === 'requirements'"
-        :requirements="design.requirements.value"
+        :requirements="design.requirements"
         @update:requirement="onRequirementChange"
       />
 
       <DesignDecisionsForm
         v-if="selectedTab === 'decisions'"
-        :decisions="design.decisions.value"
+        :decisions="design.decisions"
         @update:decision="onDecisionChange"
       />
     </template>
 
     <template #sticky-sidebar>
       <div class="p-4">
-        <div v-if="Object.keys(design.wafScores.value).length > 0">
-          <DesignWafScores :scores="design.wafScores.value" />
+        <div v-if="Object.keys(wafScores).length > 0">
+          <DesignWafScores :scores="wafScores" />
           <USeparator class="my-5" />
           <UButton
             label="Discuss with AI"

@@ -4,8 +4,7 @@ const props = defineProps<{
 }>()
 
 const designsStore = useDesignsStore()
-
-const design = computed(() => designsStore.getDesign(props.id))
+const { design } = useDesign(props.id)
 
 const renameOpen = ref(false)
 const renameInput = ref('')
@@ -32,19 +31,16 @@ const actionItems = [[
 
 async function confirmRename () {
   const trimmed = renameInput.value.trim()
-  if (trimmed) {
-    const record = designsStore.getRecord(props.id)
-    if (record) {
-      record.title.value = trimmed
-      await record.save()
-    }
+  if (trimmed && design.value) {
+    await designsStore.update(design.value.id!, { title: trimmed })
   }
   renameOpen.value = false
 }
 
 async function confirmDelete () {
-  const record = designsStore.getRecord(props.id)
-  await record?.delete()
+  if (design.value) {
+    await design.value.delete()
+  }
   deleteOpen.value = false
 }
 </script>
@@ -74,7 +70,7 @@ async function confirmDelete () {
       {{ design.description }}
     </div>
     <p class="text-xs text-muted">
-      Last Updated {{ new Date(design.updatedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+      Last Updated {{ new Date(design.updatedAt!).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
     </p>
   </UCard>
 

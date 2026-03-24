@@ -1,18 +1,17 @@
 <script setup lang="ts">
 const designsStore = useDesignsStore()
+const { design } = useNewDesign()
 
 useHead({
   title: 'New Design',
 })
 
-const design = designsStore.newRecord()
-
 const breadcrumbItems = getDesignBreadcrumbs(null, { action: 'New' })
 
 async function onCreate () {
   await design.save()
-  if (design.id.value) {
-    navigateTo(designsStore.getEditPathById(design.id.value), { replace: true })
+  if (design.id) {
+    navigateTo(designsStore.getEditPathById(design.id), { replace: true })
   }
 }
 </script>
@@ -33,10 +32,10 @@ async function onCreate () {
       </p>
 
       <DesignMetadataForm
-        v-model:title="design.title.value"
-        v-model:description="design.description.value"
+        v-model:title="design.title"
+        v-model:description="design.description"
         submit-label="Next"
-        :loading="design.saving.value"
+        :loading="design.saving"
         @submit="onCreate"
       />
     </template>

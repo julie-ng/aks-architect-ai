@@ -1,26 +1,24 @@
 <script setup lang="ts">
 const route = useRoute()
 const designId = route.params.id as string
-
-// console.log(`designId: ${designId}`)
-
 const designsStore = useDesignsStore()
 
 await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
-const design = designsStore.getRecord(designId)!
+const { design } = useDesign(designId)
+
 const breadcrumbItems = getDesignBreadcrumbs({
   id: designId,
-  title: design.title.value
+  title: design.value?.title ?? ''
 })
 
 useHead({
-  title: design.title,
+  title: computed(() => design.value?.title ?? 'Design'),
 })
 </script>
 
 <template>
-  <DesignPanel>
+  <DesignPanel v-if="design">
 
     <template #navbar-title>
       <UBreadcrumb :items="breadcrumbItems" />
@@ -28,11 +26,11 @@ useHead({
 
     <template #body>
       <h1 class="text-2xl font-bold">
-        {{ design.title.value }}
+        {{ design.title }}
       </h1>
 
-      <p v-if="design.description.value" class="text-muted mt-1 mb-4">
-        {{ design.description.value }}
+      <p v-if="design.description" class="text-muted mt-1 mb-4">
+        {{ design.description }}
       </p>
 
       <UButton
@@ -45,11 +43,11 @@ useHead({
 
       <USeparator class="my-5" />
 
-      <DesignDecisions v-if="Object.keys(design.decisions.value).length > 0" :decisions="design.decisions.value" />
+      <DesignDecisions v-if="Object.keys(design.decisions).length > 0" :decisions="design.decisions" />
 
-      <DesignRequirements v-if="Object.keys(design.requirements.value).length > 0" :requirements="design.requirements.value" />
+      <DesignRequirements v-if="Object.keys(design.requirements).length > 0" :requirements="design.requirements" />
 
-      <p v-if="Object.keys(design.decisions.value).length === 0 && Object.keys(design.requirements.value).length === 0" class="text-sm text-muted">
+      <p v-if="Object.keys(design.decisions).length === 0 && Object.keys(design.requirements).length === 0" class="text-sm text-muted">
         No decisions or requirements yet. Start by editing this design.
       </p>
     </template>
