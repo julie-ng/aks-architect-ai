@@ -6,10 +6,23 @@ scenarios:
 workloads:
   - all
 urls:
+  - url: "https://learn.microsoft.com/en-us/azure/aks/reliability-availability-zones-configure"
+    doc_type: how-to
+    comments: |
+      Good article with diagrams explaining AZ configurations, e.g. zone aligned vs zone spanning and bash commands.
+
+  - url: "https://learn.microsoft.com/en-us/azure/aks/reliability-zone-resiliency-recommendations"
+    doc_type: guidance
+    comments: |
+      AZ Recommendations,incl. table of LRS vs ZRS disks for storage.
+
   - url: "https://learn.microsoft.com/en-us/azure/aks/reliability-multi-region-deployment-models"
     doc_type: guidance
     tags:
       - business-continuity
+    comments: |
+      Good overview of active-active vs active-passive vs passive-cold
+
   - url: "https://learn.microsoft.com/en-us/azure/aks/active-active-solution"
     doc_type: guidance
     scenarios:

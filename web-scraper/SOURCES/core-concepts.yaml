@@ -64,3 +64,17 @@ urls:
     priority: 15
     comments: |
       Has tables for required roles, permissions, etc. for backup extension. Good source.
+
+  # AKS Automatic
+  - url: https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic
+    doc_type: reference
+    priority: 15
+    comments: |
+      Overview of AKS automatic, with many comparison tables of AKS automatic pre-configurations vs AKS standard optional configurations.
+
+  # Integrations, Addons, etc.
+  - url: https://learn.microsoft.com/en-us/azure/aks/integrations
+    doc_type: reference
+    priority: 10
+    comments: |
+      Lists and Tables of various addons, incl. monitoring, azure policy.

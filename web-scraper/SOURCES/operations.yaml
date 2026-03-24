@@ -1,0 +1,18 @@
+group_title: Operations
+# group_priority: 10
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  - url: https://learn.microsoft.com/en-us/azure/aks/planned-maintenance
+    doc_type: how-to
+    priority: 10
+    comments: |
+      Configure maintenance windows for system-initiated weekly AKS releases, as well as user-initiated auto-upgrades and node OS security updates.
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/auto-upgrade-cluster
+    doc_type: reference
+    priority: 15
+    comments: |
+      patch vs stable vs rapid, etc. how versions of k8s are auto-upgraded
