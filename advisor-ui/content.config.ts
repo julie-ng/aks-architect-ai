@@ -52,7 +52,7 @@ export default defineContentConfig({
         title: z.string(),
         spec: z.object({
           title: z.string(),
-          short_title: z.string().optional(),
+          question: z.string().optional(),
           description: z.string().optional(),
           question_type: z.enum(['radio', 'checkbox']),
           answers: z.array(z.object({

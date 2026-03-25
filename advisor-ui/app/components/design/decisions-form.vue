@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 const { data: componentEntries } = await useAsyncData('designer-components', () => {
   return queryCollection('components')
-    .select('title', 'stem', 'spec')
+    .select('title', 'path', 'spec')
     .all()
 })
 
@@ -22,7 +22,7 @@ const questions = computed<DesignerQuestion[]>(() => {
       const spec = entry?.spec || {}
 
       return {
-        id: entry?.stem || `spec-question-${index}`,
+        id: entry?.path?.split('/')?.pop() || `spec-question-${index}`,
         title: spec.title || entry?.title,
         description: spec.description,
         question: spec.question,

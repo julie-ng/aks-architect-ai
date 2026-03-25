@@ -157,6 +157,20 @@ Don't destructure store methods. Use the store variable directly — it's cleare
 
 If content is replaced in frontend use [skipHydrate()](https://pinia.vuejs.org/api/pinia/functions/skipHydrate.html) to prevent SSR from overwriting content.
 
+## Nuxt Content
+
+### Use `path` not `stem` for content keys
+
+Content files are prefixed with numbers for ordering (e.g. `1.organization-type.md`). Use `path.split('/').pop()` to derive the key — it strips both the path and the leading number prefix, giving stable keys like `organization-type`.
+
+```ts
+// ✅ Stable key, unaffected by reordering files
+id: entry?.path?.split('/')?.pop()
+
+// ❌ stem includes the number prefix — breaks if files are reordered
+id: entry?.stem  // → "1.organization-type"
+```
+
 ## Composables
 
 ### Static vs reactive data fetching
