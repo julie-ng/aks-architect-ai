@@ -3,7 +3,11 @@ const props = defineProps<{
   requirements: Record<string, string | string[]>
 }>()
 
+const route = useRoute()
+const configurePath = route.path + '/configure?tab=requirements'
 const schema = await useSpecSchema('requirements')
+
+const answeredCount = Object.keys(props.requirements).length
 
 /**
  * Decisions Format from Database is in key: value format.
@@ -20,10 +24,18 @@ const schema = await useSpecSchema('requirements')
 
 <template>
   <div class="space-y-2">
-    <h2 class="text-lg font-semibold">
-      Requirements
-    </h2>
-    <table class="w-full text-sm border-collapse border border-slate-200">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">
+        Requirements
+      </h2>
+      <div class="text-sm text-muted">
+        <span :class="textCountColor(answeredCount, schema.total)">{{ answeredCount }}/{{ schema.total }}</span> answered
+      </div>
+    </div>
+    <p v-if="answeredCount === 0" class="text-sm text-muted">
+      No requirements recorded yet. Go to the <NuxtLink :to="configurePath" class="text-primary hover:underline">configure page</NuxtLink> to answer the questions.
+    </p>
+    <table v-else class="w-full text-sm border-collapse border border-slate-200">
       <tbody>
         <tr
           v-for="(val, key) in props.requirements"

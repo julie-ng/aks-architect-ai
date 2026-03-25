@@ -34,5 +34,5 @@ export async function useSpecSchema (collection: 'requirements' | 'components') 
     return spec?.answers.find(a => a.key === aKey)?.label ?? aKey
   }
 
-  return { getQuestionTitle, getAnswerLabel }
+  return { total: entries.length, getQuestionTitle, getAnswerLabel }
 }

@@ -43,26 +43,31 @@ useHead({
           color="neutral"
           @click="editOpen = true"
         />
-        <UButton
-          label="Configure"
-          icon="i-lucide-settings-2"
-          :to="design.configurePath"
-          variant="subtle"
-          color="neutral"
-        />
       </div>
 
       <DesignEditModal :id="designId" v-model:open="editOpen" />
 
       <USeparator class="my-5" />
 
-      <DesignDecisions v-if="Object.keys(design.decisions).length > 0" :decisions="design.decisions" />
+      <DesignRequirements :requirements="design.requirements" class="mb-4"/>
+      <UButton
+        label="Configure Requirements"
+        icon="i-lucide-settings-2"
+        :to="`${design.configurePath}?tab=requirements`"
+        variant="subtle"
+        color="neutral"
+      />
 
-      <DesignRequirements v-if="Object.keys(design.requirements).length > 0" :requirements="design.requirements" />
+      <!-- <USeparator class="my-6" /> -->
 
-      <p v-if="Object.keys(design.decisions).length === 0 && Object.keys(design.requirements).length === 0" class="text-sm text-muted">
-        No decisions or requirements yet. Start by editing this design.
-      </p>
+      <DesignDecisions :decisions="design.decisions" class="mt-8 mb-4" />
+      <UButton
+        label="Configure Decisions"
+        icon="i-lucide-settings-2"
+        :to="`${design.configurePath}?tab=decisions`"
+        variant="subtle"
+        color="neutral"
+      />
     </template>
   </DesignPanel>
 </template>

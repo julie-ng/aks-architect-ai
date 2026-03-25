@@ -207,6 +207,26 @@ return { getQuestionTitle, getAnswerLabel }
 return { lookup, getQuestionTitle, getAnswerLabel }
 ```
 
+## Routing
+
+### Query params — use `useRoute()` directly, don't add `ref` or `watch`
+
+`useRoute()` is reactive. Read query params with a `computed()` getter; write them with `navigateTo()` or a computed setter. Never introduce a separate `ref` + `watch` to sync with the URL:
+
+```ts
+// ✅ Reactive query param, two-way
+const route = useRoute()
+
+const selectedTab = computed({
+  get: () => String(route.query.tab ?? 'requirements'),
+  set: (tab) => navigateTo({ query: { ...route.query, tab } })
+})
+
+// ❌ Unnecessary — ref + watch duplicates what useRoute() already provides
+const selectedTab = ref('requirements')
+watch(selectedTab, (tab) => router.replace({ query: { tab } }))
+```
+
 ## Configuration Access
 
 - Public (client-safe) config: `nuxt.config.ts` → `useRuntimeConfig().public.*`

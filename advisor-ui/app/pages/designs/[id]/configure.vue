@@ -70,7 +70,10 @@ const tabItems = ref<TabsItem[]>([
   }
 ])
 
-const selectedTab = ref('requirements')
+const selectedTab = computed({
+  get: () => String(route.query.tab ?? 'requirements'),
+  set: (tab) => navigateTo({ query: { ...route.query, tab } })
+})
 </script>
 
 <template>
