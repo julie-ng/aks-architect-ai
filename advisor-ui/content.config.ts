@@ -14,7 +14,7 @@ export default defineContentConfig({
       source: 'aks/components/**/*.md',
       schema: z.object({
         title: z.string(),
-        designer: z.object({
+        spec: z.object({
           title: z.string(),
           description: z.string().optional(),
           question: z.string(),
@@ -25,7 +25,8 @@ export default defineContentConfig({
           }).optional(),
           answers: z.array(z.object({
             key: z.string(),
-            title: z.string(),
+            title: z.string().optional(),
+            label: z.string().optional(),
             description: z.string().optional(),
             highlights: z.array(z.string()).optional(),
             tag: z.object({
@@ -49,7 +50,7 @@ export default defineContentConfig({
       source: 'aks/requirements/**/*.md',
       schema: z.object({
         title: z.string(),
-        designer: z.object({
+        spec: z.object({
           title: z.string(),
           description: z.string().optional(),
           question_type: z.enum(['radio', 'checkbox']),

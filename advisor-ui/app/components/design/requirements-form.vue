@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 const { data: requirementEntries } = await useAsyncData('designer-requirements', () => {
   return queryCollection('requirements')
-    .select('title', 'path', 'designer')
+    .select('title', 'stem', 'spec')
     .all()
 })
 
@@ -19,31 +19,26 @@ const questions = computed<DesignerQuestion[]>(() => {
   return (requirementEntries.value || [])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((entry: any, index: number) => {
-      const designer = entry?.designer || {}
+      const spec = entry?.spec || {}
 
       return {
-        id: entry?.path || `designer-requirement-${index}`,
-        title: designer.title || entry?.title,
-        description: designer.description,
-        question: designer.title,
-        question_type: designer.question_type,
-        answers: designer.answers || [],
+        id: entry?.stem || `spec-requirement-${index}`,
+        title: spec.title || entry?.title,
+        description: spec.description,
+        question: spec.title,
+        question_type: spec.question_type,
+        answers: spec.answers || [],
       } satisfies DesignerQuestion
     })
     .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
 })
 
-function entryKey (questionId: string): string {
-  return questionId.split('/').pop() || questionId
-}
-
 function getRequirement (questionId: string): string | string[] | null {
-  const key = entryKey(questionId)
-  return props.requirements[key] ?? null
+  return props.requirements[questionId] ?? null
 }
 
 function onChange (questionId: string, value: string | string[]) {
-  emit('update:requirement', entryKey(questionId), value)
+  emit('update:requirement', questionId, value)
 }
 </script>
 
