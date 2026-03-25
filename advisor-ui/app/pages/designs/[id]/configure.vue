@@ -132,17 +132,8 @@ const selectedTab = computed({
 
     <template #sticky-sidebar>
       <div class="p-4">
-        <div v-if="Object.keys(wafImpact).length > 0">
+        <div v-if="design.hasBeenConfigured">
           <DesignWafScores :scores="wafImpact" :baseline="wafBaseline" />
-          <USeparator class="my-5" />
-          <UButton
-            label="Discuss with AI"
-            color="primary"
-            size="lg"
-            class="cursor-pointer w-full justify-center"
-            icon="i-lucide-bot-message-square"
-          />
-          <p class="text-xs text-dimmed my-2 text-center">Feature TODO</p>
         </div>
         <p v-else class="text-xs text-muted">
           Make architectural decisions to see scores.

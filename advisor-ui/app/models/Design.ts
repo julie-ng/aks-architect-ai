@@ -91,6 +91,10 @@ export class Design {
     return this.id === null
   }
 
+  get hasBeenConfigured (): boolean {
+    return Object.keys(this.decisions).length > 0 || Object.keys(this.requirements).length > 0
+  }
+
   // --- Persistence (delegates to injected callbacks) ---
 
   async save (): Promise<void> {

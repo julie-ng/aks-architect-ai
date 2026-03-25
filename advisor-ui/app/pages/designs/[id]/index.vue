@@ -7,6 +7,18 @@ await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
 const { design } = useDesign(designId)
 
+const wafImpact = ref<Record<string, number>>({})
+const wafBaseline = ref<Record<string, number>>({})
+
+async function calculateWafScores () {
+  if (!design.value) return
+  const result = await designsStore.fetchWafScores(design.value.decisions, design.value.requirements)
+  wafImpact.value = result.impact
+  wafBaseline.value = result.baseline
+}
+
+await calculateWafScores()
+
 const editOpen = ref(false)
 
 const breadcrumbItems = getDesignBreadcrumbs({
@@ -68,6 +80,27 @@ useHead({
         variant="subtle"
         color="neutral"
       />
+    </template>
+
+    <template #sticky-sidebar>
+      <div class="p-4">
+        <div v-if="design.hasBeenConfigured">
+          <DesignWafScores :scores="wafImpact" :baseline="wafBaseline" />
+          <p class="my-2">
+            <UButton
+              label="Adjust Design"
+              icon="i-lucide-settings-2"
+              :to="design.configurePath"
+              variant="subtle"
+              color="neutral"
+              class="mt-1 w-full justify-center"
+            />
+          </p>
+        </div>
+        <p v-else class="text-xs text-muted">
+          Make architectural decisions to see scores.
+        </p>
+      </div>
     </template>
   </DesignPanel>
 </template>

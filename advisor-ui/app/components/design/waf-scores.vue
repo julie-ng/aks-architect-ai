@@ -9,9 +9,12 @@ const props = withDefaults(defineProps<{
 
 <template>
   <div class="space-y-3">
-    <h3 class="text-sm font-semibold">
-      WAF Pillar Scores
+    <h3 class="mb-1 font-semibold">
+      Design Scores
     </h3>
+    <p class="mt-0 mb-6 text-xs text-muted">
+      The baseline is determined based on your chosen requirements. The score band is based on your architectural decisions.
+    </p>
     <DesignWafScoreBar
       v-for="(score, pillar) in scores"
       :key="pillar"
@@ -19,5 +22,20 @@ const props = withDefaults(defineProps<{
       :score="score"
       :baseline="props.baseline[pillar] ?? 0"
     />
+
+    <USeparator class="my-5" />
+
+    <p class="mb-6 text-xs text-muted">
+      If your business requirements are met, your score band and baseline should overlap.
+    </p>
+
+    <UButton
+      label="Discuss with AI"
+      color="primary"
+      size="lg"
+      class="cursor-pointer w-full justify-center"
+      icon="i-lucide-bot-message-square"
+    />
+
   </div>
 </template>

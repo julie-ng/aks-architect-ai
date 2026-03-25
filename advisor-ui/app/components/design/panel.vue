@@ -53,14 +53,14 @@ const props = defineProps({
 
     <template #body>
       <div class="w-full overflow-y-auto scroll-smooth">
-        <div class="flex gap-8">
-          <div class="max-w-3xl basis-3/4 min-w-0">
+        <div class="flex gap-2">
+          <div class="max-w-3xl basis-7/10 min-w-0">
             <UContainer>
               <!-- [Slot] Body -->
               <slot name="body" />
             </UContainer>
           </div>
-          <div class="basis-1/4 min-w-0 sticky top-0 self-start">
+          <div class="basis-3/10 min-w-0 sticky top-0 self-start">
             <!-- [Slot] Sticky Sidebar -->
             <slot name="sticky-sidebar" />
           </div>
