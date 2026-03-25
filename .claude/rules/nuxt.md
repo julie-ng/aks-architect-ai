@@ -157,6 +157,42 @@ Don't destructure store methods. Use the store variable directly — it's cleare
 
 If content is replaced in frontend use [skipHydrate()](https://pinia.vuejs.org/api/pinia/functions/skipHydrate.html) to prevent SSR from overwriting content.
 
+## Composables
+
+### Static vs reactive data fetching
+
+If a composable fetches content that never changes at runtime (e.g. YAML schemas via `queryCollection`), use plain `await` — not `useAsyncData` + `computed`. The parent component's reactive props are sufficient to drive reactive template updates.
+
+```ts
+// ✅ Static content — plain await
+export async function useSpecSchema (collection: 'requirements' | 'components') {
+  const entries = await queryCollection(collection).select('path', 'spec').all()
+  // ...
+}
+
+// ❌ Unnecessary reactivity wrapping for static content
+export async function useSpecSchema (collection: 'requirements' | 'components') {
+  const { data: entries } = await useAsyncData(`spec-${collection}`, () =>
+    queryCollection(collection).select('path', 'spec').all()
+  )
+  const lookup = computed(() => { /* ... */ })
+}
+```
+
+Ask: "does this data change after the composable runs?" If no → plain `await`. If yes → `useAsyncData` / `computed`.
+
+### Encapsulation — never expose internal state
+
+Only expose the public API (helper functions). Never return raw lookup maps, intermediate data structures, or internal refs. If a consumer needs something new, add a helper function.
+
+```ts
+// ✅ Only expose functions
+return { getQuestionTitle, getAnswerLabel }
+
+// ❌ Leaks internal structure — consumers will bypass the helpers
+return { lookup, getQuestionTitle, getAnswerLabel }
+```
+
 ## Configuration Access
 
 - Public (client-safe) config: `nuxt.config.ts` → `useRuntimeConfig().public.*`
