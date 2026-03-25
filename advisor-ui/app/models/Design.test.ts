@@ -116,7 +116,9 @@ describe('Design', () => {
     it('sets saving flag during save', async () => {
       let resolveSave!: (v: DesignData) => void
       const persist = mockPersist({
-        create: vi.fn().mockReturnValue(new Promise(r => { resolveSave = r })),
+        create: vi.fn().mockReturnValue(new Promise(r => {
+ resolveSave = r 
+})),
       })
       const design = new Design(null, persist)
       design.title = 'Test'

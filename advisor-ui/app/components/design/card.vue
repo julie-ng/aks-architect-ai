@@ -12,13 +12,17 @@ const actionItems = [[
   {
     label: 'Edit',
     icon: 'i-lucide-pencil',
-    onSelect () { editOpen.value = true },
+    onSelect () {
+ editOpen.value = true 
+},
   },
   {
     label: 'Delete',
     icon: 'i-lucide-trash-2',
     color: 'error' as const,
-    onSelect () { deleteOpen.value = true },
+    onSelect () {
+ deleteOpen.value = true 
+},
   },
 ]]
 
