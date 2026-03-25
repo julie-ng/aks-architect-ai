@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { SpecEntry, WafPillarScores } from '~~/shared/types/spec'
+import { getWafImpact } from '~~/shared/utils/spec-helpers'
 
 const WAF_PILLARS = ['reliability', 'security', 'cost', 'operations', 'performance'] as const
 
@@ -11,6 +13,7 @@ const bodySchema = z.object({
  */
 export default defineEventHandler(async (event) => {
   const result = await readValidatedBody(event, body => bodySchema.safeParse(body))
+
   if (!result.success) {
     setResponseStatus(event, 400)
     return {
@@ -23,26 +26,16 @@ export default defineEventHandler(async (event) => {
   const { decisions } = result.data
 
   const entries = await queryCollection(event, 'components')
-    .select('stem', 'spec')
-    .all()
+    .select('path', 'spec')
+    .all() as unknown as SpecEntry[]
 
-  const impacts: Record<string, number>[] = []
+  const impacts: WafPillarScores[] = []
 
-  for (const entry of entries) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const e = entry as any
-    const spec = e?.spec
-    if (!spec?.answers) continue
-
-    const key = e.stem
-    if (!key || !decisions[key]) continue
-
-    const selectedKeys = Array.isArray(decisions[key]) ? decisions[key] : [decisions[key]]
-
-    for (const answer of spec.answers) {
-      if (selectedKeys.includes(answer.key) && answer.waf_impact) {
-        impacts.push(answer.waf_impact)
-      }
+  for (const [key, selected] of Object.entries(decisions)) {
+    const selectedKeys = Array.isArray(selected) ? selected : [selected]
+    for (const aKey of selectedKeys) {
+      const impact = getWafImpact(entries, key, aKey)
+      if (impact) impacts.push(impact)
     }
   }
 

@@ -17,7 +17,7 @@ async function refreshWafScores () {
   wafScores.value = await designsStore.fetchWafScores(design.value.decisions)
 }
 
-refreshWafScores()
+await refreshWafScores()
 
 useHead({
   title: computed(() => `Configure - ${design.value?.title ?? 'Design'}`),

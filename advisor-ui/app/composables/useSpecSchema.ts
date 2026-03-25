@@ -1,38 +1,21 @@
-type SpecAnswer = {
-  key: string
-  label?: string
-  description?: string
-}
-
-type SpecEntry = {
-  path: string
-  title: string
-  spec: {
-    title: string
-    question?: string
-    question_type: 'radio' | 'checkbox'
-    answers: SpecAnswer[]
-  }
-}
+import type { SpecEntry } from '~~/shared/types/spec'
+import {
+  getQuestionTitle as _getQuestionTitle,
+  getAnswerLabel as _getAnswerLabel,
+  getWafImpact as _getWafImpact,
+  getWafBaseline as _getWafBaseline,
+} from '~~/shared/utils/spec-helpers'
 
 export async function useSpecSchema (collection: 'requirements' | 'components') {
   const entries = await queryCollection(collection)
     .select('path', 'title', 'spec')
     .all() as unknown as SpecEntry[]
 
-  function _findByKey (key: string): SpecEntry | undefined {
-    return entries.find(e => e.path.split('/').pop() === key)
+  return {
+    total: entries.length,
+    getQuestionTitle: (key: string) => _getQuestionTitle(entries, key),
+    getAnswerLabel: (qKey: string, aKey: string) => _getAnswerLabel(entries, qKey, aKey),
+    getWafImpact: (qKey: string, aKey: string) => _getWafImpact(entries, qKey, aKey),
+    getWafBaseline: (qKey: string, aKey: string) => _getWafBaseline(entries, qKey, aKey),
   }
-
-  function getQuestionTitle (key: string): string {
-    const entry = _findByKey(key)
-    return entry?.spec?.title ?? key
-  }
-
-  function getAnswerLabel (qKey: string, aKey: string): string {
-    const spec = _findByKey(qKey)?.spec
-    return spec?.answers.find(a => a.key === aKey)?.label ?? aKey
-  }
-
-  return { total: entries.length, getQuestionTitle, getAnswerLabel }
 }

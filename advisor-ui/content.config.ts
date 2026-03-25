@@ -16,7 +16,7 @@ export default defineContentConfig({
         title: z.string(),
         spec: z.object({
           title: z.string(),
-          description: z.string().optional(),
+          description: z.string(),
           question: z.string(),
           question_type: z.enum(['radio', 'text', 'checkbox']),
           reference: z.object({
@@ -25,8 +25,7 @@ export default defineContentConfig({
           }).optional(),
           answers: z.array(z.object({
             key: z.string(),
-            title: z.string().optional(),
-            label: z.string().optional(),
+            label: z.string(),
             description: z.string().optional(),
             highlights: z.array(z.string()).optional(),
             tag: z.object({
@@ -34,13 +33,14 @@ export default defineContentConfig({
               color: z.string().optional(),
               variant: z.string().optional()
             }).optional(),
+            disabled: z.boolean().optional(),
             waf_impact: z.object({
               reliability: z.number().optional(),
               security: z.number().optional(),
               cost: z.number().optional(),
               operations: z.number().optional(),
               performance: z.number().optional()
-            }).optional()
+            })
           }))
         })
       })
@@ -52,13 +52,21 @@ export default defineContentConfig({
         title: z.string(),
         spec: z.object({
           title: z.string(),
-          question: z.string().optional(),
+          question: z.string(),
           description: z.string().optional(),
           question_type: z.enum(['radio', 'checkbox']),
           answers: z.array(z.object({
             key: z.string(),
-            label: z.string().optional(),
+            label: z.string(),
             description: z.string().optional(),
+            implications: z.array(z.record(z.string(), z.string())).optional(),
+            waf_baseline: z.object({
+              reliability: z.number().optional(),
+              security: z.number().optional(),
+              cost: z.number().optional(),
+              operations: z.number().optional(),
+              performance: z.number().optional()
+            })
           }))
         })
       })
