@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
   min: -10,
   max: 10,
   baseline: 0,
-  bandWidth: 1
+  bandWidth: 2
 })
 
 const range = computed(() => props.max - props.min)
@@ -45,7 +45,7 @@ const bandRight = computed(() => {
       />
       <!-- Score band -->
       <div
-        class="absolute top-1 bottom-1 rounded-sm bg-secondary/80 transition-[left,right] duration-300"
+        class="absolute top-0.5 bottom-0.5 rounded-sm bg-secondary/80 transition-[left,right] duration-300"
         :style="{ left: bandLeft, right: bandRight }"
       />
     </div>
