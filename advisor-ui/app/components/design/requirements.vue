@@ -3,7 +3,7 @@ const props = defineProps<{
   requirements: Record<string, string | string[]>
 }>()
 
-const schema = await useRequirementsSchema()
+const schema = await useSpecSchema('requirements')
 
 /**
  * Decisions Format from Database is in key: value format.
@@ -31,7 +31,7 @@ const schema = await useRequirementsSchema()
           class="border-b border-slate-200 last:border-b-0"
         >
           <td class="px-4 py-3 font-medium w-1/2 border-r border-slate-200">
-            {{ schema.getQuestionShortTitle(key) }}
+            {{ schema.getQuestionTitle(key) }}
           </td>
           <td class="px-4 py-3 text-muted w-1/2">
             {{ schema.getAnswerLabel(key, val)  }}
