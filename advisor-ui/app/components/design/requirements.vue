@@ -3,39 +3,19 @@ const props = defineProps<{
   requirements: Record<string, string | string[]>
 }>()
 
-const { data: requirementEntries } = await useAsyncData('designer-requirements', () => {
-  return queryCollection('requirements')
-    .select('title', 'path', 'designer')
-    .all()
-})
+const schema = await useSpecSchema('requirements')
 
-const requirementsLookup = computed(() => {
-  const map: Record<string, { title: string, answers: Record<string, string> }> = {}
-  for (const entry of requirementEntries.value || []) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const designer = (entry as any)?.designer
-    if (!designer) continue
-    const key = entry.path.split('/').pop()
-    if (!key) continue
-    const answers: Record<string, string> = {}
-    for (const answer of designer.answers || []) {
-      answers[answer.key] = answer.label || answer.title || answer.key
-    }
-    map[key] = { title: designer.title || entry.title, answers }
-  }
-  return map
-})
-
-function resolveQuestion (key: string) {
-  return requirementsLookup.value[key]?.title || key
+/**
+ * Decisions Format from Database is in key: value format.
+ *
+{
+    "tenancy": "single-tenant",
+    "team-role": "app-developer",
+    "organization-type": "startup",
+    "networking-boundary": "public",
+    "infrastructure-experience": "medium"
 }
-
-function resolveAnswer (key: string, value: string | string[]) {
-  if (Array.isArray(value)) {
-    return value.map(v => requirementsLookup.value[key]?.answers[v] || v).join(', ')
-  }
-  return requirementsLookup.value[key]?.answers[value] || value
-}
+ */
 </script>
 
 <template>
@@ -43,13 +23,21 @@ function resolveAnswer (key: string, value: string | string[]) {
     <h2 class="text-lg font-semibold">
       Requirements
     </h2>
-    <section class="space-y-1">
-      <DesignRequirement
-        v-for="(value, key) in props.requirements"
-        :key="key"
-        :question-title="resolveQuestion(String(key))"
-        :answer-label="resolveAnswer(String(key), value)"
-      />
-    </section>
+    <table class="w-full text-sm border-collapse border border-slate-200">
+      <tbody>
+        <tr
+          v-for="(val, key) in props.requirements"
+          :key="key"
+          class="border-b border-slate-200 last:border-b-0"
+        >
+          <td class="px-4 py-3 font-medium w-1/2 border-r border-slate-200">
+            {{ schema.getQuestionTitle(key) }}
+          </td>
+          <td class="px-4 py-3 text-muted w-1/2">
+            {{ schema.getAnswerLabel(key, val)  }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>

@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 const { data: componentEntries } = await useAsyncData('designer-components', () => {
   return queryCollection('components')
-    .select('title', 'path', 'designer')
+    .select('title', 'stem', 'spec')
     .all()
 })
 
@@ -19,31 +19,26 @@ const questions = computed<DesignerQuestion[]>(() => {
   return (componentEntries.value || [])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((entry: any, index: number) => {
-      const designer = entry?.designer || {}
+      const spec = entry?.spec || {}
 
       return {
-        id: entry?.path || `designer-question-${index}`,
-        title: designer.title || entry?.title,
-        description: designer.description,
-        question: designer.question,
-        question_type: designer.question_type,
-        answers: designer.answers || [],
+        id: entry?.stem || `spec-question-${index}`,
+        title: spec.title || entry?.title,
+        description: spec.description,
+        question: spec.question,
+        question_type: spec.question_type,
+        answers: spec.answers || [],
       } satisfies DesignerQuestion
     })
     .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
 })
 
-function entryKey (questionId: string): string {
-  return questionId.split('/').pop() || questionId
-}
-
 function getDecision (questionId: string): string | string[] | null {
-  const key = entryKey(questionId)
-  return props.decisions[key] ?? null
+  return props.decisions[questionId] ?? null
 }
 
 function onChange (questionId: string, value: string | string[]) {
-  emit('update:decision', entryKey(questionId), value)
+  emit('update:decision', questionId, value)
 }
 </script>
 

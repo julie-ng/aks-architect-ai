@@ -23,22 +23,23 @@ export default defineEventHandler(async (event) => {
   const { decisions } = result.data
 
   const entries = await queryCollection(event, 'components')
-    .select('path', 'designer')
+    .select('stem', 'spec')
     .all()
 
   const impacts: Record<string, number>[] = []
 
   for (const entry of entries) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const designer = (entry as any)?.designer
-    if (!designer?.answers) continue
+    const e = entry as any
+    const spec = e?.spec
+    if (!spec?.answers) continue
 
-    const key = entry.path.split('/').pop()
+    const key = e.stem
     if (!key || !decisions[key]) continue
 
     const selectedKeys = Array.isArray(decisions[key]) ? decisions[key] : [decisions[key]]
 
-    for (const answer of designer.answers) {
+    for (const answer of spec.answers) {
       if (selectedKeys.includes(answer.key) && answer.waf_impact) {
         impacts.push(answer.waf_impact)
       }
