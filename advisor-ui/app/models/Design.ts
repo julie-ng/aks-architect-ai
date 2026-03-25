@@ -124,6 +124,26 @@ export class Design {
     }
   }
 
+  async resetDecision (key: string): Promise<void> {
+    await this.setDecision(key, null)
+  }
+
+  async resetAllDecisions (): Promise<void> {
+    for (const key of Object.keys(this.decisions)) {
+      await this.setDecision(key, null)
+    }
+  }
+
+  async resetRequirement (key: string): Promise<void> {
+    await this.setRequirement(key, null)
+  }
+
+  async resetAllRequirements (): Promise<void> {
+    for (const key of Object.keys(this.requirements)) {
+      await this.setRequirement(key, null)
+    }
+  }
+
   async setDecision (key: string, value: string | string[] | null): Promise<void> {
     if (!this._data) return
     const updated = { ...this._data.decisions }

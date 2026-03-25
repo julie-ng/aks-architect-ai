@@ -49,16 +49,30 @@ function onManualSave () {
 }, 2000)
 }
 
-async function onDecisionChange (key: string, value: string | string[]) {
+async function onDecisionChange (key: string, value: string | string[] | null) {
   if (!design.value) return
   await design.value.setDecision(key, value)
   showAutosaved()
   calculateWafScores()
 }
 
-async function onRequirementChange (key: string, value: string | string[]) {
+async function onResetAllDecisions () {
+  if (!design.value) return
+  await design.value.resetAllDecisions()
+  showAutosaved()
+  calculateWafScores()
+}
+
+async function onRequirementChange (key: string, value: string | string[] | null) {
   if (!design.value) return
   await design.value.setRequirement(key, value)
+  showAutosaved()
+  calculateWafScores()
+}
+
+async function onResetAllRequirements () {
+  if (!design.value) return
+  await design.value.resetAllRequirements()
   showAutosaved()
   calculateWafScores()
 }
@@ -121,12 +135,14 @@ const selectedTab = computed({
         v-if="selectedTab === 'requirements'"
         :requirements="design.requirements"
         @update:requirement="onRequirementChange"
+        @reset:all-requirements="onResetAllRequirements"
       />
 
       <DesignDecisionsForm
         v-if="selectedTab === 'decisions'"
         :decisions="design.decisions"
         @update:decision="onDecisionChange"
+        @reset:all-decisions="onResetAllDecisions"
       />
     </template>
 

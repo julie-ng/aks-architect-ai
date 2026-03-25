@@ -8,6 +8,10 @@ const props = defineProps<{
 
 const selectedKey = defineModel<string | null>({ default: null })
 
+function onReset () {
+  selectedKey.value = null
+}
+
 function getAnswerTitle (answer: SpecAnswer) {
   return answer.label || answer.key
 }
@@ -19,6 +23,17 @@ function getHighlights (answer: SpecAnswer) {
 
 <template>
   <div class="space-y-3">
+    <UButton
+      v-if="selectedKey"
+      label="Reset Answer"
+      icon="i-lucide-x"
+      variant="outline"
+      color="neutral"
+      size="xs"
+      class="mt-1 cursor-pointer"
+      @click="onReset"
+    />
+
     <label
       v-for="answer in props.answers"
       :key="answer.key"

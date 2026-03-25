@@ -6,7 +6,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:requirement': [key: string, value: string | string[]]
+  'update:requirement': [key: string, value: string | string[] | null]
+  'reset:all-requirements': []
 }>()
 
 const { data: requirementEntries } = await useAsyncData('designer-requirements', () => {
@@ -14,6 +15,8 @@ const { data: requirementEntries } = await useAsyncData('designer-requirements',
     .select('title', 'path', 'spec')
     .all()
 })
+
+const hasRequirements = computed(() => Object.keys(props.requirements).length > 0)
 
 const questions = computed<SpecQuestion[]>(() => {
   return (requirementEntries.value || [])
@@ -37,7 +40,7 @@ function getRequirement (questionId: string): string | string[] | null {
   return props.requirements[questionId] ?? null
 }
 
-function onChange (questionId: string, value: string | string[]) {
+function onChange (questionId: string, value: string | string[] | null) {
   emit('update:requirement', questionId, value)
 }
 </script>
@@ -50,13 +53,25 @@ function onChange (questionId: string, value: string | string[]) {
     <p class="text-lg text-muted">
       Answer 5 quick questions to personalize your guidance and results.
     </p>
+
+    <UButton
+      v-if="hasRequirements"
+      label="Reset All Answers"
+      icon="i-lucide-undo-2"
+      variant="subtle"
+      color="neutral"
+      size="xs"
+      class="mt-1 cursor-pointer"
+      @click="emit('reset:all-requirements')"
+    />
+
     <DesignSpecFormQuestion
       v-for="(question, index) in questions"
       :key="question.id"
       :question="question"
       :index="index"
       :model-value="getRequirement(question.id)"
-      @update:model-value="onChange(question.id, $event as string | string[])"
+      @update:model-value="onChange(question.id, $event as string | string[] | null)"
     />
   </section>
 </template>
