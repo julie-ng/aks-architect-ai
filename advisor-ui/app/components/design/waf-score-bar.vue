@@ -9,7 +9,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   min: -10,
   max: 10,
-  baseline: 50,
+  baseline: 0,
   bandWidth: 1
 })
 
@@ -37,15 +37,15 @@ const bandRight = computed(() => {
       <span class="text-muted capitalize">{{ pillar }}</span>
       <span class="font-medium">{{ score }}</span>
     </div>
-    <div class="relative h-6 w-full bg-muted rounded overflow-hidden">
+    <div class="relative h-6 w-full bg-muted rounded">
       <!-- Baseline marker -->
       <div
-        class="absolute top-0 bottom-0 w-px bg-neutral-400"
-        :style="{ left: `${baseline}%` }"
+        class="absolute -top-1 -bottom-1 w-0.5 bg-neutral-300 transition-[left] duration-300"
+        :style="{ left: `${toPercent(baseline)}%` }"
       />
       <!-- Score band -->
       <div
-        class="absolute top-1 bottom-1 rounded-sm bg-secondary/80 transition-all duration-300"
+        class="absolute top-1 bottom-1 rounded-sm bg-secondary/80 transition-[left,right] duration-300"
         :style="{ left: bandLeft, right: bandRight }"
       />
     </div>

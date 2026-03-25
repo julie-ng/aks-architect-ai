@@ -1,7 +1,10 @@
 <script setup lang="ts">
-defineProps<{
+const props = withDefaults(defineProps<{
   scores: Record<string, number>
-}>()
+  baseline?: Record<string, number>
+}>(), {
+  baseline: () => ({})
+})
 </script>
 
 <template>
@@ -14,6 +17,7 @@ defineProps<{
       :key="pillar"
       :pillar="String(pillar)"
       :score="score"
+      :baseline="props.baseline[pillar] ?? 0"
     />
   </div>
 </template>

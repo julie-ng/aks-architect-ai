@@ -110,16 +110,19 @@ export const useDesignsStore = defineStore('designs', () => {
     }
   }
 
-  async function fetchWafScores (decisions: Record<string, string | string[]>): Promise<Record<string, number>> {
+  type WafScoresResponse = {
+    impact: Record<string, number>
+    baseline: Record<string, number>
+  }
 
-    console.log(`[Store] fetchWafScores()`, decisions)
-    const { scores } = await $fetch<{ scores: Record<string, number> }>('/api/waf-scores', {
+  async function fetchWafScores (
+    decisions: Record<string, string | string[]>,
+    requirements: Record<string, string | string[]>,
+  ): Promise<WafScoresResponse> {
+    return await $fetch<WafScoresResponse>('/api/waf-scores', {
       method: 'POST',
-      body: { decisions },
+      body: { decisions, requirements },
     })
-
-    console.log(`[Store] scores`, scores)
-    return scores
   }
 
   function reset () {

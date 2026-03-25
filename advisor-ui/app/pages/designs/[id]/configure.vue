@@ -10,14 +10,17 @@ await callOnce(`design-${designId}`, () => designsStore.fetchDesign(designId))
 
 const { design } = useDesign(designId)
 
-const wafScores = ref<Record<string, number>>({})
+const wafImpact = ref<Record<string, number>>({})
+const wafBaseline = ref<Record<string, number>>({})
 
-async function refreshWafScores () {
+async function calculateWafScores () {
   if (!design.value) return
-  wafScores.value = await designsStore.fetchWafScores(design.value.decisions)
+  const result = await designsStore.fetchWafScores(design.value.decisions, design.value.requirements)
+  wafImpact.value = result.impact
+  wafBaseline.value = result.baseline
 }
 
-await refreshWafScores()
+await calculateWafScores()
 
 useHead({
   title: computed(() => `Configure - ${design.value?.title ?? 'Design'}`),
@@ -50,13 +53,14 @@ async function onDecisionChange (key: string, value: string | string[]) {
   if (!design.value) return
   await design.value.setDecision(key, value)
   showAutosaved()
-  refreshWafScores()
+  calculateWafScores()
 }
 
 async function onRequirementChange (key: string, value: string | string[]) {
   if (!design.value) return
   await design.value.setRequirement(key, value)
   showAutosaved()
+  calculateWafScores()
 }
 
 const tabItems = ref<TabsItem[]>([
@@ -104,7 +108,9 @@ const selectedTab = computed({
       <UiSavingIndicator :status="manualSaveStatus" />
       <UButton
         label="Save Design"
-        color="neutral"
+        icon="i-lucide-save"
+        color="secondary"
+        variant="subtle"
         size="sm"
         class="cursor-pointer"
         @click="onManualSave" />
@@ -126,8 +132,8 @@ const selectedTab = computed({
 
     <template #sticky-sidebar>
       <div class="p-4">
-        <div v-if="Object.keys(wafScores).length > 0">
-          <DesignWafScores :scores="wafScores" />
+        <div v-if="Object.keys(wafImpact).length > 0">
+          <DesignWafScores :scores="wafImpact" :baseline="wafBaseline" />
           <USeparator class="my-5" />
           <UButton
             label="Discuss with AI"
