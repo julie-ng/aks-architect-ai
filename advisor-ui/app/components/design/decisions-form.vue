@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DesignerQuestion } from '~/types/designer'
+import type { SpecQuestion } from '~~/shared/types/spec'
 
 const props = defineProps<{
   decisions: Record<string, string | string[]>
@@ -9,14 +9,14 @@ const emit = defineEmits<{
   'update:decision': [key: string, value: string | string[]]
 }>()
 
-const { data: componentEntries } = await useAsyncData('designer-components', () => {
-  return queryCollection('components')
+const { data: decisionEntries } = await useAsyncData('designer-decisions', () => {
+  return queryCollection('decisions')
     .select('title', 'path', 'spec')
     .all()
 })
 
-const questions = computed<DesignerQuestion[]>(() => {
-  return (componentEntries.value || [])
+const questions = computed<SpecQuestion[]>(() => {
+  return (decisionEntries.value || [])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((entry: any, index: number) => {
       const spec = entry?.spec || {}
@@ -28,7 +28,7 @@ const questions = computed<DesignerQuestion[]>(() => {
         question: spec.question,
         question_type: spec.question_type,
         answers: spec.answers || [],
-      } satisfies DesignerQuestion
+      } satisfies SpecQuestion
     })
     .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
 })
@@ -50,7 +50,7 @@ function onChange (questionId: string, value: string | string[]) {
     <p class="text-lg text-muted">
       Answer 8 quick questions to prioritze most relevant official documentation and best practices.
     </p>
-    <DesignComponentFormQuestion
+    <DesignSpecFormQuestion
       v-for="(question, index) in questions"
       :key="question.id"
       :question="question"

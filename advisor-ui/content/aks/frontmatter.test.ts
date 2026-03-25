@@ -16,14 +16,14 @@ function getMarkdownFiles (dir: string): string[] {
     .map(f => join(dir, f))
 }
 
-const componentsDir = join(__dirname, 'components')
+const decisionsDir = join(__dirname, 'decisions')
 const requirementsDir = join(__dirname, 'requirements')
 
-const componentFiles = getMarkdownFiles(componentsDir)
+const decisionFiles = getMarkdownFiles(decisionsDir)
 const requirementFiles = getMarkdownFiles(requirementsDir)
 
-describe('components frontmatter', () => {
-  it.each(componentFiles)('%s', (filePath) => {
+describe('decisions frontmatter', () => {
+  it.each(decisionFiles)('%s', (filePath) => {
     const data = parseFrontmatter(filePath)
     const spec = data.spec as Record<string, unknown>
 

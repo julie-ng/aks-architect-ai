@@ -9,9 +9,9 @@ export default defineContentConfig({
       // Load every file inside the `content` directory
       source: 'index.md',
     }),
-    components: defineCollection({
+    decisions: defineCollection({
       type: 'page',
-      source: 'aks/components/**/*.md',
+      source: 'aks/decisions/**/*.md',
       schema: z.object({
         title: z.string(),
         spec: z.object({

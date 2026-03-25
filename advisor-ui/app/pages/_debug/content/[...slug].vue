@@ -3,7 +3,7 @@ const route = useRoute()
 const slug = Array.isArray(route.params.slug) ? route.params.slug.join('/') : route.params.slug
 
 const { data } = await useAsyncData(`debug-${slug}`, () => {
-  return queryCollection('components')
+  return queryCollection('decisions')
       .all()
     // .where('stem', '=', slug.split('/').pop() ?? slug)
     // .first()

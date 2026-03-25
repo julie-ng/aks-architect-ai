@@ -64,7 +64,7 @@ function averagePillarScores (scores: WafPillarScores[]): Record<string, number>
  * Computes WAF pillar scores from the user's architectural decisions and
  * business requirements. Returns two score sets:
  *
- * - `impact`: averaged `waf_impact` from component answers (architectural decisions)
+ * - `impact`: averaged `waf_impact` from decision answers (architectural decisions)
  * - `baseline`: averaged `waf_baseline` from requirement answers (business context)
  *
  * Both are computed as the mean across all selected answers, rounded to integers.
@@ -85,12 +85,12 @@ export default defineEventHandler(async (event) => {
   const { decisions = {}, requirements = {} } = result.data
 
   // Fetch content schemas for both collections in parallel
-  const [componentEntries, requirementEntries] = await Promise.all([
-    queryCollection(event, 'components').select('path', 'spec').all() as unknown as Promise<SpecEntry[]>,
+  const [decisionEntries, requirementEntries] = await Promise.all([
+    queryCollection(event, 'decisions').select('path', 'spec').all() as unknown as Promise<SpecEntry[]>,
     queryCollection(event, 'requirements').select('path', 'spec').all() as unknown as Promise<SpecEntry[]>,
   ])
 
-  const impact = averagePillarScores(collectScores(componentEntries, decisions, getWafImpact))
+  const impact = averagePillarScores(collectScores(decisionEntries, decisions, getWafImpact))
   const baseline = averagePillarScores(collectScores(requirementEntries, requirements, getWafBaseline))
 
   return { impact, baseline }

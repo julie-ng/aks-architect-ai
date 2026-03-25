@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DesignerQuestion } from '~/types/designer'
+import type { SpecQuestion } from '~~/shared/types/spec'
 
 const props = defineProps<{
   requirements: Record<string, string | string[]>
@@ -15,7 +15,7 @@ const { data: requirementEntries } = await useAsyncData('designer-requirements',
     .all()
 })
 
-const questions = computed<DesignerQuestion[]>(() => {
+const questions = computed<SpecQuestion[]>(() => {
   return (requirementEntries.value || [])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((entry: any, index: number) => {
@@ -28,7 +28,7 @@ const questions = computed<DesignerQuestion[]>(() => {
         question: spec.question,
         question_type: spec.question_type,
         answers: spec.answers || [],
-      } satisfies DesignerQuestion
+      } satisfies SpecQuestion
     })
     .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
 })
@@ -50,7 +50,7 @@ function onChange (questionId: string, value: string | string[]) {
     <p class="text-lg text-muted">
       Answer 5 quick questions to personalize your guidance and results.
     </p>
-    <DesignComponentFormQuestion
+    <DesignSpecFormQuestion
       v-for="(question, index) in questions"
       :key="question.id"
       :question="question"

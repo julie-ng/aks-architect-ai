@@ -6,7 +6,7 @@ import {
   getWafBaseline as _getWafBaseline,
 } from '~~/shared/utils/spec-helpers'
 
-export async function useSpecSchema (collection: 'requirements' | 'components') {
+export async function useSpecSchema (collection: 'requirements' | 'decisions') {
   const entries = await queryCollection(collection)
     .select('path', 'title', 'spec')
     .all() as unknown as SpecEntry[]

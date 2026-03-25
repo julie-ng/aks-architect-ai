@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { DesignerQuestion } from '~/types/designer'
+import type { SpecQuestion } from '~~/shared/types/spec'
 
 defineProps<{
-  question: DesignerQuestion
+  question: SpecQuestion
   index: number
 }>()
 
@@ -21,14 +21,14 @@ const selected = defineModel<string | string[] | null>({ default: null })
       </p>
     </header>
 
-    <DesignComponentFormInputRadio
+    <DesignSpecFormInputRadio
       v-if="question.question_type === 'radio'"
       v-model="selected"
       :name="question.id"
       :answers="question.answers || []"
     />
 
-    <DesignComponentFormInputCheckbox
+    <DesignSpecFormInputCheckbox
       v-else-if="question.question_type === 'checkbox'"
       v-model="selected"
       :name="question.id"

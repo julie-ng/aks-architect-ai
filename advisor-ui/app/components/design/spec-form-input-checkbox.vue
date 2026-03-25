@@ -1,20 +1,34 @@
 <script setup lang="ts">
-import type { DesignerAnswer } from '~/types/designer'
+import type { SpecAnswer } from '~~/shared/types/spec'
 
 const props = defineProps<{
   name: string
-  answers: DesignerAnswer[]
+  answers: SpecAnswer[]
 }>()
 
-const selectedKey = defineModel<string | null>({ default: null })
+const modelValue = defineModel<string[] | null>({ default: () => [] })
 
-function getAnswerTitle (answer: DesignerAnswer) {
-  return answer.label || answer.title || answer.key
+const selectedKeys = computed(() => Array.isArray(modelValue.value) ? modelValue.value : [])
+
+function getAnswerTitle (answer: SpecAnswer) {
+  return answer.label || answer.key
 }
 
-function getHighlights (answer: DesignerAnswer) {
-  const values = answer.highlights ?? answer.highglights
-  return Array.isArray(values) ? values : []
+function getHighlights (answer: SpecAnswer) {
+  return answer.highlights ?? []
+}
+
+function isSelected (key: string) {
+  return selectedKeys.value.includes(key)
+}
+
+function toggle (key: string) {
+  if (isSelected(key)) {
+    modelValue.value = selectedKeys.value.filter(k => k !== key)
+  }
+  else {
+    modelValue.value = [...selectedKeys.value, key]
+  }
 }
 </script>
 
@@ -26,16 +40,19 @@ function getHighlights (answer: DesignerAnswer) {
       class="flex items-start gap-3 rounded-md border border-default p-3 transition-colors"
       :class="[
         answer.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-elevated/40',
-        selectedKey === answer.key ? 'bg-blue-50 hover:bg-blue-50' : ''
+        isSelected(answer.key) ? 'bg-blue-50 hover:bg-blue-50' : ''
       ]"
+      @click.prevent="!answer.disabled && toggle(answer.key)"
     >
       <input
-        v-model="selectedKey"
-        type="radio"
+        type="checkbox"
         :name="name"
         :value="answer.key"
+        :checked="isSelected(answer.key)"
         :disabled="answer.disabled"
         class="mt-1"
+        @click.stop
+        @change="toggle(answer.key)"
       >
 
       <div class="space-y-2">

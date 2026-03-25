@@ -5,7 +5,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const configurePath = route.path + '/configure?tab=decisions'
-const schema = await useSpecSchema('components')
+const schema = await useSpecSchema('decisions')
 const answeredCount = Object.keys(props.decisions).length
 </script>
 

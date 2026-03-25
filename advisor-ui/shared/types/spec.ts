@@ -10,8 +10,24 @@ export type SpecAnswer = {
   key: string
   label?: string
   description?: string
+  highlights?: string[]
+  disabled?: boolean
+  tag?: {
+    text: string
+    color?: string
+    variant?: string
+  }
   waf_impact?: WafPillarScores
   waf_baseline?: WafPillarScores
+}
+
+export type SpecQuestion = {
+  id: string
+  title?: string
+  description?: string
+  question?: string
+  question_type?: string
+  answers?: SpecAnswer[]
 }
 
 export type SpecEntry = {
