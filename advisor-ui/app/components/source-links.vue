@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import microsoftIcon from '~/assets/icons/microsoft.svg'
 
-defineProps<{
+const props = defineProps<{
   sources: Array<{ url: string, title?: string }>
 }>()
+
+const hasSources = computed(() => props.sources.length > 0)
 
 function isMicrosoftSource (url: string): boolean {
   try {
@@ -17,7 +19,7 @@ function isMicrosoftSource (url: string): boolean {
 </script>
 
 <template>
-  <div v-if="sources.length" class="mt-6 pt-2 border-t border-slate-200">
+  <div v-if="hasSources" class="mt-6 pt-2 border-t border-slate-200">
     <h3 class="my-4 font-semibold">References</h3>
     <div class="flex flex-wrap gap-2">
       <a

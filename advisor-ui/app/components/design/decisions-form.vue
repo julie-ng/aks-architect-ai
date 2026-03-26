@@ -36,6 +36,8 @@ const questions = computed<SpecQuestion[]>(() => {
     .filter(q => (q.question_type === 'radio' || q.question_type === 'checkbox') && Array.isArray(q.answers))
 })
 
+const hasQuestions = computed(() => questions.value.length > 0)
+
 function getDecision (questionId: string): string | string[] | null {
   return props.decisions[questionId] ?? null
 }
@@ -46,7 +48,7 @@ function onChange (questionId: string, value: string | string[] | null) {
 </script>
 
 <template>
-  <section v-if="questions.length > 0">
+  <section v-if="hasQuestions">
     <h2 class="text-xl font-semibold mb-2">
       Architectural Decisions
     </h2>

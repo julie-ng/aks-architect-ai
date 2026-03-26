@@ -227,6 +227,25 @@ const selectedTab = ref('requirements')
 watch(selectedTab, (tab) => router.replace({ query: { tab } }))
 ```
 
+## Semantic Conditions
+
+Never use inline `Object.keys(…).length`, `.length > 0`, or similar expressions in templates or conditionals. Extract them into a computed property (component-local) or a model getter (if reusable across components) with a semantic name:
+
+```ts
+// ✅ Semantic computed
+const hasDecisions = computed(() => Object.keys(props.decisions).length > 0)
+// template: v-if="hasDecisions"
+
+// ✅ Model getter (reusable)
+get hasBeenConfigured (): boolean {
+  return Object.keys(this.decisions).length > 0 || Object.keys(this.requirements).length > 0
+}
+
+// ❌ Inline — no semantic meaning
+v-if="Object.keys(props.decisions).length > 0"
+v-if="messages.length > 0"
+```
+
 ## Configuration Access
 
 - Public (client-safe) config: `nuxt.config.ts` → `useRuntimeConfig().public.*`
