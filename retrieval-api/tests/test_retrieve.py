@@ -71,7 +71,23 @@ class TestRetrieveEndpoint:
             json={"question": "What about multi-region?", "history": history},
         )
         assert response.status_code == 200
-        mock_reform.assert_called_once_with("What about multi-region?", mock_reform.call_args[0][1], history, 0.1)
+        mock_reform.assert_called_once_with("What about multi-region?", mock_reform.call_args[0][1], history, 0.1, None, "ollama")
+
+    def test_passes_design_context_to_reformulate(self, mock_reform, mock_retrieve):
+        design_context = "Requirements:\n- Compliance: Pci Dss"
+        response = self.client.post(
+            "/api/retrieve",
+            json={"question": "How to secure my cluster?", "design_context": design_context},
+        )
+        assert response.status_code == 200
+        mock_reform.assert_called_once()
+        assert mock_reform.call_args[0][4] == design_context
+
+    def test_works_without_design_context(self, mock_reform, mock_retrieve):
+        response = self.client.post("/api/retrieve", json={"question": "How to set up node pools?"})
+        assert response.status_code == 200
+        mock_reform.assert_called_once()
+        assert mock_reform.call_args[0][4] is None
 
     def test_rejects_missing_question(self, mock_reform, mock_retrieve):
         response = self.client.post("/api/retrieve", json={})

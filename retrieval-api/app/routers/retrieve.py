@@ -22,6 +22,8 @@ def retrieve_endpoint(
         settings.reformulation_model,
         history,
         settings.reformulation_temperature,
+        req.design_context,
+        settings.reformulation_provider,
     )
     chunks = retrieve(reformulated, conn, settings)
 

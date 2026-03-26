@@ -11,6 +11,7 @@ class HistoryMessage(BaseModel):
 class RetrieveRequest(BaseModel):
     question: str
     history: list[HistoryMessage] = []
+    design_context: str | None = None
 
 
 class RetrieveChunk(BaseModel):

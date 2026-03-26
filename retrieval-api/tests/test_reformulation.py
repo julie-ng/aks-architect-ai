@@ -38,6 +38,27 @@ class TestReformulateQuery:
         assert call_messages[1] == {"role": "user", "content": "how do I secure my cluster?"}
 
     @patch("app.services.reformulation.ollama")
+    def test_appends_design_context_to_system_message(self, mock_ollama):
+        mock_ollama.chat.return_value = {"message": {"content": "AKS private cluster with CNI Overlay"}}
+        design_context = "Requirements:\n- Compliance: Pci Dss\n\nArchitectural Decisions:\n- Networking Plugin: Azure Cni Overlay"
+        result = reformulate_query("how should I set up networking?", "llama3.2", design_context=design_context)
+
+        assert result == "AKS private cluster with CNI Overlay"
+        call_messages = mock_ollama.chat.call_args[1]["messages"]
+        system_msg = call_messages[0]["content"]
+        assert "AKS architecture design" in system_msg
+        assert design_context in system_msg
+
+    @patch("app.services.reformulation.ollama")
+    def test_system_message_unchanged_without_design_context(self, mock_ollama):
+        mock_ollama.chat.return_value = {"message": {"content": "AKS cluster security"}}
+        reformulate_query("how do I secure my cluster?", "llama3.2")
+
+        call_messages = mock_ollama.chat.call_args[1]["messages"]
+        system_msg = call_messages[0]["content"]
+        assert "architecture design" not in system_msg
+
+    @patch("app.services.reformulation.ollama")
     def test_falls_back_on_error(self, mock_ollama):
         mock_ollama.chat.side_effect = Exception("connection refused")
         result = reformulate_query("my original question", "llama3.2")

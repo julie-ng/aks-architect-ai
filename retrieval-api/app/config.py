@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     embedding_prefix: str = "search_query: "
     document_prefix: str = "search_document: "
     chat_model: str = "llama3.2"
+    reformulation_provider: Literal["ollama", "anthropic"] = "ollama"
     reformulation_model: str = "llama3.2"
     reformulation_temperature: float = 0.1
     cors_origins: list[str] = ["http://localhost:3000"]
