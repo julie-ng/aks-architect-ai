@@ -21,6 +21,8 @@ class Config:
     retrieval_top_k: int
     chunk_max_chars: int
     chunk_min_chars: int
+    tagging_model: str
+    tagging_provider: str
 
 
 config_defaults = Config(
@@ -34,6 +36,8 @@ config_defaults = Config(
     retrieval_top_k=5,
     chunk_max_chars=1500,
     chunk_min_chars=100,
+    tagging_model="gemma3:4b",
+    tagging_provider="ollama",
 )
 
 config = Config(
@@ -47,4 +51,6 @@ config = Config(
     retrieval_top_k=int(os.environ.get("RETRIEVAL_TOP_K", str(config_defaults.retrieval_top_k))),
     chunk_max_chars=int(os.environ.get("CHUNK_MAX_CHARS", str(config_defaults.chunk_max_chars))),
     chunk_min_chars=int(os.environ.get("CHUNK_MIN_CHARS", str(config_defaults.chunk_min_chars))),
+    tagging_model=os.environ.get("TAGGING_MODEL", config_defaults.tagging_model),
+    tagging_provider=os.environ.get("TAGGING_PROVIDER", config_defaults.tagging_provider),
 )

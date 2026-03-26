@@ -1,7 +1,7 @@
 DC = docker compose -f docker-compose.dev.yaml
 
-rag-pipeline: pipeline/chunk pipeline/embed
-rag-pipeline/full: scrape pipeline/chunk pipeline/embed
+rag-pipeline: pipeline/chunk pipeline/tag pipeline/embed
+rag-pipeline/full: scrape pipeline/chunk pipeline/tag pipeline/embed
 unit-tests: scraper/test pipeline/test retrieval-api/test
 
 # --- Web Scraper ---
@@ -22,6 +22,12 @@ pipeline/test:
 
 pipeline/chunk:
 	cd rag-pipeline && uv run python chunk.py
+
+pipeline/tag:
+	cd rag-pipeline && uv run python tag.py
+
+pipeline/tag-sample:
+	cd rag-pipeline && head -15 chunks.jsonl > sample_chunks.jsonl && uv run python tag.py --input sample_chunks.jsonl --output sample_tagged.jsonl
 
 pipeline/embed:
 	cd rag-pipeline && uv run python embed.py
@@ -83,7 +89,7 @@ dc/build:
 
 .PHONY: rag-pipeline rag-pipeline/full unit-tests \
 	scraper/test scraper/clean scraper/crawl \
-	pipeline/test pipeline/chunk pipeline/embed pipeline/query \
+	pipeline/test pipeline/chunk pipeline/tag pipeline/tag-sample pipeline/embed pipeline/query \
 	retrieval-api/test \
 	lint advisor-ui/lint retrieval-api/lint pipeline/lint \
 	advisor-ui/dev advisor-ui/install \

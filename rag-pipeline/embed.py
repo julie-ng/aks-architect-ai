@@ -43,13 +43,13 @@ def get_embedding(text: str) -> list[float]:
 
 def main():
     parser = argparse.ArgumentParser(description="Embed chunks and insert into Postgres/pgvector")
-    parser.add_argument("--input", default="chunks.jsonl", help="Input JSONL file")
+    parser.add_argument("--input", default="tagged_chunks.jsonl", help="Input JSONL file")
     args = parser.parse_args()
 
     input_path = Path(args.input)
     if not input_path.exists():
         print(f"Error: input file not found: {input_path}", file=sys.stderr)
-        print("Run chunk.py first to generate chunks.jsonl", file=sys.stderr)
+        print("Run chunk.py → tag.py first to generate tagged_chunks.jsonl", file=sys.stderr)
         sys.exit(1)
 
     conn = psycopg.connect(cfg.database_url)

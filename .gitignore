@@ -20,7 +20,7 @@ backup*
 *.xlsx
 web-scraper/crawled-pages.csv
 web-scraper/SOURCES_FRAMEWORK.yaml
-rag-pipeline/chunks.jsonl
+rag-pipeline/*.jsonl
 
 # Config
 .env
