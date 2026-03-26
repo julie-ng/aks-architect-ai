@@ -6,7 +6,7 @@ export default function (
 ): BreadcrumbItem[] {
   const items: BreadcrumbItem[] = [
     {
-      label: 'Designs',
+      label: 'Design Planner',
       to: '/designs',
     },
   ]

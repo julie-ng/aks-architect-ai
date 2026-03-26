@@ -2,7 +2,7 @@
 const designsStore = useDesignsStore()
 
 useHead({
-  title: 'Designs',
+  title: 'Design Planner',
 })
 
 await callOnce('designs', () => designsStore.fetchDesigns())

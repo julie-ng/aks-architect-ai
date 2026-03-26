@@ -31,9 +31,9 @@ const links = computed(() => {
       //   })),
       // },
       {
-        label: 'Design Wizard',
+        label: 'Architecture Planner',
         to: '/designs',
-        icon: 'i-lucide-origami', // goal
+        icon: 'i-lucide-drafting-compass', // goal
       },
     ],
     [

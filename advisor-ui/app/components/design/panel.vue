@@ -16,12 +16,12 @@ const props = defineProps({
 <template>
   <UDashboardPanel id="designs-panel">
     <template #header>
-      <UDashboardNavbar v-if="props.hasNavbar" icon="i-lucide-origami">
+      <UDashboardNavbar v-if="props.hasNavbar" icon="i-lucide-drafting-compass">
         <template #title>
           <!-- [Slot] Navbar (title) -->
           <slot name="navbar-title">
             <NuxtLink to="/designs">
-              <span class="font-normal text-sm">Designs</span>
+              <span class="font-normal text-sm">Planner</span>
             </NuxtLink>
           </slot>
         </template>
