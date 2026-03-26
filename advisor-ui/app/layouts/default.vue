@@ -2,9 +2,11 @@
 const route = useRoute()
 const { loggedIn } = useUserSession()
 const chatsStore = useChatsStore()
+const designsStore = useDesignsStore()
 
-// SSR: fetch chat sessions on server, hydrate on client (no layout shift)
+// SSR: fetch chat sessions + designs on server, hydrate on client (no layout shift)
 await callOnce('chat-sessions', () => chatsStore.fetchSessions())
+await callOnce('designs', () => designsStore.fetchDesigns())
 
 const { data: guidePages } = await useAsyncData('guide-pages', () => {
   return queryCollection('guide')
@@ -33,7 +35,14 @@ const links = computed(() => {
       {
         label: 'Architecture Planner',
         to: '/designs',
-        icon: 'i-lucide-drafting-compass', // goal
+        icon: 'i-lucide-drafting-compass',
+        defaultOpen: route.path.startsWith('/designs'),
+        active: route.path.startsWith('/designs'),
+        children: designsStore.sortedDesigns.map(d => ({
+          label: d.title || 'Untitled Design',
+          icon: 'i-lucide-file-text',
+          to: `/designs/${d.id}`,
+        })),
       },
     ],
     [
