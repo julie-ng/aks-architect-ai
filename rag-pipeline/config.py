@@ -36,8 +36,8 @@ config_defaults = Config(
     retrieval_top_k=5,
     chunk_max_chars=1500,
     chunk_min_chars=100,
-    tagging_model="gemma3:4b",
-    tagging_provider="ollama",
+    tagging_model="claude-haiku-4-5-20251001",
+    tagging_provider="anthropic",
 )
 
 config = Config(

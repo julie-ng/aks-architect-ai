@@ -27,7 +27,7 @@ pipeline/tag:
 	cd rag-pipeline && uv run python tag.py
 
 pipeline/tag-sample:
-	cd rag-pipeline && head -15 chunks.jsonl > sample_chunks.jsonl && uv run python tag.py --input sample_chunks.jsonl --output sample_tagged.jsonl
+	cd rag-pipeline && head -5 chunks.jsonl > sample_chunks.jsonl && uv run python tag.py --input sample_chunks.jsonl --output sample_tagged.jsonl
 
 pipeline/embed:
 	cd rag-pipeline && uv run python embed.py
