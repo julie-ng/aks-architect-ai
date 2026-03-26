@@ -8,11 +8,11 @@ const designsStore = useDesignsStore()
 await callOnce('chat-sessions', () => chatsStore.fetchSessions())
 await callOnce('designs', () => designsStore.fetchDesigns())
 
-const { data: guidePages } = await useAsyncData('guide-pages', () => {
-  return queryCollection('guide')
-    .select('title', 'path')
-    .all()
-})
+// const { data: guidePages } = await useAsyncData('guide-pages', () => {
+//   return queryCollection('guide')
+//     .select('title', 'path')
+//     .all()
+// })
 
 const links = computed(() => {
   const groups = [
