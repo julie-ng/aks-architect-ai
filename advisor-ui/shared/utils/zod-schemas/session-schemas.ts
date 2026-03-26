@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const createSessionSchema = z.object({
   id: z.string().uuid(),
   title: z.string().optional(),
+  designId: z.string().uuid().optional(),
 })
 
 export const updateSessionSchema = z.object({

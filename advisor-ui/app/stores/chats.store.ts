@@ -34,8 +34,9 @@ export const useChatsStore = defineStore('chats', () => {
 
   async function fetchSessions (): Promise<void> {
     if (!loggedIn.value) return
-    const data = await requestFetch<Array<{ id: string, title: string, createdAt: string, updatedAt: string }>>('/api/sessions')
+    const data = await requestFetch<Array<{ id: string, title: string, designId: string | null, createdAt: string, updatedAt: string }>>('/api/sessions')
     const record: Record<string, ChatSession> = {}
+    // s = session
     for (const s of data) {
       record[s.id] = { ...s, messages: [] }
     }
@@ -52,21 +53,22 @@ export const useChatsStore = defineStore('chats', () => {
     return data
   }
 
-  async function newSession (): Promise<ChatSession> {
-    return createSession(crypto.randomUUID())
+  async function newSession (designId?: string): Promise<ChatSession> {
+    return createSession(crypto.randomUUID(), designId)
   }
 
-  async function createSession (id: string): Promise<ChatSession> {
+  async function createSession (id: string, designId?: string): Promise<ChatSession> {
     const now = new Date().toISOString()
     const session: ChatSession = {
       id,
       title: 'New Chat',
+      designId: designId ?? null,
       createdAt: now,
       updatedAt: now,
       messages: [],
     }
     sessions.value = { ...sessions.value, [id]: session }
-    await $fetch('/api/sessions', { method: 'POST', body: { id } })
+    await $fetch('/api/sessions', { method: 'POST', body: { id, ...(designId ? { designId } : {}) } })
     return session
   }
 

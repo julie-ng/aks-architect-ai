@@ -15,7 +15,7 @@ export const users = pgTable('users', {
 export const chatSessions = pgTable('chat_sessions', {
   id: uuid('id').primaryKey(),
   userId: uuid('user_id').references(() => users.id),
-  // TODO: replace hardcoded default with shared constant (skipped to avoid unnecessary migration — do it in the next one)
+  designId: uuid('design_id').references(() => designs.id, { onDelete: 'set null' }),
   title: text('title').notNull().default('(untitled chat)'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

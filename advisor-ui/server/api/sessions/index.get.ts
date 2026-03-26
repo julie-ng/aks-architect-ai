@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
   const sessions = await db().select({
     id: chatSessions.id,
     title: chatSessions.title,
+    designId: chatSessions.designId,
     createdAt: chatSessions.createdAt,
     updatedAt: chatSessions.updatedAt,
   }).from(chatSessions)

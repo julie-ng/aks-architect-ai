@@ -4,6 +4,13 @@ const props = defineProps<{
 }>()
 
 const chatsStore = useChatsStore()
+const designsStore = useDesignsStore()
+
+const session = computed(() => chatsStore.getSession(props.chatId))
+const linkedDesign = computed(() => {
+  const did = session.value?.designId
+  return did ? designsStore.get(did) : null
+})
 
 // Rename modal state
 const renameOpen = ref(false)
@@ -44,6 +51,13 @@ function confirmRename () {
       <span class="font-semibold text-sm truncate">
         {{ chatsStore.getSession(chatId)?.title ?? 'Chat' }}
       </span>
+      <NuxtLink
+        v-if="linkedDesign"
+        :to="`/designs/${session?.designId}`"
+        class="text-xs text-muted hover:text-default ml-2 truncate"
+      >
+        {{ linkedDesign.title }}
+      </NuxtLink>
     </template>
     <template #right>
       <UDropdownMenu :items="chatActionItems">

@@ -125,6 +125,21 @@ export const useDesignsStore = defineStore('designs', () => {
     })
   }
 
+  async function startChat (designId: string): Promise<void> {
+    const design = designs.value[designId]
+    if (design) {
+      // console.log(`[design-chat] Starting chat for design: ${design.title}`)
+      console.log(`[design-chat] Requirements: ${design.title} (${design.id})`)
+      console.table({ ...design.requirements })
+      console.log(`[design-chat] Decisions: ${design.title} (${design.id})`)
+      console.log({ ...design.decisions })
+    }
+
+    const chatsStore = useChatsStore()
+    const session = await chatsStore.newSession(designId)
+    navigateTo(chatsStore.sessionPath(session.id))
+  }
+
   function reset () {
     designs.value = {}
     loaded.value = false
@@ -152,6 +167,7 @@ export const useDesignsStore = defineStore('designs', () => {
     patchDecision,
     patchRequirement,
     fetchWafScores,
+    startChat,
 
     // Reset
     reset,

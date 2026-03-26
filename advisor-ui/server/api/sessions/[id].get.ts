@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
   const [session] = await db().select({
     id: chatSessions.id,
     title: chatSessions.title,
+    designId: chatSessions.designId,
     createdAt: chatSessions.createdAt,
     updatedAt: chatSessions.updatedAt,
   }).from(chatSessions).where(and(eq(chatSessions.id, id), eq(chatSessions.userId, userId)))

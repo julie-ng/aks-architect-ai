@@ -1,10 +1,13 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
+  designId: string
   scores: Record<string, number>
   baseline?: Record<string, number>
 }>(), {
   baseline: () => ({})
 })
+
+const designsStore = useDesignsStore()
 </script>
 
 <template>
@@ -35,6 +38,7 @@ const props = withDefaults(defineProps<{
       size="lg"
       class="cursor-pointer w-full justify-center"
       icon="i-lucide-bot-message-square"
+      @click="designsStore.startChat(props.designId)"
     />
 
   </div>

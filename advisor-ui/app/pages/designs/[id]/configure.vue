@@ -149,7 +149,7 @@ const selectedTab = computed({
     <template #sticky-sidebar>
       <div class="p-4">
         <div v-if="design.hasBeenConfigured">
-          <DesignWafScores :scores="wafImpact" :baseline="wafBaseline" />
+          <DesignWafScores :design-id="designId" :scores="wafImpact" :baseline="wafBaseline" />
         </div>
         <p v-else class="text-xs text-muted">
           Make architectural decisions to see scores.

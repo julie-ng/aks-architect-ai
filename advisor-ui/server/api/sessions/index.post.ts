@@ -18,12 +18,14 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const { id, title } = result.data
+  const { id, title, designId } = result.data
+  console.log('[session] create', { id, designId: designId ?? null })
 
   const [session] = await db().insert(chatSessions).values({
     id,
     userId,
     ...(title ? { title } : {}),
+    ...(designId ? { designId } : {}),
   }).returning()
 
   setResponseStatus(event, 201)

@@ -29,6 +29,13 @@
       "when": 1774276146637,
       "tag": "0003_cold_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774525209865,
+      "tag": "0004_legal_scalphunter",
+      "breakpoints": true
     }
   ]
 }

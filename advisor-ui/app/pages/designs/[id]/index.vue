@@ -85,7 +85,7 @@ useHead({
     <template #sticky-sidebar>
       <div class="p-4">
         <div v-if="design.hasBeenConfigured">
-          <DesignWafScores :scores="wafImpact" :baseline="wafBaseline" />
+          <DesignWafScores :design-id="designId" :scores="wafImpact" :baseline="wafBaseline" />
           <p class="my-2">
             <UButton
               label="Adjust Design"
