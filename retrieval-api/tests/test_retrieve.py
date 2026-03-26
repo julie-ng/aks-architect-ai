@@ -1,3 +1,4 @@
+import os
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -21,6 +22,7 @@ from app.main import app
     ],
 )
 @patch("app.routers.retrieve.reformulate_query", return_value="AKS node pool configuration best practices")
+@patch.dict(os.environ, {"REFORMULATION_PROVIDER": "ollama"})
 class TestRetrieveEndpoint:
     def setup_method(self):
         mock_pool = MagicMock()
@@ -71,7 +73,14 @@ class TestRetrieveEndpoint:
             json={"question": "What about multi-region?", "history": history},
         )
         assert response.status_code == 200
-        mock_reform.assert_called_once_with("What about multi-region?", mock_reform.call_args[0][1], history, 0.1, None, "ollama")
+        mock_reform.assert_called_once_with(
+            "What about multi-region?",
+            mock_reform.call_args[0][1],
+            history,
+            0.1,
+            None,
+            "ollama",
+        )
 
     def test_passes_design_context_to_reformulate(self, mock_reform, mock_retrieve):
         design_context = "Requirements:\n- Compliance: Pci Dss"

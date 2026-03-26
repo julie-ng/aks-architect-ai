@@ -36,7 +36,13 @@ def retrieve_endpoint(
 
     chunks = retrieve(reformulated, conn, settings)
     for i, c in enumerate(chunks):
-        logger.info("[retrieve] chunk %d: score=%.3f boosted=%.3f title=%s", i, c["score"], c["boosted_score"], c["title"])
+        logger.info(
+            "[retrieve] chunk %d: score=%.3f boosted=%.3f title=%s",
+            i,
+            c["score"],
+            c["boosted_score"],
+            c["title"],
+        )
 
     return RetrieveResponse(
         chunks=[RetrieveChunk(**c) for c in chunks],

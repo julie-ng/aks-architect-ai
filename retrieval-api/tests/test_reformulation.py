@@ -40,7 +40,9 @@ class TestReformulateQuery:
     @patch("app.services.reformulation.ollama")
     def test_appends_design_context_to_system_message(self, mock_ollama):
         mock_ollama.chat.return_value = {"message": {"content": "AKS private cluster with CNI Overlay"}}
-        design_context = "Requirements:\n- Compliance: Pci Dss\n\nArchitectural Decisions:\n- Networking Plugin: Azure Cni Overlay"
+        design_context = (
+            "Requirements:\n- Compliance: Pci Dss\n\nArchitectural Decisions:\n- Networking Plugin: Azure Cni Overlay"
+        )
         result = reformulate_query("how should I set up networking?", "llama3.2", design_context=design_context)
 
         assert result == "AKS private cluster with CNI Overlay"
