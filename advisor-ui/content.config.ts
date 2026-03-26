@@ -78,9 +78,9 @@ export default defineContentConfig({
         domain: z.string(),
       })
     }),
-    guide: defineCollection({
-      type: 'page',
-      source: 'guide/**/*.md',
-    })
+    // guide: defineCollection({
+    //   type: 'page',
+    //   source: 'guide/**/*.md',
+    // })
   }
 })

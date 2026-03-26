@@ -20,16 +20,16 @@ const links = computed(() => {
         to: '/',
         icon: 'i-lucide-home',
       },
-      {
-        label: 'AKS Guide',
-        to: '/guide',
-        icon: 'i-lucide-book-text', // noteboook-text
-        defaultOpen: route.path.startsWith('/guide'),
-        children: guidePages.value?.map(p => ({
-          label: p.title,
-          to: p.path,
-        })),
-      },
+      // {
+      //   label: 'AKS Guide',
+      //   to: '/guide',
+      //   icon: 'i-lucide-book-text', // noteboook-text
+      //   defaultOpen: route.path.startsWith('/guide'),
+      //   children: guidePages.value?.map(p => ({
+      //     label: p.title,
+      //     to: p.path,
+      //   })),
+      // },
       {
         label: 'Design Wizard',
         to: '/designs',
