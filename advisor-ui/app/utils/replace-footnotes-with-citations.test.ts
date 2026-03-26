@@ -27,7 +27,7 @@ const sources: SourceMeta[] = [
 describe('replaceFootnotesWithCitations', () => {
   it('replaces a single citation with MDC link', () => {
     const result = replaceFootnotesWithCitations('See [1] for details.', sources)
-    expect(result).toBe('See [AKS Networking](https://learn.microsoft.com/aks/networking){.citation .citation-msft} for details.')
+    expect(result).toBe('See [AKS Networking](https://learn.microsoft.com/aks/networking){.citation .citation-msft target="_blank" rel="noopener"} for details.')
   })
 
   it('replaces multiple citations', () => {
@@ -38,7 +38,7 @@ describe('replaceFootnotesWithCitations', () => {
 
   it('handles citation at end of sentence', () => {
     const result = replaceFootnotesWithCitations('Read this [1].', sources)
-    expect(result).toBe('Read this [AKS Networking](https://learn.microsoft.com/aks/networking){.citation .citation-msft}.')
+    expect(result).toBe('Read this [AKS Networking](https://learn.microsoft.com/aks/networking){.citation .citation-msft target="_blank" rel="noopener"}.')
   })
 
   it('handles adjacent citations', () => {

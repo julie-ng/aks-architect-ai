@@ -60,7 +60,7 @@ export function replaceFootnotesWithCitations (text: string, sources: SourceMeta
     const source = sources[index]
     const title = escapeMarkdownLinkText(shortenCitationTitle(source.title || 'Source'))
     const classes = getCitationClass(source.url)
-    return `[${title}](${source.url}){.${classes.split(' ').join(' .')}}`
+    return `[${title}](${source.url}){.${classes.split(' ').join(' .')} target="_blank" rel="noopener"}`
   })
 
   // Restore code blocks
