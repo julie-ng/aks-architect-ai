@@ -25,6 +25,31 @@ Frontend is hard.
   - vs `useRequestFetch()`
 - [Pinia > Nuxt > `callOnce()`](https://pinia.vuejs.org/ssr/nuxt.html)
 
+### AI SDK - Chat Flow
+
+Sent to LLM API on _every_ message:
+
+- Full system prompt 
+- All messages 
+- RAG context 
+
+```
+Browser → POST /api/chat (messages only, no system prompt)
+  → Nuxt server (chat.post.ts):
+      1. Fetches RAG chunks from FastAPI
+      2. Builds system prompt + context
+      3. Calls Anthropic API via streamText():
+           {
+             system: "You are an AKS architect...\n<context>...</context>",
+             messages: [
+               { role: "user", content: "How should I set up networking?" },
+               { role: "assistant", content: "Based on your requirements..." },
+               { role: "user", content: "What about ingress?" }
+             ]
+           }
+      4. Streams response tokens back to browser
+```      
+
 ## Misc.
 
 ### AI Model Pricing for personal reference.
