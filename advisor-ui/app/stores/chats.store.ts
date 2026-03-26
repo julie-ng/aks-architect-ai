@@ -30,6 +30,11 @@ export const useChatsStore = defineStore('chats', () => {
     (id: string): string => `/chat/${id}`,
   )
 
+  const getSessionByDesignId = computed(() =>
+    (designId: string): ChatSession | undefined =>
+      Object.values(sessions.value).find(s => s.designId === designId),
+  )
+
   // --- Actions ---
 
   async function fetchSessions (): Promise<void> {
@@ -53,22 +58,31 @@ export const useChatsStore = defineStore('chats', () => {
     return data
   }
 
-  async function newSession (designId?: string): Promise<ChatSession> {
-    return createSession(crypto.randomUUID(), designId)
+  async function newSession (opts?: { designId?: string, title?: string }): Promise<ChatSession> {
+    return createSession(crypto.randomUUID(), opts)
   }
 
-  async function createSession (id: string, designId?: string): Promise<ChatSession> {
+  async function createSession (id: string, opts?: { designId?: string, title?: string }): Promise<ChatSession> {
+    const designId = opts?.designId
+    const title = opts?.title ?? 'New Chat'
     const now = new Date().toISOString()
     const session: ChatSession = {
       id,
-      title: 'New Chat',
+      title,
       designId: designId ?? null,
       createdAt: now,
       updatedAt: now,
       messages: [],
     }
     sessions.value = { ...sessions.value, [id]: session }
-    await $fetch('/api/sessions', { method: 'POST', body: { id, ...(designId ? { designId } : {}) } })
+    await $fetch('/api/sessions', {
+      method: 'POST',
+      body: {
+        id,
+        ...(title !== 'New Chat' ? { title } : {}),
+        ...(designId ? { designId } : {}),
+      },
+    })
     return session
   }
 
@@ -137,6 +151,7 @@ export const useChatsStore = defineStore('chats', () => {
     hasSessions,
     latestSession,
     getSession,
+    getSessionByDesignId,
     sessionPath,
 
     // Actions

@@ -125,18 +125,24 @@ export const useDesignsStore = defineStore('designs', () => {
     })
   }
 
-  async function startChat (designId: string): Promise<void> {
+  async function openChat (designId: string): Promise<void> {
     const design = designs.value[designId]
     if (design) {
-      // console.log(`[design-chat] Starting chat for design: ${design.title}`)
       console.log(`[design-chat] Requirements: ${design.title} (${design.id})`)
       console.table({ ...design.requirements })
       console.log(`[design-chat] Decisions: ${design.title} (${design.id})`)
-      console.log({ ...design.decisions })
+      console.table({ ...design.decisions })
     }
 
     const chatsStore = useChatsStore()
-    const session = await chatsStore.newSession(designId)
+    const existing = chatsStore.getSessionByDesignId(designId)
+    if (existing) {
+      navigateTo(chatsStore.sessionPath(existing.id))
+      return
+    }
+
+    const title = design ? `[Design] ${design.title}` : undefined
+    const session = await chatsStore.newSession({ designId, title })
     navigateTo(chatsStore.sessionPath(session.id))
   }
 
@@ -167,7 +173,7 @@ export const useDesignsStore = defineStore('designs', () => {
     patchDecision,
     patchRequirement,
     fetchWafScores,
-    startChat,
+    openChat,
 
     // Reset
     reset,

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
+
 const props = defineProps<{
   chatId: string
 }>()
@@ -18,7 +20,7 @@ const renameInput = ref('')
 
 const chatActionItems = [[
   {
-    label: 'Rename',
+    label: 'Rename Chat',
     icon: 'i-lucide-pencil',
     onSelect () {
       renameInput.value = chatsStore.getSession(props.chatId)?.title ?? ''
@@ -26,7 +28,7 @@ const chatActionItems = [[
     },
   },
   {
-    label: 'Delete',
+    label: 'Delete Chat',
     icon: 'i-lucide-trash-2',
     color: 'error' as const,
     async onSelect () {
@@ -43,24 +45,68 @@ function confirmRename () {
   }
   renameOpen.value = false
 }
+
+const otherDesigns = computed(() =>
+  designsStore.sortedDesigns.filter(d => d.id !== session.value?.designId),
+)
+const hasOtherDesigns = computed(() => otherDesigns.value.length > 0)
+
+const designDropdownItems = computed<DropdownMenuItem[][]>(() => {
+  const designId = session.value?.designId
+  if (!designId || !linkedDesign.value) return []
+
+  const groups: DropdownMenuItem[][] = [
+    [
+      {
+        label: 'Details',
+        icon: 'i-lucide-eye',
+        to: `/designs/${designId}`,
+      },
+      {
+        label: 'Configure',
+        icon: 'i-lucide-settings-2',
+        to: `/designs/${designId}/configure`,
+      },
+    ],
+  ]
+
+  if (hasOtherDesigns.value) {
+    groups.push([
+      {
+        label: 'Chat about',
+        icon: 'i-lucide-drafting-compass',
+        children: otherDesigns.value.map(d => ({
+          label: d.title || 'Untitled Design',
+          icon: 'i-lucide-map',
+          onSelect: () => designsStore.openChat(d.id),
+        })),
+      },
+    ])
+  }
+
+  return groups
+})
 </script>
 
 <template>
-  <UDashboardNavbar>
-    <template #default>
+  <UDashboardNavbar icon="i-lucide-bot-message-square">
+    <template #title>
       <span class="font-semibold text-sm truncate">
         {{ chatsStore.getSession(chatId)?.title ?? 'Chat' }}
       </span>
-      <NuxtLink
-        v-if="linkedDesign"
-        :to="`/designs/${session?.designId}`"
-        class="text-xs text-muted hover:text-default ml-2 truncate"
-      >
-        {{ linkedDesign.title }}
-      </NuxtLink>
     </template>
     <template #right>
-      <UDropdownMenu :items="chatActionItems">
+      <UDropdownMenu v-if="linkedDesign" :items="designDropdownItems">
+        <UButton
+          :label="linkedDesign.title"
+          icon="i-lucide-drafting-compass"
+          size="sm"
+          color="neutral"
+          variant="outline"
+          trailing-icon="i-lucide-chevron-down"
+        />
+      </UDropdownMenu>
+      <UDropdownMenu :items="chatActionItems" :ui="{ content: 'min-w-40' }">
         <UButton
           icon="i-lucide-ellipsis-vertical"
           color="neutral"

@@ -40,7 +40,7 @@ const links = computed(() => {
         active: route.path.startsWith('/designs'),
         children: designsStore.sortedDesigns.map(d => ({
           label: d.title || 'Untitled Design',
-          icon: 'i-lucide-file-text',
+          icon: 'i-lucide-map',
           to: `/designs/${d.id}`,
         })),
       },
@@ -70,7 +70,7 @@ const links = computed(() => {
           },
           ...chatsStore.sortedSessions.map(session => ({
             label: session.title,
-            icon: 'i-lucide-messages-square',
+            icon: session.designId ? 'i-lucide-map' : 'i-lucide-messages-square',
             to: `/chat/${session.id}`,
           })),
         ],

@@ -32,6 +32,11 @@ export default defineAppConfig({
         },
       },
     },
+    dropdownMenu: {
+      slots: {
+        content: 'w-(--reka-dropdown-menu-trigger-width)'
+      }
+    }
   },
   chat: {
     untitledLabel: '(untitled chat)',

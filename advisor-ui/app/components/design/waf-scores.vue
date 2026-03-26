@@ -38,7 +38,7 @@ const designsStore = useDesignsStore()
       size="lg"
       class="cursor-pointer w-full justify-center"
       icon="i-lucide-bot-message-square"
-      @click="designsStore.startChat(props.designId)"
+      @click="designsStore.openChat(props.designId)"
     />
 
   </div>
