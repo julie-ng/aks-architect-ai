@@ -61,7 +61,7 @@ useHead({
 
       <USeparator class="my-5" />
 
-      <DesignRequirements :requirements="design.requirements" class="mb-4"/>
+      <DesignRequirements :design-id="designId" class="mb-4"/>
       <UButton
         label="Configure Requirements"
         icon="i-lucide-settings-2"
@@ -72,7 +72,7 @@ useHead({
 
       <!-- <USeparator class="my-6" /> -->
 
-      <DesignDecisions :decisions="design.decisions" class="mt-8 mb-4" />
+      <DesignDecisions :design-id="designId" class="mt-8 mb-4" />
       <UButton
         label="Configure Decisions"
         icon="i-lucide-settings-2"

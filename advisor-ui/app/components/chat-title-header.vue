@@ -9,13 +9,15 @@ const chatsStore = useChatsStore()
 const designsStore = useDesignsStore()
 
 const session = computed(() => chatsStore.getSession(props.chatId))
+const linkedDesignId = computed(() => session.value?.designId ?? null)
 const linkedDesign = computed(() => {
-  const did = session.value?.designId
-  return did ? designsStore.get(did) : null
+  const designId = linkedDesignId.value
+  return designId ? designsStore.get(designId) : null
 })
 
-// Rename modal state
+// Modal state
 const renameOpen = ref(false)
+const detailsOpen = ref(false)
 const renameInput = ref('')
 
 const chatActionItems = [[
@@ -60,7 +62,9 @@ const designDropdownItems = computed<DropdownMenuItem[][]>(() => {
       {
         label: 'Details',
         icon: 'i-lucide-eye',
-        to: `/designs/${designId}`,
+        onSelect () {
+          detailsOpen.value = true
+        },
       },
       {
         label: 'Configure',
@@ -136,6 +140,38 @@ const designDropdownItems = computed<DropdownMenuItem[][]>(() => {
           />
           <UButton label="Rename" @click="confirmRename" />
         </div>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    v-if="linkedDesign"
+    v-model:open="detailsOpen"
+    :title="linkedDesign.title"
+    description="Design requirements and architectural decisions"
+    :ui="{ content: 'max-w-2xl', description: 'sr-only' }"
+  >
+    <template #body>
+      <DesignRequirements :design-id="linkedDesignId!" class="mb-4" />
+      <DesignDecisions :design-id="linkedDesignId!" class="mt-8 mb-4" />
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton
+          label="Configure"
+          icon="i-lucide-settings-2"
+          color="neutral"
+          :to="designsStore.getConfigurePath(linkedDesignId!)"
+          variant="subtle"
+        />
+        <UButton
+          label="Return to chat"
+          icon="i-lucide-bot-message-square"
+          color="neutral"
+          variant="subtle"
+          class="cursor-pointer"
+          @click="detailsOpen = false"
+        />
       </div>
     </template>
   </UModal>

@@ -1,25 +1,16 @@
 <script setup lang="ts">
 const props = defineProps<{
-  requirements: Record<string, string | string[]>
+  designId: string
 }>()
 
-const route = useRoute()
-const configurePath = route.path + '/configure?tab=requirements'
+const designsStore = useDesignsStore()
+await callOnce(`design-${props.designId}`, () => designsStore.fetchDesign(props.designId))
+
+const design = computed(() => designsStore.get(props.designId))
+const requirements = computed(() => design.value?.requirements ?? {})
+const configurePath = designsStore.getConfigurePath(props.designId)
 const schema = await useSpecSchema('requirements')
-
-const answeredCount = Object.keys(props.requirements).length
-
-/**
- * Decisions Format from Database is in key: value format.
- *
-{
-    "tenancy": "single-tenant",
-    "team-role": "app-developer",
-    "organization-type": "startup",
-    "networking-boundary": "public",
-    "infrastructure-experience": "medium"
-}
- */
+const answeredCount = computed(() => Object.keys(requirements.value).length)
 </script>
 
 <template>
@@ -38,7 +29,7 @@ const answeredCount = Object.keys(props.requirements).length
     <table v-else class="w-full text-sm border-collapse border border-slate-200">
       <tbody>
         <tr
-          v-for="(val, key) in props.requirements"
+          v-for="(val, key) in requirements"
           :key="key"
           class="border-b border-slate-200 last:border-b-0"
         >
@@ -46,7 +37,7 @@ const answeredCount = Object.keys(props.requirements).length
             {{ schema.getQuestionTitle(key) }}
           </td>
           <td class="px-4 py-3 text-muted w-1/2">
-            {{ schema.getAnswerLabel(key, val)  }}
+            {{ schema.getAnswerLabel(key, val) }}
           </td>
         </tr>
       </tbody>

@@ -1,12 +1,16 @@
 <script setup lang="ts">
 const props = defineProps<{
-  decisions: Record<string, string | string[]>
+  designId: string
 }>()
 
-const route = useRoute()
-const configurePath = route.path + '/configure?tab=decisions'
+const designsStore = useDesignsStore()
+await callOnce(`design-${props.designId}`, () => designsStore.fetchDesign(props.designId))
+
+const design = computed(() => designsStore.get(props.designId))
+const decisions = computed(() => design.value?.decisions ?? {})
+const configurePath = designsStore.getConfigurePath(props.designId)
 const schema = await useSpecSchema('decisions')
-const answeredCount = Object.keys(props.decisions).length
+const answeredCount = computed(() => Object.keys(decisions.value).length)
 </script>
 
 <template>
@@ -25,7 +29,7 @@ const answeredCount = Object.keys(props.decisions).length
     <table v-else class="w-full text-sm border-collapse border border-slate-200">
       <tbody>
         <tr
-          v-for="(value, key) in props.decisions"
+          v-for="(value, key) in decisions"
           :key="key"
           class="border-b border-slate-200 last:border-b-0"
         >

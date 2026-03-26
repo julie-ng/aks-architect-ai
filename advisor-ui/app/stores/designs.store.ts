@@ -22,6 +22,10 @@ export const useDesignsStore = defineStore('designs', () => {
     (id: string): DesignData | undefined => designs.value[id],
   )
 
+  const getConfigurePath = computed(() =>
+    (id: string): string => `/designs/${id}/configure`,
+  )
+
   // --- Read actions ---
 
   async function fetchDesigns (): Promise<void> {
@@ -160,6 +164,7 @@ export const useDesignsStore = defineStore('designs', () => {
     sortedDesigns,
     hasDesigns,
     getDesign,
+    getConfigurePath,
 
     // Read actions
     get,
