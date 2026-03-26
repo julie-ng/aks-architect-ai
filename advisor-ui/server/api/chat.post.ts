@@ -1,5 +1,7 @@
 import type { UIMessage } from 'ai'
 import { streamText, convertToModelMessages } from 'ai'
+import { eq } from 'drizzle-orm'
+import { designs } from '../db/schema'
 import type { RetrieveResponse } from '../types/retrieval'
 
 export default defineLazyEventHandler(async () => {
@@ -8,7 +10,11 @@ export default defineLazyEventHandler(async () => {
     const config = useRuntimeConfig()
 
     try {
-      const { messages, domains }: { messages: UIMessage[], domains?: string[] } = await readBody(event)
+      const { messages, domains, designId }: {
+        messages: UIMessage[]
+        domains?: string[]
+        designId?: string
+      } = await readBody(event)
 
       const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
       if (!lastUserMessage) {
@@ -31,6 +37,26 @@ export default defineLazyEventHandler(async () => {
         .filter((m) => m.content.length > 0)
         .slice(-6)
 
+      console.log('[chat] designId:', designId ?? '(none)', '| domains:', domains ?? '(none)')
+
+      let designContext = ''
+      if (designId) {
+        const [design] = await db().select({
+          requirements: designs.requirements,
+          decisions: designs.decisions,
+        }).from(designs).where(eq(designs.id, designId))
+
+        if (design) {
+          designContext = formatDesignContext(
+            design.requirements as Record<string, string | string[]>,
+            design.decisions as Record<string, string | string[]>,
+          )
+        }
+      }
+      if (designContext) {
+        console.log('[chat] design context:\n' + designContext)
+      }
+
       const t0 = performance.now()
 
       console.time('[chat] retrieve')
@@ -38,16 +64,24 @@ export default defineLazyEventHandler(async () => {
         `${config.retrievalApiHost}/api/retrieve`,
         {
           method: 'POST',
-          body: { question, history },
+          body: {
+            question,
+            history,
+            ...(designContext ? { design_context: designContext } : {}),
+          },
         },
       )
       console.timeEnd('[chat] retrieve')
+      console.log('[chat] reformulated:', retrieveResponse.reformulated_query)
 
       console.time('[chat] systemPrompt')
       const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
       const context = formatContext(dedupedChunks)
       const systemPrompt = buildSystemPrompt(domains)
-      const systemPromptWithContext = `${systemPrompt}\n\n<context>\n${context}\n</context>`
+      let fullPrompt = `${systemPrompt}\n\n<context>\n${context}\n</context>`
+      if (designContext) {
+        fullPrompt += `\n\n<design>\nThe user has an AKS architecture design with these choices. Tailor your advice to their specific configuration:\n${designContext}\n</design>`
+      }
       console.timeEnd('[chat] systemPrompt')
 
       const modelMessages = await convertToModelMessages(messages)
@@ -65,7 +99,7 @@ export default defineLazyEventHandler(async () => {
       const result = streamText({
         model: getChatModel(),
         temperature: config.ai.chatTemperature,
-        system: systemPromptWithContext,
+        system: fullPrompt,
         messages: modelMessages,
         onFinish: () => {
           const total = (performance.now() - t0).toFixed(0)

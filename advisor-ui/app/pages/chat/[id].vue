@@ -26,23 +26,26 @@ await callOnce(`chat-session-${chatId}`, async () => {
 // Client-only: Chat class manages streaming connections and reactive DOM state
 const ready = ref(false)
 let chat: Chat
+let chatBody: Record<string, unknown> = {}
 
 onMounted(() => {
   const session = chatsStore.getSession(chatId)!
 
+  chatBody = {
+    domains: [
+      'cluster-design',
+      'networking',
+      'security',
+      'operations',
+      'observability-and-cost',
+      'resilience',
+    ],
+    ...(session.designId ? { designId: session.designId } : {}),
+  }
+
   chat = new Chat({
     id: chatId,
     messages: session.messages,
-    body: {
-      domains: [
-        'cluster-design',
-        'networking',
-        'security',
-        'operations',
-        'observability-and-cost',
-        'resilience',
-      ],
-    },
     onFinish ({ messages }) {
       chatsStore.updateMessages(chatId, messages)
     },
@@ -53,6 +56,7 @@ onMounted(() => {
 
   hasSubmitted.value = session.messages.length > 0
   ready.value = true
+
 })
 
 useHead({
@@ -75,7 +79,7 @@ function onSubmit (e: Event) {
   if (!hasSubmitted.value) {
     hasSubmitted.value = true
     setTimeout(() => {
-      chat.sendMessage({ text: message })
+      chat.sendMessage({ text: message }, { body: chatBody })
       // Sync user message immediately
       chatsStore.updateMessages(chatId, chat.messages)
     }, 300)
@@ -83,7 +87,7 @@ function onSubmit (e: Event) {
     generateChatTitle(message)
   }
   else {
-    chat.sendMessage({ text: message })
+    chat.sendMessage({ text: message }, { body: chatBody })
     chatsStore.updateMessages(chatId, chat.messages)
   }
 }
