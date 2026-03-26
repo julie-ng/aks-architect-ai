@@ -47,3 +47,7 @@ urls:
   - url: https://learn.microsoft.com/en-us/azure/aks/advanced-container-networking-services-overview
     doc_type: overview
     priority: 10
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network-isolated
+    doc_type: article
+    priority: 10
