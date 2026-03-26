@@ -122,7 +122,11 @@ const designDropdownItems = computed<DropdownMenuItem[][]>(() => {
     </template>
   </UDashboardNavbar>
 
-  <UModal v-model:open="renameOpen" title="Rename chat">
+  <UModal
+    v-model:open="renameOpen"
+    title="Rename chat"
+    description="Enter a new name for this chat"
+    :ui="{ description: 'sr-only' }">
     <template #body>
       <div class="flex flex-col gap-4">
         <UInput

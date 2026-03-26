@@ -13,7 +13,7 @@ const actionItems = [[
     label: 'Edit',
     icon: 'i-lucide-pencil',
     onSelect () {
- editOpen.value = true 
+ editOpen.value = true
 },
   },
   {
@@ -21,7 +21,7 @@ const actionItems = [[
     icon: 'i-lucide-trash-2',
     color: 'error' as const,
     onSelect () {
- deleteOpen.value = true 
+ deleteOpen.value = true
 },
   },
 ]]
@@ -65,7 +65,11 @@ async function confirmDelete () {
 
   <DesignEditModal :id="id" v-model:open="editOpen" />
 
-  <UModal v-model:open="deleteOpen" title="Confirm Deletion">
+  <UModal
+    v-model:open="deleteOpen"
+    title="Confirm Deletion"
+    description="Confirm design deletion"
+    :ui="{ description: 'sr-only' }">
     <template #body>
       <div class="flex flex-col gap-4">
         <p>Are you sure you want to delete "{{ design?.title }}"?</p>
