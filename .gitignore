@@ -18,7 +18,7 @@ notes/
 # Data and Debugging
 backup*
 *.xlsx
-web-scraper/crawled-pages.csv
+web-scraper/*.csv
 web-scraper/SOURCES_FRAMEWORK.yaml
 rag-pipeline/*.jsonl
 

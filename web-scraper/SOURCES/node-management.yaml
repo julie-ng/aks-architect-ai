@@ -1,0 +1,73 @@
+group_title: Node Management
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/manage-node-pools
+    title: Manage node pools for a cluster in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to manage multiple node pools for a cluster in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-access
+    title: Access Azure Kubernetes Service (AKS) cluster nodes - Azure Kubernetes Service
+    description: Learn how to access Azure Kubernetes Service (AKS) cluster nodes for troubleshooting and maintenance tasks.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-auto-provisioning
+    title: Node auto-provisioning in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn about node auto-provisioning in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-auto-repair
+    title: Azure Kubernetes Service (AKS) node auto-repair - Azure Kubernetes Service
+    description: Learn about Azure Kubernetes Service (AKS) node auto-repair.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-autoprovision
+    title: Use node autoprovision in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to use node autoprovision in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-images
+    title: Azure Kubernetes Service (AKS) node images - Azure Kubernetes Service
+    description: Learn about Azure Kubernetes Service (AKS) node images.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-problem-detector
+    title: Node Problem Detector in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn about Node Problem Detector in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-resource-reservations
+    title: Azure Kubernetes Service (AKS) node resource reservations - Azure Kubernetes Service
+    description: Learn about Azure Kubernetes Service (AKS) node resource reservations.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-updates-kured
+    title: Handle node updates and reboots with kured in Azure Kubernetes Service (AKS)
+    description: Learn how to update nodes and automatically reboot them with kured in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/node-upgrade-github-actions
+    title: Apply AKS node security updates with GitHub Actions - Azure Kubernetes Service
+    description: Learn how to update AKS nodes using GitHub Actions.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/resize-cluster
+    title: Resize an Azure Kubernetes Service (AKS) cluster - Azure Kubernetes Service
+    description: Learn how to resize an Azure Kubernetes Service (AKS) cluster.
+    priority: 8
+    wave: 2

@@ -22,10 +22,12 @@ const VALID_GROUP_KEYS = new Set([
 const VALID_URL_KEYS = new Set([
   'url',
   'title',
+  'description',
   'priority',
   'doc_type',
   'workloads',
   'scenarios',
+  'wave',
   'tags',
   'comments',
 ]);
@@ -118,6 +120,17 @@ describe('SOURCES/ schema validation', () => {
         if (entry.priority !== undefined) {
           expect(typeof entry.priority, `URL "${entry.url}" priority is not a number`).toBe('number');
           expect(entry.priority as number, `URL "${entry.url}" priority must be > 0`).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    it('wave values are positive integers', () => {
+      const urls = group.urls as Record<string, unknown>[];
+      for (const entry of urls) {
+        if (entry.wave !== undefined) {
+          expect(typeof entry.wave, `URL "${entry.url}" wave is not a number`).toBe('number');
+          expect(Number.isInteger(entry.wave), `URL "${entry.url}" wave must be an integer`).toBe(true);
+          expect(entry.wave as number, `URL "${entry.url}" wave must be > 0`).toBeGreaterThan(0);
         }
       }
     });

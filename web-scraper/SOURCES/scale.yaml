@@ -18,3 +18,11 @@ urls:
     priority: 10
     comments: |
       Best practices for large workloads, referring more to load of control plane, i.e. Kubernetes API server.
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler-overview
+    title: Cluster autoscaler overview in Azure Kubernetes Service (AKS)
+    description: Learn about the cluster autoscaler in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2

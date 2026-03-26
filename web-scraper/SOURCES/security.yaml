@@ -1,0 +1,103 @@
+group_title: Security
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/azure-disk-customer-managed-keys
+    title: Customer-managed keys for Azure disks in Azure Kubernetes Service (AKS)
+    description: Learn how to use customer-managed keys with Azure disks in AKS.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/cis-kubernetes
+    title: CIS Kubernetes Benchmark for Azure Kubernetes Service (AKS)
+    description: Learn about CIS Kubernetes Benchmark compliance in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-vulnerability-management
+    title: Vulnerability management for Azure Kubernetes Service (AKS)
+    description: Learn about vulnerability management in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/confidential-containers-overview
+    title: Confidential containers on Azure Kubernetes Service (AKS) overview
+    description: Learn about confidential containers on Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-driver
+    title: Use the Azure Key Vault Provider for Secrets Store CSI Driver in AKS
+    description: Learn how to use the Azure Key Vault Provider for Secrets Store CSI Driver in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-identity-access
+    title: Provide an access identity to the Azure Key Vault Provider for Secrets Store CSI Driver in AKS
+    description: Learn about the various methods for providing an access identity in AKS.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/custom-certificate-authority
+    title: Use a custom certificate authority (CA) in Azure Kubernetes Service (AKS)
+    description: Learn how to use a custom certificate authority in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/developer-best-practices-pod-security
+    title: Developer best practices for pod security in AKS - Azure Kubernetes Service
+    description: Learn the developer best practices for how to secure pods in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/enable-fips-nodes
+    title: Enable Federal Information Process Standard (FIPS) for AKS node pools
+    description: Learn how to enable FIPS for Azure Kubernetes Service (AKS) node pools.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/enable-host-encryption
+    title: Enable host-based encryption on Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to enable host-based encryption on Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/image-cleaner
+    title: Use Image Cleaner to clean up stale images on AKS - Azure Kubernetes Service
+    description: Learn how to use Image Cleaner to clean up stale images on Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/image-integrity
+    title: Use Image Integrity to validate signed images before deploying them to AKS
+    description: Learn how to use Image Integrity to validate signed container images before deploying them to AKS clusters.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-cluster-security
+    title: Best practices for cluster security in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for how to manage cluster security and upgrades in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/secure-container-access
+    title: Secure container access to resources using built-in security features - Azure Kubernetes Service
+    description: Learn how to secure container access to resources in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/security-controls-policy
+    title: Azure Policy Regulatory Compliance controls for Azure Kubernetes Service (AKS)
+    description: Lists Azure Policy Regulatory Compliance controls available for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/trusted-access-feature
+    title: Enable Azure resources to access AKS clusters using Trusted Access - Azure Kubernetes Service
+    description: Learn how to enable Azure resources to access Azure Kubernetes Service (AKS) clusters using Trusted Access.
+    priority: 8
+    wave: 2

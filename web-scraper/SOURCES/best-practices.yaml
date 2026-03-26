@@ -1,0 +1,25 @@
+group_title: Best Practices
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/best-practices
+    title: Best practices for Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: A collection of cluster operator and developer best practices for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/best-practices-app-cluster-reliability
+    title: Best practices for app and cluster reliability in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator and developer best practices for reliability in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/best-practices-cost
+    title: Best practices for cost optimization in Azure Kubernetes Service (AKS)
+    description: Learn the best practices for cost optimization in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2

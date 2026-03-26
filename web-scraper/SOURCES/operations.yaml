@@ -16,3 +16,17 @@ urls:
     priority: 15
     comments: |
       patch vs stable vs rapid, etc. how versions of k8s are auto-upgraded
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/deployment-safeguards
+    title: Deployment safeguards for Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to use deployment safeguards in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/long-term-support
+    title: Long-term support for Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn about long-term support for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2

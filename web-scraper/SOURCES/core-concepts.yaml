@@ -78,3 +78,23 @@ urls:
     priority: 10
     comments: |
       Lists and Tables of various addons, incl. monitoring, azure policy.
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/managed-identity-overview
+    title: Use a managed identity in Azure Kubernetes Service (AKS)
+    description: Learn how to use managed identities in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-identity
+    title: Best practices for authentication and authorization - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for managing authentication and authorization for clusters in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview
+    title: Microsoft Entra Workload ID with Azure Kubernetes Service (AKS)
+    description: Learn about Microsoft Entra Workload ID for Azure Kubernetes Service (AKS) and how to migrate your application to use it.
+    priority: 8
+    wave: 2

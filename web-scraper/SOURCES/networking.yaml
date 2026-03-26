@@ -51,3 +51,95 @@ urls:
   - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network-isolated
     doc_type: article
     priority: 10
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/azure-cni-overview
+    title: Azure CNI networking in Azure Kubernetes Service (AKS) overview - Azure Kubernetes Service
+    description: Learn about Azure CNI networking in Azure Kubernetes Service (AKS), including prerequisites and deployment.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network-azure-cni-overlay
+    title: Azure CNI Overlay networking - Azure Kubernetes Service
+    description: Learn about Azure CNI Overlay networking in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-network-cni-overview
+    title: CNI networking overview - Azure Kubernetes Service
+    description: Overview of CNI networking plugins and choosing a networking model in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/dns-concepts
+    title: DNS concepts in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn about DNS in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype
+    title: Customize cluster egress with outbound types in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to define a custom egress route in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/egress-udr
+    title: Use user-defined routing (UDR) for egress with Azure Kubernetes Service (AKS)
+    description: Learn how to use user-defined routing for egress with Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/internal-lb
+    title: Use an internal load balancer with Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to create and use an internal load balancer to expose your services with Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic
+    title: Limit egress traffic for cluster nodes in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn what ports and addresses are required to control egress traffic for cluster nodes in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/load-balancer-standard
+    title: Use a public Standard Load Balancer in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn how to use a public load balancer with a Standard SKU to expose your services with Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/nat-gateway
+    title: Create a managed or user-assigned NAT gateway for Azure Kubernetes Service (AKS)
+    description: Learn how to create a managed or user-assigned NAT gateway for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/network-isolated
+    title: Create a network isolated AKS cluster - Azure Kubernetes Service
+    description: Learn how to create a network isolated Azure Kubernetes Service (AKS) cluster.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/network-policy-best-practices
+    title: Best practices for network policies in Azure Kubernetes Service (AKS)
+    description: Learn the best practices for using network policies in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/private-clusters
+    title: Create a private Azure Kubernetes Service (AKS) cluster - Azure Kubernetes Service
+    description: Learn how to create a private Azure Kubernetes Service (AKS) cluster.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/static-ip
+    title: Use a static public IP address and DNS label with the Azure Kubernetes Service (AKS)
+    description: Learn how to create and use a static public IP address with the Azure Kubernetes Service (AKS) load balancer.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-network
+    title: Best practices for network resources in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for virtual network resources and connectivity in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2

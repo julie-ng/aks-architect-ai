@@ -21,3 +21,17 @@ urls:
   - url: "https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator-tool-calling"
     priority: 6
     doc_type: how-to
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/best-practices-ml-ops
+    title: Best practices for MLOps with Azure Kubernetes Service (AKS)
+    description: Learn best practices for machine learning operations (MLOps) in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-fine-tune-language-models
+    title: Fine-tune language models with Azure Kubernetes Service (AKS)
+    description: Learn about fine-tuning language models with Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2

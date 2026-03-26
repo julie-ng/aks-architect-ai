@@ -22,3 +22,53 @@ urls:
     priority: 15
     comments: |
       Decent overview article with concrete steps for setting up Prometheus metrics, managed Grafana, container logging and control plane logs.
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/control-plane-metrics-default-list
+    title: Control plane metrics default list in Azure Kubernetes Service (AKS)
+    description: Learn about the default list of control plane metrics in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/cost-advisors
+    title: Azure Kubernetes Service (AKS) cost advisors
+    description: Learn about Azure Kubernetes Service (AKS) cost advisors.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/cost-analysis
+    title: Azure Kubernetes Service (AKS) cost analysis - Azure Kubernetes Service
+    description: Learn how to use cost analysis to understand Azure Kubernetes Service (AKS) costs.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/monitor-aks-reference
+    title: AKS monitoring data reference - Azure Kubernetes Service
+    description: Important reference material needed when you monitor Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/monitor-control-plane-metrics
+    title: Monitor Azure Kubernetes Service (AKS) control plane metrics (preview)
+    description: Learn how to monitor the AKS control plane metrics.
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/monitor-gpu-metrics
+    title: Monitor GPU metrics in Azure Kubernetes Service (AKS)
+    description: Learn how to monitor GPU metrics in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/optimize-aks-costs
+    title: Optimize costs in Azure Kubernetes Service (AKS)
+    description: Learn how to optimize costs in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/understand-aks-costs
+    title: Understand Azure Kubernetes Service (AKS) costs
+    description: Learn about Azure Kubernetes Service (AKS) costs.
+    priority: 8
+    wave: 2

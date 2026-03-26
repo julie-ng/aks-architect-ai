@@ -1,0 +1,85 @@
+group_title: Workloads & Scheduling
+workloads:
+  - all
+scenarios:
+  - all
+urls:
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/concepts-scheduler-configuration
+    title: Kubernetes scheduler configuration for Azure Kubernetes Service (AKS)
+    description: Learn about the Kubernetes scheduler in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/dapr-overview
+    title: Dapr extension for Azure Kubernetes Service (AKS) overview
+    description: Learn about the Dapr extension for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/developer-best-practices-resource-management
+    title: Developer best practices for resource management in AKS - Azure Kubernetes Service
+    description: Learn the application developer best practices for resource management in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/draft
+    title: Automated application deployments using Draft for Azure Kubernetes Service (AKS)
+    description: Learn how to use Draft for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/istio-about
+    title: Istio service mesh addon for Azure Kubernetes Service (AKS) overview
+    description: Learn about the Istio service mesh addon for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/keda-about
+    title: Kubernetes Event-driven Autoscaling (KEDA) overview in Azure Kubernetes Service (AKS)
+    description: Learn about KEDA in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-advanced-scheduler
+    title: Best practices for advanced scheduler features in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for using advanced scheduler features in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-cluster-isolation
+    title: Best practices for cluster isolation in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for isolation in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-container-image-management
+    title: Best practices for container image management in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for managing container images in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-scheduler
+    title: Best practices for basic scheduler features in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for using basic scheduler features in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/servicemesh-about
+    title: Service meshes in Azure Kubernetes Service (AKS) overview
+    description: Learn about service meshes in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/vertical-pod-autoscaler
+    title: Vertical pod autoscaler in Azure Kubernetes Service (AKS) - Azure Kubernetes Service
+    description: Learn about the vertical pod autoscaler in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/vertical-pod-autoscaler-api-reference
+    title: Vertical pod autoscaler API reference for Azure Kubernetes Service (AKS)
+    description: API reference for the vertical pod autoscaler in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2

@@ -1,0 +1,14 @@
+group_title: Policy & Governance
+workloads:
+  - all
+scenarios:
+  - enterprise
+urls:
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/policy-reference
+    title: Azure Policy built-in definitions for Azure Kubernetes Service - Azure Kubernetes Service
+    description: Lists Azure Policy built-in policy definitions for Azure Kubernetes Service.
+    doc_type: reference
+    priority: 8
+    wave: 2

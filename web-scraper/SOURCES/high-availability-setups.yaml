@@ -35,3 +35,29 @@ urls:
       - business-continuity
   - url: "https://learn.microsoft.com/en-us/azure/aks/passive-cold-solution"
     doc_type: guidance
+
+  # --- wave 2 ---
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/availability-zones
+    title: Availability zones in Azure Kubernetes Service (AKS) overview
+    description: Learn about availability zones in Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/ha-dr-overview
+    title: High availability and disaster recovery overview for Azure Kubernetes Service (AKS)
+    description: Learn about high availability and disaster recovery for Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-multi-region
+    title: Best practices for business continuity and disaster recovery in AKS - Azure Kubernetes Service
+    description: Learn the cluster operator best practices for maximizing availability using Azure Kubernetes Service (AKS).
+    priority: 8
+    wave: 2
+
+  - url: https://learn.microsoft.com/en-us/azure/aks/uptime-sla
+    title: Azure Kubernetes Service (AKS) Uptime SLA - Azure Kubernetes Service
+    description: Learn about the optional Uptime SLA offering for the Azure Kubernetes Service (AKS) API Server.
+    priority: 8
+    wave: 2
