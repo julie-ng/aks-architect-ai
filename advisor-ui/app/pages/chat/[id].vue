@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isTextUIPart } from 'ai'
+import { isTextUIPart, isToolUIPart } from 'ai'
 import { Chat } from '@ai-sdk/vue'
 import { ref } from 'vue'
 import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
@@ -9,6 +9,7 @@ const chatId = route.params.id as string
 
 const { user } = useUserSession()
 const { chat: chatConfig } = useAppConfig()
+
 const chatsStore = useChatsStore()
 
 // SSR: fetch full session (with messages) — data is ready before hydration
@@ -97,7 +98,9 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
       <ChatTitleHeader :chat-id="chatId" />
     </template>
     <template #body>
-      <UContainer v-if="ready">
+      <UContainer
+        v-if="
+          ready">
         <div class="max-w-3xl w-full mx-auto">
           <UContainer
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
@@ -108,6 +111,7 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
               Ask a question about AKS architecture to get started.
             </p>
 
+            <!-- Temporarily show ASSISTANT disabling chat/part/streaming status -->
             <UChatMessages
               :messages="chat.messages"
               :status="chat.status"
@@ -124,6 +128,14 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
                   content: 'bg-slate-100'
                 }
               }"
+              :assistant="{
+                side: 'left',
+                variant: 'outline',
+                avatar: {
+                  icon: 'i-lucide-bot-message-square',
+                  color: 'primary',
+                },
+              }"
               auto-scroll
             >
               <template #content="{ message }">
@@ -133,6 +145,11 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
                     :value="renderCitedText(part, message)"
                     :cache-key="`${message.id}-${index}-${part.text.length}`"
                     class="*:first:mt-0 *:last:mb-0"
+                  />
+                  <chat-tool-part
+                    v-else-if="isToolUIPart(part)"
+                    :key="`${message.id}-tool-${index}-${part.state}`"
+                    :part="part"
                   />
                 </template>
                 <source-links

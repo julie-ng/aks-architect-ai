@@ -1,5 +1,5 @@
 import type { UIMessage } from 'ai'
-import { streamText, convertToModelMessages } from 'ai'
+import { streamText, convertToModelMessages, stepCountIs } from 'ai'
 import { eq } from 'drizzle-orm'
 import { designs } from '../db/schema'
 import type { RetrieveResponse } from '../types/retrieval'
@@ -93,6 +93,10 @@ export default defineLazyEventHandler(async () => {
         console.timeEnd('[chat] modelCheck')
       }
 
+      const tools = designId
+        ? { getDesignSnapshot: createDesignSnapshotTool(designId) }
+        : undefined
+
       let firstToken = true
       console.time('[chat] ttfb')
       const result = streamText({
@@ -100,6 +104,7 @@ export default defineLazyEventHandler(async () => {
         temperature: config.ai.chatTemperature,
         system: fullPrompt,
         messages: modelMessages,
+        ...(tools ? { tools, stopWhen: stepCountIs(2) } : {}),
         onFinish: () => {
           const total = (performance.now() - t0).toFixed(0)
           console.timeEnd('[chat] streaming')
