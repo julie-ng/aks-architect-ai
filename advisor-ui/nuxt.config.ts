@@ -22,6 +22,16 @@ export default defineNuxtConfig({
     },
   },
   devtools: { enabled: true },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        'ai',
+        '@ai-sdk/vue',
+      ],
+    },
+  },
   runtimeConfig: {
     appEnvironment: 'production',
     databaseUrl: '',
