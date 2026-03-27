@@ -23,6 +23,21 @@ Follow configuration in [eslint.config.mjs](./../../advisor-ui/eslint.config.mjs
 
 ESLint is configured via the Nuxt ESLint module with `@stylistic/eslint-plugin`. See `eslint.config.mjs` for details.
 
+## JSDoc
+
+All exported functions must have JSDoc comments with `@param` and `@returns` tags. This applies everywhere — utils, composables, store actions, server routes, etc.
+
+```ts
+/**
+ * Formats retrieved RAG chunks into a numbered context block for the system prompt.
+ * The index numbers correspond to citation markers the LLM uses in responses.
+ *
+ * @param chunks - Retrieved chunks from the retrieval API
+ * @returns Formatted text block ready for system prompt injection
+ */
+export function formatContext (chunks: RetrieveChunk[]): string {
+```
+
 ## File Naming
 
 - Reusable utility/helper functions: `.utils.js` suffix (e.g., `filename.utils.js`)
@@ -48,8 +63,6 @@ And then in code, do
 ```js
 import { fn1, fn2 } from 'utils/category'
 ```
-
-Include JSDoc notation for every utility function.
 
 ### Placement
 
