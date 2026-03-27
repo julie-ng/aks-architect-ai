@@ -99,6 +99,7 @@ export default defineLazyEventHandler(async () => {
 
       let firstToken = true
       console.time('[chat] ttfb')
+      console.log('[chat] tools registered:', tools ? Object.keys(tools) : 'none')
       const result = streamText({
         model: getChatModel(),
         temperature: config.ai.chatTemperature,

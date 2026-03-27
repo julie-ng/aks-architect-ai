@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isToolStreaming } from '@nuxt/ui/utils/ai'
+import { getToolName } from 'ai'
 
 const props = defineProps<{
   part: {
@@ -15,53 +15,61 @@ const props = defineProps<{
     }
     errorText?: string
   }
+  chatStatus: string
 }>()
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toolName = computed(() => getToolName(props.part as any))
+
+// AI SDK mutates part.state in place — Vue can't detect the transition.
+// Use chat.status as the reactive signal: tool is streaming until chat is done.
 const isStreaming = computed(() =>
-  props.part.state === 'input-streaming' || props.part.state === 'input-available',
+  props.chatStatus === 'streaming' || props.chatStatus === 'submitted',
 )
 
-const toolText = computed(() =>
-  isStreaming.value ? 'Loading design snapshot...' : 'Loaded design snapshot',
-)
-
-watchEffect(() => {
-  console.log('[tool-part]', props.part.state, props.part.type)
+onMounted(() => {
+  console.log('[chat-tool-part] mount', {
+    toolName: toolName.value,
+    state: props.part.state,
+    chatStatus: props.chatStatus,
+    toolCallId: props.part.toolCallId,
+  })
 })
 
+watch(isStreaming, (streaming) => {
+  console.log('[chat-tool-part] streaming:', streaming, '| chatStatus:', props.chatStatus)
+})
 </script>
 
 <template>
-  <div>
-    <UChatTool
-      v-if="part.type === 'tool-getDesignSnapshot'"
-      :streaming="isToolStreaming(props.part)"
-      :text="toolText"
-      icon="i-lucide-clipboard-list"
+  <UChatTool
+    v-if="toolName === 'getDesignSnapshot'"
+    :text="isStreaming ? 'Loading design snapshot...' : 'Loaded design snapshot'"
+    :streaming="isStreaming"
+    icon="i-lucide-clipboard-list"
+  >
+    <template v-if="!isStreaming && part.output?.found">
+      <design-snapshot-card
+        :title="part.output.title"
+        :requirements="part.output.requirements"
+        :decisions="part.output.decisions"
+      />
+    </template>
+
+    <div
+      v-else-if="!isStreaming && part.output && !part.output.found"
+      class="text-sm text-muted py-2"
     >
-      <template v-if="part.state === 'output-available' && part.output?.found">
-        <design-snapshot-card
-          :title="part.output.title"
-          :requirements="part.output.requirements"
-          :decisions="part.output.decisions"
-        />
-      </template>
-      <div
-        v-else-if="part.state === 'output-available' && !part.output?.found"
-        class="text-sm text-muted py-2"
-      >
-        Design no longer available.
-      </div>
-    </UChatTool>
+      Design no longer available.
+    </div>
 
     <UAlert
-      v-else-if="part.state === 'output-error'"
+      v-else-if="!isStreaming && part.errorText"
       color="error"
       variant="subtle"
       icon="i-lucide-circle-alert"
       title="Could not load design snapshot"
       :description="part.errorText"
-      class="my-2"
     />
-  </div>
+  </UChatTool>
 </template>

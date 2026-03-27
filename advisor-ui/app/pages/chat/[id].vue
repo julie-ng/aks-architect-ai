@@ -41,6 +41,13 @@ onMounted(() => {
   hasSubmitted.value = session.messages.length > 0
   ready.value = true
 
+  // Debug: trace chat lifecycle in browser console
+  watch(() => chat.status, (next, prev) => {
+    console.log('[chat] status:', prev, '->', next)
+  })
+  watch(() => chat.messages.length, (len) => {
+    console.log('[chat] messages count:', len)
+  })
 })
 
 useHead({
@@ -140,6 +147,7 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
             >
               <template #content="{ message }">
                 <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
+                  <pre><code>{{ part }}</code></pre>
                   <MDC
                     v-if="isTextUIPart(part)"
                     :value="renderCitedText(part, message)"
@@ -148,8 +156,9 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
                   />
                   <chat-tool-part
                     v-else-if="isToolUIPart(part)"
-                    :key="`${message.id}-tool-${index}-${part.state}`"
+                    :key="`${message.id}-tool-${index}`"
                     :part="part"
+                    :chat-status="chat.status"
                   />
                 </template>
                 <source-links
