@@ -87,6 +87,12 @@ const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
 
+// TODO: Verify whether AI SDK mutates part.state in place or replaces the message.
+// Using chat.status as reactive signal because Vue doesn't detect part.state transitions during streaming.
+const isToolActive = computed(() =>
+  chat.status === 'streaming' || chat.status === 'submitted',
+)
+
 function isMessageComplete (message: (typeof chat)['messages'][number]) {
   const lastMessage = chat.messages[chat.messages.length - 1]
   if (message !== lastMessage) return true
@@ -147,19 +153,39 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
             >
               <template #content="{ message }">
                 <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
-                  <pre><code>{{ part }}</code></pre>
                   <MDC
                     v-if="isTextUIPart(part)"
                     :value="renderCitedText(part, message)"
                     :cache-key="`${message.id}-${index}-${part.text.length}`"
                     class="*:first:mt-0 *:last:mb-0"
                   />
-                  <chat-tool-part
+                  <UChatTool
                     v-else-if="isToolUIPart(part)"
-                    :key="`${message.id}-tool-${index}`"
-                    :part="part"
-                    :chat-status="chat.status"
-                  />
+                    :text="isToolActive ? 'Loading design snapshot...' : 'Loaded design snapshot'"
+                    :streaming="isToolActive"
+                    icon="i-lucide-clipboard-list"
+                  >
+                    <design-snapshot-card
+                      v-if="!isToolActive && part.output?.found"
+                      :title="part.output.title"
+                      :requirements="part.output.requirements"
+                      :decisions="part.output.decisions"
+                    />
+                    <div
+                      v-else-if="!isToolActive && part.output && !part.output.found"
+                      class="text-sm text-muted py-2"
+                    >
+                      Design no longer available.
+                    </div>
+                    <UAlert
+                      v-else-if="!isToolActive && part.errorText"
+                      color="error"
+                      variant="subtle"
+                      icon="i-lucide-circle-alert"
+                      title="Could not load design snapshot"
+                      :description="part.errorText"
+                    />
+                  </UChatTool>
                 </template>
                 <source-links
                   v-if="message.role === 'assistant' && isMessageComplete(message)"
