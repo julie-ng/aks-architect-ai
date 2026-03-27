@@ -23,14 +23,6 @@ onMounted(() => {
   const session = chatsStore.getSession(chatId)!
 
   chatBody = {
-    domains: [
-      'cluster-design',
-      'networking',
-      'security',
-      'operations',
-      'observability-and-cost',
-      'resilience',
-    ],
     ...(session.designId ? { designId: session.designId } : {}),
   }
 

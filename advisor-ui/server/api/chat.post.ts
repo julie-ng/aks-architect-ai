@@ -10,9 +10,8 @@ export default defineLazyEventHandler(async () => {
     const config = useRuntimeConfig()
 
     try {
-      const { messages, domains, designId }: {
+      const { messages, designId }: {
         messages: UIMessage[]
-        domains?: string[]
         designId?: string
       } = await readBody(event)
 
@@ -37,7 +36,7 @@ export default defineLazyEventHandler(async () => {
         .filter((m) => m.content.length > 0)
         .slice(-6)
 
-      console.log('[chat] designId:', designId ?? '(none)', '| domains:', domains ?? '(none)')
+      console.log('[chat] designId:', designId ?? '(none)')
 
       let designContext = ''
       if (designId) {
@@ -77,7 +76,7 @@ export default defineLazyEventHandler(async () => {
       console.time('[chat] systemPrompt')
       const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
       const context = formatContext(dedupedChunks)
-      const systemPrompt = buildSystemPrompt(domains)
+      const systemPrompt = buildSystemPrompt()
       let fullPrompt = `${systemPrompt}\n\n<context>\n${context}\n</context>`
       if (designContext) {
         fullPrompt += `\n\n<design>\nThe user has an AKS architecture design with these choices. Tailor your advice to their specific configuration:\n${designContext}\n</design>`
