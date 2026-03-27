@@ -2,6 +2,7 @@
 import { isTextUIPart } from 'ai'
 import { Chat } from '@ai-sdk/vue'
 import { ref } from 'vue'
+import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
 
 const route = useRoute()
 const chatId = route.params.id as string
@@ -11,17 +12,7 @@ const { chat: chatConfig } = useAppConfig()
 const chatsStore = useChatsStore()
 
 // SSR: fetch full session (with messages) — data is ready before hydration
-await callOnce(`chat-session-${chatId}`, async () => {
-  const existing = chatsStore.getSession(chatId)
-  if (!existing || existing.messages.length === 0) {
-    try {
-      await chatsStore.fetchSession(chatId)
-    }
-    catch {
-      await chatsStore.createSession(chatId)
-    }
-  }
-})
+await callOnce(`chat-session-${chatId}`, () => chatsStore.loadSession(chatId))
 
 // Client-only: Chat class manages streaming connections and reactive DOM state
 const ready = ref(false)
@@ -84,7 +75,7 @@ function onSubmit (e: Event) {
       chatsStore.updateMessages(chatId, chat.messages)
     }, 300)
     // Fire title generation in parallel
-    generateChatTitle(message)
+    chatsStore.generateTitle(chatId, message)
   }
   else {
     chat.sendMessage({ text: message }, { body: chatBody })
@@ -92,31 +83,9 @@ function onSubmit (e: Event) {
   }
 }
 
-async function generateChatTitle (question: string) {
-  try {
-    const { title } = await $fetch<{ title: string }>('/api/chat/title', {
-      method: 'POST',
-      body: { question },
-    })
-    if (title) {
-      chatsStore.setTitle(chatId, title)
-    }
-  }
-  catch (err) {
-    console.warn('[chat] title generation failed:', err)
-  }
-}
-
 const messagesWrapperStyle = computed(() => ({
   minHeight: hasSubmitted.value ? '100dvh' : '0px',
 }))
-
-function renderCitedText (part: { type: 'text', text: string }, message: (typeof chat)['messages'][number]): string {
-  if (message.role !== 'assistant') return part.text
-  const sources = getSourcesMeta(message)
-  if (!sources.length) return part.text
-  return replaceFootnotesWithCitations(part.text, sources)
-}
 
 function isMessageComplete (message: (typeof chat)['messages'][number]) {
   const lastMessage = chat.messages[chat.messages.length - 1]
@@ -124,30 +93,6 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
   return chat.status === 'ready' || chat.status === 'error'
 }
 
-const errorTitle = computed(() => {
-  if (!ready.value || !chat?.error) return ''
-  try {
-    const parsed = JSON.parse(chat.error.message)
-    if (parsed?.statusCode && parsed?.statusMessage) {
-      return `${parsed.statusCode} ${parsed.statusMessage}`
-    }
-    return 'Error'
-  }
-  catch {
-    return 'Error'
-  }
-})
-
-const errorMessage = computed(() => {
-  if (!ready.value || !chat?.error) return null
-  try {
-    const parsed = JSON.parse(chat.error.message)
-    return parsed?.data?.error ?? parsed?.statusMessage ?? parsed?.message ?? chat.error.message
-  }
-  catch {
-    return chat.error.message || 'An unexpected error occurred.'
-  }
-})
 </script>
 
 <template>
@@ -211,8 +156,8 @@ const errorMessage = computed(() => {
                 color="error"
                 variant="subtle"
                 icon="i-lucide-circle-alert"
-                :title="errorTitle"
-                :description="errorMessage"
+                :title="extractErrorTitle(chat.error.message)"
+                :description="extractErrorMessage(chat.error.message)"
                 class="mb-4"
               />
               <UChatPrompt
