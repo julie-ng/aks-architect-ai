@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { isTextUIPart } from 'ai'
+import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
 
 const route = useRoute()
 const chatId = route.params.id as string
@@ -65,19 +66,29 @@ watch(status, (s) => console.log('[chat-v2] status:', s))
             </template>
           </UChatMessages>
 
-          <UChatPrompt
-            v-model="input"
-            :error="chat?.error"
-            variant="subtle"
-            class="sticky bottom-0"
-            @submit="onSubmit"
-          >
-            <UChatPromptSubmit
-              :status="status"
-              @stop="chat?.stop()"
-              @reload="chat?.regenerate()"
+          <div class="sticky bottom-0 py-4">
+            <UAlert
+              v-if="chat?.error"
+              color="error"
+              variant="subtle"
+              icon="i-lucide-circle-alert"
+              :title="extractErrorTitle(chat.error.message)"
+              :description="extractErrorMessage(chat.error.message)"
+              class="mb-4"
             />
-          </UChatPrompt>
+            <UChatPrompt
+              v-model="input"
+              :error="chat?.error"
+              variant="subtle"
+              @submit="onSubmit"
+            >
+              <UChatPromptSubmit
+                :status="status"
+                @stop="chat?.stop()"
+                @reload="chat?.regenerate()"
+              />
+            </UChatPrompt>
+          </div>
         </UContainer>
       </ClientOnly>
     </template>

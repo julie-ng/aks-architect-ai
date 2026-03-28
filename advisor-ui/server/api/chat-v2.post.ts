@@ -13,10 +13,12 @@ export default defineEventHandler(async (event) => {
   await requireUserId(event)
   const config = useRuntimeConfig()
 
-  const { messages }: { messages: UIMessage[] } = await readBody(event)
+  try {
+    const { messages }: { messages: UIMessage[] } = await readBody(event)
 
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
+
       // --- Extract question from last user message ---
       const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
       if (!lastUserMessage) {
@@ -82,5 +84,9 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  return createUIMessageStreamResponse({ stream })
+    return createUIMessageStreamResponse({ stream })
+  }
+  catch (err: unknown) {
+    handleChatError(err, config)
+  }
 })
