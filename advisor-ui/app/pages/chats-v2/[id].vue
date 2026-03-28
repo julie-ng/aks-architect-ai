@@ -8,7 +8,7 @@ const chatId = route.params.id as string
 await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId))
 
 // Composable owns all chat behavior — page is pure template
-const { chat, messages, status, title, sendMessage } = useChatSession(chatId)
+const { chat, messages, status, title, sendMessage, isMessageFinished } = useChatSession(chatId)
 
 const input = ref('')
 const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
@@ -57,8 +57,9 @@ watch(status, (s) => console.log('[chat-v2] status:', s))
                   class="*:first:mt-0 *:last:mb-0"
                 />
               </template>
+              <!-- TODO: consider renaming to References -->
               <source-links
-                v-if="message.role === 'assistant'"
+                v-if="message.role === 'assistant' && isMessageFinished(message)"
                 :sources="getCitedSources(message)"
               />
             </template>

@@ -1,3 +1,4 @@
+import type { UIMessage } from 'ai'
 import { DefaultChatTransport } from 'ai'
 import { Chat } from '@ai-sdk/vue'
 
@@ -76,6 +77,21 @@ export function useChatSession (chatId: string) {
     }
   }
 
+  // --- Helpers ---
+
+  /**
+   * Check if a message has finished streaming (for gating UI like source links).
+   * Returns true for all messages except the last one while streaming.
+   *
+   * @param message - The message to check
+   * @returns Whether the message is complete
+   */
+  function isMessageFinished (message: UIMessage): boolean {
+    const msgs = messages.value
+    if (message !== msgs[msgs.length - 1]) return true
+    return status.value === 'ready' || status.value === 'error'
+  }
+
   return {
     // AI SDK Chat instance (shallowRef) — for direct access (chat.stop, chat.regenerate, chat.error)
     chat,
@@ -84,6 +100,9 @@ export function useChatSession (chatId: string) {
     messages,
     status,
     title: computed(() => chatSessionStore.title),
+
+    // Helpers
+    isMessageFinished,
 
     // Actions
     sendMessage,
