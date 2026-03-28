@@ -223,7 +223,7 @@ export function useChatSession(sessionId: string) {
 Composes `useChatSession()` with the design model and store. 
 
 <details>
-  <summary><h5><code>composables/useChatSession.ts</code></h5></summary>
+  <summary><h5><code>composables/useChatWithDesign.ts</code></h5></summary>
   
 ```ts
 // composables/useChatWithDesign.ts
