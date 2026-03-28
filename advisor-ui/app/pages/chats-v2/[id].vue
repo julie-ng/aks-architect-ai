@@ -32,11 +32,20 @@ onMounted(() => {
 })
 
 const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
+const sessionTitle = computed(() => chatsStore.getSession(chatId)?.title ?? 'New Chat')
+let hasGeneratedTitle = false
 
 function onSubmit () {
   if (!input.value.trim()) return
-  chat.sendMessage({ text: input.value })
+  const message = input.value
   input.value = ''
+
+  chat.sendMessage({ text: message })
+
+  if (!hasGeneratedTitle) {
+    hasGeneratedTitle = true
+    chatsStore.generateTitle(chatId, message)
+  }
 }
 </script>
 
@@ -45,6 +54,12 @@ function onSubmit () {
     id="chat-v2"
     :ui="{ body: 'p-0 sm:p-0' }"
   >
+    <template #header>
+      <!-- TODO: temporary debug header — replace with ChatTitleHeader -->
+      <div class="px-4 py-2 text-sm text-muted">
+        {{ sessionTitle }}
+      </div>
+    </template>
     <template #body>
       <UContainer v-if="isChatReady" class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">
         <UChatMessages
