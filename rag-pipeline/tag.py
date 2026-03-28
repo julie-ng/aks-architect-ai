@@ -12,9 +12,11 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
+import anthropic
 import ollama
 
 from config import config as cfg
@@ -36,6 +38,29 @@ Rules:
 - Return ONLY the JSON array, no explanation"""
 
 
+def _call_ollama(messages: list[dict], model: str) -> str:
+    response = ollama.chat(
+        model=model,
+        messages=messages,
+        options={"temperature": 0.1},
+    )
+    return response["message"]["content"].strip()
+
+
+def _call_anthropic(messages: list[dict], model: str) -> str:
+    client = anthropic.Anthropic()
+    system = next((m["content"] for m in messages if m["role"] == "system"), "")
+    user_messages = [m for m in messages if m["role"] != "system"]
+    response = client.messages.create(
+        model=model,
+        max_tokens=256,
+        temperature=0.1,
+        system=system,
+        messages=user_messages,
+    )
+    return response.content[0].text.strip()
+
+
 def tag_chunk(text: str, title: str, taxonomy_prompt: str) -> list[str]:
     """Send a chunk to the LLM and parse the returned tags."""
     user_prompt = f"""## Available Tags
@@ -50,16 +75,15 @@ Title: {title}
 
 Return ONLY a JSON array of matching tags:"""
 
-    response = ollama.chat(
-        model=cfg.tagging_model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        options={"temperature": 0.1},
-    )
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt},
+    ]
 
-    content = response["message"]["content"].strip()
+    if cfg.tagging_provider == "anthropic":
+        content = _call_anthropic(messages, cfg.tagging_model)
+    else:
+        content = _call_ollama(messages, cfg.tagging_model)
 
     # Strip markdown code fences if present
     if content.startswith("```"):
@@ -89,6 +113,11 @@ def main() -> None:
 
     if not input_path.exists():
         print(f"Error: {input_path} not found", file=sys.stderr)
+        sys.exit(1)
+
+    if cfg.tagging_provider == "anthropic" and not os.environ.get("ANTHROPIC_API_KEY"):
+        msg = "Error: ANTHROPIC_API_KEY environment variable is required when tagging_provider is 'anthropic'"
+        print(msg, file=sys.stderr)
         sys.exit(1)
 
     # Load taxonomy from content YAML
