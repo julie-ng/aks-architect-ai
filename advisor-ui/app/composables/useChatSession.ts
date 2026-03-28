@@ -15,9 +15,9 @@ export function useChatSession (chatId: string) {
 
   // --- State ---
 
-  // AI SDK Chat instance as a ref — null until setup() runs (client-only).
-  // Chat manages its own internal reactivity (messages, status, error are reactive).
-  // The ref gives Vue the signal that the instance was assigned in setup().
+  // AI SDK Chat instance as a shallowRef — null until setup() runs (client-only).
+  // Must be shallowRef (not ref) because Chat uses prototype getters (messages, status, error)
+  // that break when Vue's reactive proxy wraps the instance deeply.
   const chat = ref<Chat | null>(null)
 
   // Title generation should only fire once per session
@@ -50,6 +50,10 @@ export function useChatSession (chatId: string) {
         console.error('[chat] error:', error)
       },
     })
+
+    console.log('=========')
+    console.log(chat.value.state.messagesRef)
+    console.log('=========')
 
     console.log('[useChatSession] ready, chat:', !!chat.value)
   }
