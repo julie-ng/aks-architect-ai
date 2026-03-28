@@ -3,6 +3,7 @@ import { isTextUIPart } from 'ai'
 import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
 
 const route = useRoute()
+const { user } = useUserSession()
 const chatId = route.params.id as string
 
 // SSR: load session data before hydration (route-level concern)
@@ -12,7 +13,14 @@ await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId
 const { chat, messages, status, title, sendMessage, isMessageFinished } = useChatSession(chatId)
 
 const input = ref('')
+const isBlankChat = computed(() => messages.value.length === 0)
+
 const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
+
+// Prompt - vertically centered if no messages, sticky at bottom otherwise
+const messagesWrapperStyle = computed(() => ({
+  minHeight: isBlankChat.value ? '0px' : '100dvh',
+}))
 
 function onSubmit () {
   if (!input.value.trim()) return
@@ -28,7 +36,8 @@ watch(status, (s) => console.log('[chat-v2] status:', s))
 <template>
   <UDashboardPanel
     id="chat-v2"
-    :ui="{ body: 'p-0 sm:p-0' }"
+    class="relative min-h-0"
+    :ui="{ body: 'p-0 sm:p-0 overscroll-none' }"
   >
     <template #header>
       <!-- TODO: temporary debug header — replace with ChatTitleHeader -->
@@ -38,58 +47,92 @@ watch(status, (s) => console.log('[chat-v2] status:', s))
     </template>
     <template #body>
       <ClientOnly>
-        <UContainer class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">
-          <UChatMessages
-            :messages="messages"
-            :status="status"
-            :ui="{ indicator: purpleIndicatorDots }"
-            class="flex-1"
-            auto-scroll
-          >
-            <template #content="{ message }">
-              <template
-                v-for="(part, index) in message.parts"
-                :key="`${message.id}-${part.type}-${index}`"
-              >
-                <MDC
-                  v-if="isTextUIPart(part)"
-                  :value="renderCitedText(part, message)"
-                  :cache-key="`${message.id}-${index}-${part.text.length}`"
-                  class="*:first:mt-0 *:last:mb-0"
+        <div class="max-w-3xl w-full mx-auto">
+          <UContainer
+            class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
+            :style="messagesWrapperStyle">
+
+            <p v-if="isBlankChat" class="text-gray-400 text-center py-4 my-4">
+              Ask a question about AKS architecture to get started.
+            </p>
+
+            <UChatMessages
+              :messages="messages"
+              :status="status"
+              :spacing-offset="180"
+              :ui="{
+                root: chat.error ? '[&>article]:last-of-type:min-h-0' : '',
+                indicator: purpleIndicatorDots,
+                autoScroll: 'bottom-10 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 shadow-md border border-slate-300 ring-transparent',
+              }"
+              :user="{
+                variant: 'soft',
+                avatar: user ? { src: user.avatarUrl, alt: user.name } : undefined,
+                ui: {
+                  content: 'bg-slate-100'
+                }
+              }"
+              :assistant="{
+                side: 'left',
+                variant: 'outline',
+                avatar: {
+                  icon: 'i-lucide-bot-message-square',
+                  color: 'primary',
+                },
+              }"
+              auto-scroll
+            >
+              <template #content="{ message }">
+                <template
+                  v-for="(part, index) in message.parts"
+                  :key="`${message.id}-${part.type}-${index}`"
+                >
+                  <MDC
+                    v-if="isTextUIPart(part)"
+                    :value="renderCitedText(part, message)"
+                    :cache-key="`${message.id}-${index}-${part.text.length}`"
+                    class="*:first:mt-0 *:last:mb-0"
+                  />
+                </template>
+                <!-- TODO: consider renaming to References -->
+                <source-links
+                  v-if="message.role === 'assistant' && isMessageFinished(message)"
+                  :sources="getCitedSources(message)"
                 />
               </template>
-              <!-- TODO: consider renaming to References -->
-              <source-links
-                v-if="message.role === 'assistant' && isMessageFinished(message)"
-                :sources="getCitedSources(message)"
-              />
-            </template>
-          </UChatMessages>
+            </UChatMessages>
 
-          <div class="sticky bottom-0 py-4">
-            <UAlert
-              v-if="chat?.error"
-              color="error"
-              variant="subtle"
-              icon="i-lucide-circle-alert"
-              :title="extractErrorTitle(chat.error.message)"
-              :description="extractErrorMessage(chat.error.message)"
-              class="mb-4"
-            />
-            <UChatPrompt
-              v-model="input"
-              :error="chat?.error"
-              variant="subtle"
-              @submit="onSubmit"
-            >
-              <UChatPromptSubmit
-                :status="status"
-                @stop="chat?.stop()"
-                @reload="chat?.regenerate()"
+            <div class="sticky bottom-0 bg-default py-6">
+              <UAlert
+                v-if="chat?.error"
+                color="error"
+                variant="subtle"
+                icon="i-lucide-circle-alert"
+                :title="extractErrorTitle(chat.error.message)"
+                :description="extractErrorMessage(chat.error.message)"
+                class="mb-4"
               />
-            </UChatPrompt>
-          </div>
-        </UContainer>
+              <UChatPrompt
+                v-model="input"
+                :error="chat?.error"
+                :rows="3"
+                variant="subtle"
+                @submit="onSubmit"
+              >
+                <UChatPromptSubmit
+                  submitted-color="error"
+                  submitted-variant="soft"
+                  :status="status"
+                  @stop="chat?.stop()"
+                  @reload="chat?.regenerate()"
+                />
+              </UChatPrompt>
+              <p v-if="isBlankChat" class="text-xs text-slate-400 text-center py-3">
+                AI can make mistakes. Always verify the information.
+              </p>
+            </div>
+          </UContainer>
+        </div>
       </ClientOnly>
     </template>
   </UDashboardPanel>
