@@ -1,89 +1,75 @@
 import { DefaultChatTransport } from 'ai'
 import { Chat } from '@ai-sdk/vue'
-import { toRef } from 'vue'
 
 /**
  * Wraps AI SDK's Chat class with application behavior.
- * Owns: Chat creation, message persistence, title generation.
- * Exposes the raw Chat instance for template bindings (chat.messages, chat.status, etc).
+ * Owns: Chat creation, message persistence.
+ * Exposes messages/status as computed fallbacks — store data for SSR, Chat getters on client.
  *
  * @param chatId - The session ID for this chat
- * @returns Chat instance ref, state refs, and actions
+ * @returns Chat instance, reactive messages/status, and actions
  */
 export function useChatSession (chatId: string) {
-  console.log('[useChatSession] init, chatId:', chatId)
-  const chatsStore = useChatsStore()
+  const chatSessionStore = useChatSessionStore()
 
   // --- State ---
 
-  // AI SDK Chat instance as a shallowRef — null until setup() runs (client-only).
-  // Must be shallowRef (not ref) because Chat uses prototype getters (messages, status, error)
-  // that break when Vue's reactive proxy wraps the instance deeply.
-  // const chat = ref<Chat | null>(null)
-
-  // Title generation should only fire once per session
-  const _hasGeneratedTitle = false
+  // shallowRef (not ref) — prevents Vue from deep-proxying the Chat instance,
+  // which would break prototype getters like chat.messages, chat.status, chat.error.
+  const chat = shallowRef<Chat | null>(null)
 
   // --- Getters ---
 
-  // Reactive title from the store — updates when generateTitle() completes
-  const sessionTitle = computed(() => chatsStore.getSession(chatId)?.title ?? 'New Chat')
+  // Before Chat is created: read from store (SSR-loaded data).
+  // After Chat is created: read from chat.messages (getter on VueChatState).
+  const messages = computed(() => {
+    if (chat.value) return chat.value.messages
+    return chatSessionStore.messages
+  })
 
-  let chatInstance
-  // --- Actions ---
+  // Chat status: ready until Chat is created, then live from Chat instance
+  const status = computed(() => chat.value?.status ?? 'ready')
 
-  /**
-   * Initialize the AI SDK Chat instance. Must be called from onMounted()
-   * because Chat is client-only (manages streaming connections).
-   */
-  function setup () {
-    const session = chatsStore.getSession(chatId)!
-    console.log('[useChatSession] setup(), session:', session?.id, 'messages:', session?.messages.length)
+  // --- Chat initialization (client-only) ---
 
-    chatInstance = new Chat({
+  // Chat class is client-only: manages streaming connections + reactive DOM state.
+  // We load messages from the DB (via callOnce in the page), so Chat can't be created at top level
+  // like the Nuxt UI playground examples that start with empty messages.
+  if (import.meta.client) {
+    chat.value = new Chat({
       id: chatId,
-      messages: session.messages,
+      messages: chatSessionStore.messages || [],
       transport: new DefaultChatTransport({ api: '/api/chat-v2' }),
-      // Persist messages to DB after each completed response
       onFinish ({ messages }) {
-        chatsStore.updateMessages(chatId, messages)
+        // TODO: persist messages to DB
+        console.log('[chat] onFinish, messages:', messages.length)
       },
       onError (error) {
         console.error('[chat] error:', error)
       },
     })
-
-    console.log('=========')
-    console.log(chat.value.state.messagesRef)
-    console.log('=========')
-
-    console.log('[useChatSession] ready, chat:', !!chat.value)
   }
 
+  // --- Actions ---
+
   /**
-   * Send a user message. Handles title generation on first message.
+   * Send a user message.
    *
    * @param text - The user's message text
    */
-  // function sendMessage (text: string) {
-  //   chat.value!.sendMessage({ text })
-
-  //   // Generate a title from the first user message (fire-and-forget)
-  //   if (!_hasGeneratedTitle) {
-  //     _hasGeneratedTitle = true
-  //     chatsStore.generateTitle(chatId, text)
-  //   }
-  // }
+  function sendMessage (text: string) {
+    chat.value!.sendMessage({ text })
+  }
 
   return {
-    // AI SDK Chat instance — template binds to chat.messages, chat.status, chat.error
-    chat: chatInstance,
+    // AI SDK Chat instance (shallowRef) — for direct access (chat.stop, chat.regenerate, chat.error)
+    chat,
 
-    // State
-    sessionTitle,
+    // Computed reactive state — safe for SSR + client
+    messages,
+    status,
 
     // Actions
-    setup,
     sendMessage,
   }
 }
