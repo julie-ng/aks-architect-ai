@@ -9,17 +9,22 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   const { loggedIn } = useUserSession()
   const requestFetch = useRequestFetch()
 
+  // Session ID — set by load() on SSR, or setId() on client
+  let _id: string | null = null
+
   const messages = ref<UIMessage[]>([])
   const title = ref('New Chat')
 
   /**
    * Load a chat session's messages and title from the API.
+   * Stores the session ID internally for subsequent actions.
    *
    * @param chatId - The session ID to load
    */
   async function load (chatId: string) {
     if (!loggedIn.value) return
-    const data = await requestFetch<ChatSession>(`/api/sessions/${chatId}`)
+    _id = chatId
+    const data = await requestFetch<ChatSession>(`/api/sessions/${_id}`)
     messages.value = data.messages
     title.value = data.title
   }
@@ -28,10 +33,9 @@ export const useChatSessionStore = defineStore('chat-session', () => {
    * Generate a title from the first user message, then persist it.
    * Fire-and-forget — does not block the UI.
    *
-   * @param chatId - The session ID to update
    * @param question - The user's first message text
    */
-  async function generateTitle (chatId: string, question: string) {
+  async function generateTitle (question: string) {
     try {
       const { title: generated } = await $fetch<{ title: string }>('/api/chat/title', {
         method: 'POST',
@@ -39,7 +43,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
       })
       if (generated) {
         title.value = generated
-        await $fetch(`/api/sessions/${chatId}`, {
+        await $fetch(`/api/sessions/${_id}`, {
           method: 'PATCH',
           body: { title: generated },
         })
@@ -50,10 +54,36 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     }
   }
 
+  /**
+   * Persist messages to the DB after a streaming response completes.
+   * Deep clones to strip Vue reactivity proxies before serialization.
+   *
+   * @param msgs - The full messages array from AI SDK Chat
+   */
+  async function updateMessages (msgs: UIMessage[]) {
+    const plainMessages = JSON.parse(JSON.stringify(msgs)) as UIMessage[]
+    messages.value = plainMessages
+    await $fetch(`/api/sessions/${_id}/messages`, {
+      method: 'POST',
+      body: { messages: plainMessages },
+    })
+  }
+
+  /**
+   * Set the session ID on the client side (for when load() ran on SSR only).
+   *
+   * @param chatId - The session ID
+   */
+  function setId (chatId: string) {
+    _id = chatId
+  }
+
   return {
     messages,
     title,
     load,
+    setId,
     generateTitle,
+    updateMessages,
   }
 })

@@ -43,13 +43,15 @@ export function useChatSession (chatId: string) {
   // We load messages from the DB (via callOnce in the page), so Chat can't be created at top level
   // like the Nuxt UI playground examples that start with empty messages.
   if (import.meta.client) {
+    // Set the session ID on client — load() ran on SSR, so _id didn't carry over
+    chatSessionStore.setId(chatId)
+
     chat.value = new Chat({
       id: chatId,
       messages: chatSessionStore.messages || [],
       transport: new DefaultChatTransport({ api: '/api/chat-v2' }),
       onFinish ({ messages }) {
-        // TODO: persist messages to DB
-        console.log('[chat] onFinish, messages:', messages.length)
+        chatSessionStore.updateMessages(messages)
       },
       onError (error) {
         console.error('[chat] error:', error)
@@ -70,7 +72,7 @@ export function useChatSession (chatId: string) {
     // Generate a title from the first user message (fire-and-forget, no await)
     if (!_hasGeneratedTitle) {
       _hasGeneratedTitle = true
-      chatSessionStore.generateTitle(chatId, text)
+      chatSessionStore.generateTitle(text)
     }
   }
 
