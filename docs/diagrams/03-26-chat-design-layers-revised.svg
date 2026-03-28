@@ -1,0 +1,174 @@
+<svg width="100%" viewBox="0 0 680 700" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<style>
+  :root {
+    --p: #1a1a1a;
+    --s: #6b6b6b;
+    --t: #9a9a9a;
+    --bg2: #f5f5f5;
+    --b: #e0e0e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --p: #e8e8e8;
+      --s: #a0a0a0;
+      --t: #707070;
+      --bg2: #2a2a2a;
+      --b: #404040;
+    }
+  }
+  .th { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 500; fill: var(--p); }
+  .ts { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: var(--s); }
+  .arr { stroke: var(--s); stroke-width: 1.5; }
+
+  .c-gray > rect { fill: #F1EFE8; stroke: #5F5E5A; }
+  .c-gray .th { fill: #444441; }
+  .c-gray .ts { fill: #5F5E5A; }
+  @media (prefers-color-scheme: dark) {
+    .c-gray > rect { fill: #444441; stroke: #B4B2A9; }
+    .c-gray .th { fill: #D3D1C7; }
+    .c-gray .ts { fill: #B4B2A9; }
+  }
+
+  .c-teal > rect { fill: #E1F5EE; stroke: #0F6E56; }
+  .c-teal .th { fill: #085041; }
+  .c-teal .ts { fill: #0F6E56; }
+  @media (prefers-color-scheme: dark) {
+    .c-teal > rect { fill: #085041; stroke: #5DCAA5; }
+    .c-teal .th { fill: #9FE1CB; }
+    .c-teal .ts { fill: #5DCAA5; }
+  }
+
+  .c-purple > rect { fill: #EEEDFE; stroke: #534AB7; }
+  .c-purple .th { fill: #3C3489; }
+  .c-purple .ts { fill: #534AB7; }
+  @media (prefers-color-scheme: dark) {
+    .c-purple > rect { fill: #3C3489; stroke: #AFA9EC; }
+    .c-purple .th { fill: #CECBF6; }
+    .c-purple .ts { fill: #AFA9EC; }
+  }
+
+  .c-coral > rect { fill: #FAECE7; stroke: #993C1D; }
+  .c-coral .th { fill: #712B13; }
+  .c-coral .ts { fill: #993C1D; }
+  @media (prefers-color-scheme: dark) {
+    .c-coral > rect { fill: #712B13; stroke: #F0997B; }
+    .c-coral .th { fill: #F5C4B3; }
+    .c-coral .ts { fill: #F0997B; }
+  }
+</style>
+
+<!-- Layer 1: Component -->
+<g class="c-gray">
+  <rect x="160" y="20" width="360" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="38" text-anchor="middle" dominant-baseline="central">Vue component</text>
+  <text class="ts" x="340" y="56" text-anchor="middle" dominant-baseline="central">Binds Nuxt UI to composable outputs</text>
+</g>
+
+<!-- Arrow down to useChatWithDesign -->
+<line x1="340" y1="76" x2="340" y2="100" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+
+<!-- Layer 2: useChatWithDesign (outer composable) -->
+<g class="c-teal">
+  <rect x="80" y="102" width="520" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="120" text-anchor="middle" dominant-baseline="central">useChatWithDesign()</text>
+  <text class="ts" x="340" y="138" text-anchor="middle" dominant-baseline="central">Orchestrates chat + design, handles tool results</text>
+</g>
+
+<!-- Tool router -->
+<g class="c-gray">
+  <rect x="80" y="180" width="130" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="145" y="202" text-anchor="middle" dominant-baseline="central">Tool router</text>
+</g>
+<line x1="145" y1="158" x2="145" y2="178" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+
+<!-- Arrow from outer composable down to inner composable -->
+<line x1="280" y1="158" x2="240" y2="258" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+<text class="ts" x="240" y="210" text-anchor="start">composes</text>
+
+<!-- Arrow from outer composable to design model -->
+<line x1="440" y1="158" x2="500" y2="258" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+<text class="ts" x="448" y="210" text-anchor="start">injects persist</text>
+
+<!-- Layer 3: useChatSession (inner composable) -->
+<g class="c-teal">
+  <rect x="80" y="260" width="300" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="230" y="278" text-anchor="middle" dominant-baseline="central">useChatSession()</text>
+  <text class="ts" x="230" y="296" text-anchor="middle" dominant-baseline="central">Wraps AI SDK, title gen, persist</text>
+</g>
+
+<!-- Design model -->
+<g class="c-coral">
+  <rect x="420" y="260" width="200" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="520" y="278" text-anchor="middle" dominant-baseline="central">Design model</text>
+  <text class="ts" x="520" y="296" text-anchor="middle" dominant-baseline="central">Decisions, domain logic</text>
+</g>
+
+<!-- Arrow from useChatSession down to AI SDK Chat -->
+<line x1="170" y1="316" x2="170" y2="368" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+<text class="ts" x="180" y="348" text-anchor="start">wraps</text>
+
+<!-- Arrow from useChatSession to chat store -->
+<line x1="300" y1="316" x2="340" y2="468" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+
+<!-- AI SDK Chat (third-party, not our code) -->
+<g class="c-purple">
+  <rect x="80" y="370" width="220" height="56" rx="20" stroke-width="0.5"/>
+  <text class="th" x="190" y="388" text-anchor="middle" dominant-baseline="central">AI SDK Chat</text>
+  <text class="ts" x="190" y="406" text-anchor="middle" dominant-baseline="central">@ai-sdk/vue (external)</text>
+</g>
+
+<!-- Direct arrow from AI SDK Chat back up to component (template binds) -->
+<!-- FIXME: adjust x on the two text elements below if labels are clipped -->
+<path d="M80 380 L42 380 L42 48 L158 48" fill="none" class="arr" marker-end="url(#arrow)" stroke="#534AB7" stroke-dasharray="4 3"/>
+<text class="ts" x="30" y="210" text-anchor="end">chat.messages</text>
+<text class="ts" x="30" y="226" text-anchor="end">chat.status</text>
+
+<!-- Design model to design store arrow + label -->
+<line x1="520" y1="316" x2="520" y2="468" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+<text class="ts" x="530" y="370" text-anchor="start">via callback</text>
+
+<!-- SSR boundary -->
+<line x1="56" y1="450" x2="640" y2="450" stroke="var(--t)" stroke-width="1" stroke-dasharray="6 4"/>
+<text class="ts" x="640" y="444" text-anchor="end">SSR / client-only boundary</text>
+
+<!-- Note: AI SDK is client-only -->
+<text class="ts" x="190" y="440" text-anchor="middle">Client-only (onMounted)</text>
+
+<!-- Layer 5: Stores -->
+<g class="c-purple">
+  <rect x="230" y="470" width="200" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="330" y="488" text-anchor="middle" dominant-baseline="central">Chat store</text>
+  <text class="ts" x="330" y="506" text-anchor="middle" dominant-baseline="central">Persist + SSR loading</text>
+</g>
+
+<g class="c-coral">
+  <rect x="450" y="470" width="190" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="545" y="488" text-anchor="middle" dominant-baseline="central">Design store</text>
+  <text class="ts" x="545" y="506" text-anchor="middle" dominant-baseline="central">JSON cache + endpoints</text>
+</g>
+
+<!-- Layer 6: API -->
+<line x1="330" y1="526" x2="330" y2="558" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+<line x1="545" y1="526" x2="545" y2="558" class="arr" marker-end="url(#arrow)" stroke="var(--s)"/>
+
+<g class="c-gray">
+  <rect x="230" y="560" width="200" height="36" rx="8" stroke-width="0.5"/>
+  <text class="th" x="330" y="578" text-anchor="middle" dominant-baseline="central">/api/sessions/*</text>
+</g>
+
+<g class="c-gray">
+  <rect x="450" y="560" width="190" height="36" rx="8" stroke-width="0.5"/>
+  <text class="th" x="545" y="578" text-anchor="middle" dominant-baseline="central">/api/designs/*</text>
+</g>
+
+<!-- Legend -->
+<text class="ts" x="340" y="626" text-anchor="middle">Purple = chat domain, coral = design domain, teal = orchestration</text>
+<text class="ts" x="340" y="644" text-anchor="middle">Dashed line = direct template binding (component reads AI SDK Chat directly)</text>
+<text class="ts" x="340" y="662" text-anchor="middle">Rounded box = external dependency (not our code)</text>
+</svg>
