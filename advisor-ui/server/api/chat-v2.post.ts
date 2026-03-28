@@ -73,6 +73,11 @@ export default defineEventHandler(async (event) => {
           title: c.title,
         }))
 
+        // --- Pre-flight: verify Ollama model is available (avoids cryptic mid-stream errors) ---
+        if (config.ai.provider === 'ollama') {
+          await checkOllamaModel(config.ai.ollamaBaseUrl, config.ai.chatModel)
+        }
+
         // --- Stream LLM response ---
         const result = streamText({
           model: getChatModel(),
