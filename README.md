@@ -17,9 +17,13 @@ A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster 
 
 ## Architecture
 
-![Architecture](./docs/architecture-v1.png)
+N.B. Models are configurable for different environments, e.g. Ollama for dev vs Anthropic for prod.
 
-N.B. Models are configurable for different environments, e.g. dev vs prod.
+![Architecture](./docs/diagrams/architecture-v1.1.png)
+
+#### Updates
+
+- 26.03. - Switched reformulation to Haiku, saving ~3 sec. in retrieval latency
 
 ## Project Structure
 
