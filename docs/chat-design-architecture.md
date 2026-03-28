@@ -1,8 +1,5 @@
 # Architecture: Chat + Design with mixed context
 
-> [!IMPORTANT]
-> Need to edit this and add diagrams from diagrams folder. Below is raw Claude text.
-
 ## Overview
 
 This app has an LLM chat linked 1:1 with an architectural design. Users make design decisions through both the design UI and through chat (via LLM tool calls). The chat includes design state as prompt context, persisted per-message as a point-in-time snapshot.
@@ -66,6 +63,8 @@ interface AssessmentResult {
 | Design model | `models/` | Per-instance behavior: decisions, domain logic, `toPromptContext()` | Nothing — persistence injected via callbacks |
 | Stores | `stores/` | JSON cache + API endpoint definitions | API paths and data types only |
 
+<img src="./diagrams/03-26-chat-design-layers-revised-v2.svg" alt="Data Flows Diagram" width="700">
+
 ## The AI SDK constraint
 
 The AI SDK Chat class is **not replaceable** with a custom model. It owns:
@@ -82,8 +81,16 @@ The AI SDK Chat is **client-only** — created inside `onMounted`. The chat stor
 
 ## Design model
 
-The Design model is the only custom model class. It is framework-free (no Vue, no Pinia, no Nuxt imports). Persistence is injected via constructor callbacks so there are no circular dependencies.
+The Design model is the only custom model class. 
 
+Key rules:
+- Zero framework imports — fully testable without mocking Vue or Pinia
+- Persistence is injected, never imported — no circular dependencies
+- `toPromptContext()` returns an opaque blob; the chat domain never parses it
+
+<details>
+  <summary><h5><code>models/Design.ts</code></h5></summary>
+  
 ```ts
 // models/Design.ts
 
@@ -112,16 +119,21 @@ export class Design {
   // Delegates to injected persist callback → store.update()
   async save(): Promise<void>
 }
-```
+```  
+</details>
 
-Key rules:
-- Zero framework imports — fully testable without mocking Vue or Pinia
-- Persistence is injected, never imported — no circular dependencies
-- `toPromptContext()` returns an opaque blob; the chat domain never parses it
 
 ## Stores
 
 Stores are dumb JSON caches with API endpoint definitions. They never import model classes — only data types.
+
+Key rules:
+- Stores are the **single source of truth** for API paths and HTTP methods
+- Stores hold only raw JSON — never class instances
+- Stores may import `DesignData` / `ChatSessionData` types, never model classes
+
+<details>
+  <summary><h5><code>stores/chat.ts</code></h5></summary>
 
 ```ts
 // stores/chat.ts — all chat HTTP endpoints live here
@@ -153,17 +165,18 @@ export const useDesignStore = defineStore('designs', () => {
   return { byId, fetchOne, update, assess, get, updateCache }
 })
 ```
-
-Key rules:
-- Stores are the **single source of truth** for API paths and HTTP methods
-- Stores hold only raw JSON — never class instances
-- Stores may import `DesignData` / `ChatSessionData` types, never model classes
+</details>
 
 ## Composables
 
-### useChatSession — chat-only, no design knowledge
+### `useChatSession()` — chat-only, no design knowledge
 
 Wraps the AI SDK Chat instance and adds persistence behavior via callbacks. Components that don't need design integration can use this directly.
+
+Key: the composable **does not "inject persist"** into the AI SDK Chat. It configures the SDK's `onFinish` callback to call the store. The relationship is "wraps and configures," not "injects a dependency."
+
+<details>
+  <summary><h5><code>composables/useChatSession.ts</code></h5></summary>
 
 ```ts
 // composables/useChatSession.ts
@@ -200,13 +213,18 @@ export function useChatSession(sessionId: string) {
   }
 }
 ```
+</details>
 
-Key: the composable **does not "inject persist"** into the AI SDK Chat. It configures the SDK's `onFinish` callback to call the store. The relationship is "wraps and configures," not "injects a dependency."
+### `useChatWithDesign()` — orchestrates both domains
 
-### useChatWithDesign — orchestrates both domains
+> [!IMPORTANT]
+> This is the **only layer** that knows about both chat and design.
 
-Composes `useChatSession` with the design model and store. This is the **only layer** that knows about both chat and design.
+Composes `useChatSession()` with the design model and store. 
 
+<details>
+  <summary><h5><code>composables/useChatSession.ts</code></h5></summary>
+  
 ```ts
 // composables/useChatWithDesign.ts
 export function useChatWithDesign(sessionId: string) {
@@ -247,6 +265,8 @@ export function useChatWithDesign(sessionId: string) {
   }
 }
 ```
+
+</details>
 
 ## Tool call processing
 
@@ -311,6 +331,12 @@ Component (pages/chat/[id].vue)
 ```
 
 Every arrow points down. No cycles. The Design model is a leaf node with zero application dependencies. The AI SDK Chat is an external dependency, not a custom model.
+
+---
+
+# Data Flows
+
+<img src="./diagrams/03-26-chat-design-data-flows.svg" alt="Data Flows Diagram" width="700">
 
 ## SSR / client-only boundary
 
