@@ -49,6 +49,19 @@ export const useChatsStore = defineStore('chats', () => {
     loaded.value = true
   }
 
+  async function loadSession (id: string): Promise<ChatSession> {
+    const existing = sessions.value[id]
+    if (existing && existing.messages.length > 0) {
+      return existing
+    }
+    try {
+      return await fetchSession(id)
+    }
+    catch {
+      return await createSession(id)
+    }
+  }
+
   async function fetchSession (id: string): Promise<ChatSession> {
     const data = await requestFetch<ChatSession>(`/api/sessions/${id}`)
     sessions.value = {
@@ -114,6 +127,21 @@ export const useChatsStore = defineStore('chats', () => {
     })
   }
 
+  async function generateTitle (id: string, question: string): Promise<void> {
+    try {
+      const { title } = await $fetch<{ title: string }>('/api/chat/title', {
+        method: 'POST',
+        body: { question },
+      })
+      if (title) {
+        await setTitle(id, title)
+      }
+    }
+    catch (err) {
+      console.warn('[chats] title generation failed:', err)
+    }
+  }
+
   async function renameSession (id: string, title: string): Promise<void> {
     const session = sessions.value[id]
     if (!session) return
@@ -157,11 +185,13 @@ export const useChatsStore = defineStore('chats', () => {
     // Actions
     reset,
     fetchSessions,
+    loadSession,
     fetchSession,
     newSession,
     createSession,
     updateMessages,
     setTitle,
+    generateTitle,
     renameSession,
     deleteSession,
   }
