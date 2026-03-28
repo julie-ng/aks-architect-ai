@@ -1,141 +1,116 @@
 import type { UIMessage } from 'ai'
-import { streamText, convertToModelMessages, stepCountIs } from 'ai'
-import { eq } from 'drizzle-orm'
-import { designs } from '../db/schema'
+import { streamText, convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs } from 'ai'
 import type { RetrieveResponse } from '../types/retrieval'
 
-export default defineLazyEventHandler(async () => {
-  return defineEventHandler(async (event) => {
-    await requireUserId(event)
-    const config = useRuntimeConfig()
+/**
+ * POST /api/chat-v2 — Streaming chat with RAG retrieval + optional design context.
+ * Uses createUIMessageStream so the client sees indicator dots immediately
+ * while retrieval + reformulation happen inside execute().
+ *
+ * @returns Streaming response via AI SDK's UI message stream protocol
+ */
 
-    try {
-      const { messages, designId }: {
-        messages: UIMessage[]
-        designId?: string
-      } = await readBody(event)
+export default defineEventHandler(async (event) => {
+  await requireUserId(event)
+  const config = useRuntimeConfig()
 
-      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
-      if (!lastUserMessage) {
-        throw createError({ statusCode: 400, message: 'No user message found' })
-      }
+  try {
+    const { messages, designId }: {
+      messages: UIMessage[]
+      designId?: string
+    } = await readBody(event)
 
-      const question = lastUserMessage.parts
-        ?.filter((p) => p.type === 'text')
-        .map((p) => p.text)
-        .join('') ?? ''
-
-      // Build recent conversation history for context-aware query reformulation
-      const history = messages
-        .filter((m) => m !== lastUserMessage)
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.parts?.filter((p) => p.type === 'text').map((p) => p.text).join('') ?? '',
-        }))
-        .filter((m) => m.content.length > 0)
-        .slice(-6)
-
-      console.log('[chat] designId:', designId ?? '(none)')
-
-      let designContext = ''
-      if (designId) {
-        const [design] = await db().select({
-          requirements: designs.requirements,
-          decisions: designs.decisions,
-        }).from(designs).where(eq(designs.id, designId))
-
-        if (design) {
-          designContext = formatDesignContext(
-            design.requirements as Record<string, string | string[]>,
-            design.decisions as Record<string, string | string[]>,
-          )
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        // --- Extract question from last user message ---
+        const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+        if (!lastUserMessage) {
+          throw createError({ statusCode: 400, message: 'No user message found' })
         }
-      }
-      if (designContext) {
-        console.log('[chat] design context:\n' + designContext)
-      }
 
-      const t0 = performance.now()
+        const question = lastUserMessage.parts
+          ?.filter((p) => p.type === 'text')
+          .map((p) => p.text)
+          .join('') ?? ''
 
-      console.time('[chat] retrieve')
-      const retrieveResponse = await $fetch<RetrieveResponse>(
-        `${config.retrievalApiHost}/api/retrieve`,
-        {
-          method: 'POST',
-          body: {
-            question,
-            history,
-            ...(designContext ? { design_context: designContext } : {}),
+        const history = extractConversationHistory(messages, lastUserMessage)
+
+        // --- RAG retrieval (client already sees indicator dots) ---
+        console.time('[chat-v2] retrieve')
+        const retrieveResponse = await $fetch<RetrieveResponse>(
+          `${config.retrievalApiHost}/api/retrieve`,
+          {
+            method: 'POST',
+            body: {
+              question,
+              history,
+              ...(designId
+                ? { design_id: designId }
+                : {}
+              ),
+            },
           },
-        },
-      )
-      console.timeEnd('[chat] retrieve')
-      console.log('[chat] reformulated:', retrieveResponse.reformulated_query)
+        )
+        console.timeEnd('[chat-v2] retrieve')
+        console.log('[chat-v2] reformulated:', retrieveResponse.reformulated_query)
 
-      console.time('[chat] systemPrompt')
-      const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
-      const context = formatContext(dedupedChunks)
-      const systemPrompt = buildSystemPrompt()
-      let fullPrompt = `${systemPrompt}\n\n<context>\n${context}\n</context>`
-      if (designContext) {
-        fullPrompt += `\n\n<design>\nThe user has an AKS architecture design with these choices. Tailor your advice to their specific configuration:\n${designContext}\n</design>`
-      }
-      console.timeEnd('[chat] systemPrompt')
+        // --- Fetch design context if linked ---
+        const designContext = designId
+          ? await fetchDesignContext(designId)
+          : ''
 
-      const modelMessages = await convertToModelMessages(messages)
-      const reformulatedQuery = retrieveResponse.reformulated_query
+        // --- Assemble system prompt ---
+        const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
+        const ragContext = formatContext(dedupedChunks)
+        const fullPrompt = assembleSystemPrompt(
+          buildSystemPrompt(),
+          ragContext,
+          designContext,
+        )
 
-      // Verify model is available before streaming (fast, avoids cryptic mid-stream errors)
-      if (config.ai.provider === 'ollama') {
-        console.time('[chat] modelCheck')
-        await checkOllamaModel(config.ai.ollamaBaseUrl, config.ai.chatModel)
-        console.timeEnd('[chat] modelCheck')
-      }
+        // --- Extract sources for client-side citation rendering ---
+        const sources = dedupedChunks.map(c => ({
+          url: c.url,
+          title: c.title,
+        }))
 
-      const tools = designId
-        ? { getDesignSnapshot: createDesignSnapshotTool(designId) }
-        : undefined
+        // --- Pre-flight: verify Ollama model is available (avoids cryptic mid-stream errors) ---
+        if (config.ai.provider === 'ollama') {
+          await checkOllamaModel(config.ai.ollamaBaseUrl, config.ai.chatModel)
+        }
 
-      let firstToken = true
-      console.time('[chat] ttfb')
-      console.log('[chat] tools registered:', tools ? Object.keys(tools) : 'none')
-      const result = streamText({
-        model: getChatModel(),
-        temperature: config.ai.chatTemperature,
-        system: fullPrompt,
-        messages: modelMessages,
-        ...(tools ? { tools, stopWhen: stepCountIs(2) } : {}),
-        onFinish: () => {
-          const total = (performance.now() - t0).toFixed(0)
-          console.timeEnd('[chat] streaming')
-          console.log(`[chat] total: ${total}ms`)
-        },
-      })
+        // --- Configure tools (only when a design is linked) ---
+        const tools = designId
+          ? { getDesignSnapshot: createDesignSnapshotTool(designId) }
+          : undefined
 
-      const sources = dedupedChunks.map(c => ({
-        url: c.url,
-        title: c.title,
-      }))
+        // --- Stream LLM response ---
+        const result = streamText({
+          model: getChatModel(),
+          temperature: config.ai.chatTemperature,
+          system: fullPrompt,
+          messages: await convertToModelMessages(messages),
+          // Tools + step limit to prevent runaway tool loops
+          ...(tools
+            ? { tools, stopWhen: stepCountIs(2) }
+            : {}
+          ),
+        })
 
-      return result.toUIMessageStreamResponse({
-        messageMetadata: ({ part }) => {
-          if (part.type === 'start') {
-            return { sources }
-          }
-          if (part.type === 'text-delta' && firstToken) {
-            firstToken = false
-            console.timeEnd('[chat] ttfb')
-            console.time('[chat] streaming')
-          }
-          if (part.type === 'finish') {
-            return { reformulatedQuery }
-          }
-        },
-      })
-    }
-    catch (err: unknown) {
-      handleChatError(err, config)
-    }
-  })
+        // Attach sources as message metadata so the client can render citations
+        writer.merge(result.toUIMessageStream({
+          messageMetadata: ({ part }) => {
+            if (part.type === 'start') {
+              return { sources }
+            }
+          },
+        }))
+      },
+    })
+
+    return createUIMessageStreamResponse({ stream })
+  }
+  catch (err: unknown) {
+    handleChatError(err, config)
+  }
 })

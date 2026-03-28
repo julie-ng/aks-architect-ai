@@ -17,7 +17,7 @@ export function useChatSession (chatId: string) {
 
   // shallowRef (not ref) — prevents Vue from deep-proxying the Chat instance,
   // which would break prototype getters like chat.messages, chat.status, chat.error.
-  const chat = shallowRef<Chat | null>(null)
+  const chat = shallowRef<Chat<UIMessage> | null>(null)
 
   // Title generation should only fire once per session
   let _hasGeneratedTitle = false
@@ -51,7 +51,7 @@ export function useChatSession (chatId: string) {
       id: chatId,
       messages: chatSessionStore.messages || [],
       transport: new DefaultChatTransport({
-        api: '/api/chat-v2',
+        api: '/api/chat',
         // Send designId on every request so the server can inject design context.
         // Transport body is merged into every sendMessage request (unlike Chat constructor body, which is ignored).
         body: chatSessionStore.designId

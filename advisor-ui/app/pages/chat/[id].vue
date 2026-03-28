@@ -1,109 +1,42 @@
 <script setup lang="ts">
 import { isTextUIPart, isToolUIPart } from 'ai'
-import { Chat } from '@ai-sdk/vue'
-import { ref } from 'vue'
+import { isToolStreaming } from '@nuxt/ui/utils/ai'
 import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
 
 const route = useRoute()
+const { user } = useUserSession()
 const chatId = route.params.id as string
 
-const { user } = useUserSession()
-const { chat: chatConfig } = useAppConfig()
+// SSR: load session data before hydration (route-level concern)
+await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId))
 
-const chatsStore = useChatsStore()
-
-// SSR: fetch full session (with messages) — data is ready before hydration
-await callOnce(`chat-session-${chatId}`, () => chatsStore.loadSession(chatId))
-
-// Client-only: Chat class manages streaming connections and reactive DOM state
-const ready = ref(false)
-let chat: Chat
-let chatBody: Record<string, unknown> = {}
-
-onMounted(() => {
-  const session = chatsStore.getSession(chatId)!
-
-  chatBody = {
-    ...(session.designId ? { designId: session.designId } : {}),
-  }
-
-  chat = new Chat({
-    id: chatId,
-    messages: session.messages,
-    onFinish ({ messages }) {
-      chatsStore.updateMessages(chatId, messages)
-    },
-    onError (error) {
-      console.error(error)
-    },
-  })
-
-  hasSubmitted.value = session.messages.length > 0
-  ready.value = true
-
-  // Debug: trace chat lifecycle in browser console
-  watch(() => chat.status, (next, prev) => {
-    console.log('[chat] status:', prev, '->', next)
-  })
-  watch(() => chat.messages.length, (len) => {
-    console.log('[chat] messages count:', len)
-  })
-})
-
-useHead({
-  title: computed(() => {
-    const title = chatsStore.getSession(chatId)?.title
-    return title && title !== chatConfig.untitledLabel ? title : 'Chat'
-  }),
-})
+// Composable owns all chat behavior — page is pure template
+const { chat, messages, status, sendMessage, isMessageFinished } = useChatSession(chatId)
 
 const input = ref('')
-const hasSubmitted = ref(false)
+const isBlankChat = computed(() => messages.value.length === 0)
 
-function onSubmit (e: Event) {
-  e.preventDefault()
-  if (!input.value.trim()) return
+const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
 
-  const message = input.value
-  input.value = ''
-
-  if (!hasSubmitted.value) {
-    hasSubmitted.value = true
-    setTimeout(() => {
-      chat.sendMessage({ text: message }, { body: chatBody })
-      // Sync user message immediately
-      chatsStore.updateMessages(chatId, chat.messages)
-    }, 300)
-    // Fire title generation in parallel
-    chatsStore.generateTitle(chatId, message)
-  }
-  else {
-    chat.sendMessage({ text: message }, { body: chatBody })
-    chatsStore.updateMessages(chatId, chat.messages)
-  }
-}
-
+// Prompt - vertically centered if no messages, sticky at bottom otherwise
 const messagesWrapperStyle = computed(() => ({
-  minHeight: hasSubmitted.value ? '100dvh' : '0px',
+  minHeight: isBlankChat.value ? '0px' : '100dvh',
 }))
 
-// TODO: Verify whether AI SDK mutates part.state in place or replaces the message.
-// Using chat.status as reactive signal because Vue doesn't detect part.state transitions during streaming.
-const isToolActive = computed(() =>
-  chat.status === 'streaming' || chat.status === 'submitted',
-)
-
-function isMessageComplete (message: (typeof chat)['messages'][number]) {
-  const lastMessage = chat.messages[chat.messages.length - 1]
-  if (message !== lastMessage) return true
-  return chat.status === 'ready' || chat.status === 'error'
+function onSubmit () {
+  if (!input.value.trim()) return
+  sendMessage(input.value)
+  input.value = ''
 }
 
+// Debugging
+console.log('[chat-v2] status:', status)
+watch(status, (s) => console.log('[chat-v2] status:', s))
 </script>
 
 <template>
   <UDashboardPanel
-    id="chat"
+    id="chat-v2"
     class="relative min-h-0"
     :ui="{ body: 'p-0 sm:p-0 overscroll-none' }"
   >
@@ -111,27 +44,23 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
       <ChatTitleHeader :chat-id="chatId" />
     </template>
     <template #body>
-      <UContainer
-        v-if="
-          ready">
+      <ClientOnly>
         <div class="max-w-3xl w-full mx-auto">
           <UContainer
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
-            :style="messagesWrapperStyle"
-          >
+            :style="messagesWrapperStyle">
 
-            <p v-if="chat.messages.length === 0" class="text-gray-400 text-center py-4 my-4">
+            <p v-if="isBlankChat" class="text-gray-400 text-center py-4 my-4">
               Ask a question about AKS architecture to get started.
             </p>
 
-            <!-- Temporarily show ASSISTANT disabling chat/part/streaming status -->
             <UChatMessages
-              :messages="chat.messages"
-              :status="chat.status"
+              :messages="messages"
+              :status="status"
               :spacing-offset="180"
               :ui="{
                 root: chat.error ? '[&>article]:last-of-type:min-h-0' : '',
-                indicator: '*:bg-indigo-500 dark:*:bg-indigo-300',
+                indicator: purpleIndicatorDots,
                 autoScroll: 'bottom-10 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 shadow-md border border-slate-300 ring-transparent',
               }"
               :user="{
@@ -152,33 +81,38 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
               auto-scroll
             >
               <template #content="{ message }">
-                <template v-for="(part, index) in message.parts" :key="`${message.id}-${part.type}-${index}`">
+                <template
+                  v-for="(part, index) in message.parts"
+                  :key="`${message.id}-${part.type}-${index}`"
+                >
                   <MDC
                     v-if="isTextUIPart(part)"
                     :value="renderCitedText(part, message)"
                     :cache-key="`${message.id}-${index}-${part.text.length}`"
                     class="*:first:mt-0 *:last:mb-0"
                   />
+
+                  <!-- Design snapshot tool -->
                   <UChatTool
                     v-else-if="isToolUIPart(part)"
-                    :text="isToolActive ? 'Loading design snapshot...' : 'Loaded design snapshot'"
-                    :streaming="isToolActive"
+                    :text="isToolStreaming(part) ? 'Loading design snapshot...' : 'Loaded design snapshot'"
+                    :streaming="isToolStreaming(part)"
                     icon="i-lucide-clipboard-list"
                   >
                     <design-snapshot-card
-                      v-if="!isToolActive && part.output?.found"
+                      v-if="!isToolStreaming(part) && part.output?.found"
                       :title="part.output.title"
                       :requirements="part.output.requirements"
                       :decisions="part.output.decisions"
                     />
                     <div
-                      v-else-if="!isToolActive && part.output && !part.output.found"
+                      v-else-if="!isToolStreaming(part) && part.output && !part.output.found"
                       class="text-sm text-muted py-2"
                     >
                       Design no longer available.
                     </div>
                     <UAlert
-                      v-else-if="!isToolActive && part.errorText"
+                      v-else-if="!isToolStreaming(part) && part.errorText"
                       color="error"
                       variant="subtle"
                       icon="i-lucide-circle-alert"
@@ -187,8 +121,9 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
                     />
                   </UChatTool>
                 </template>
+                <!-- TODO: consider renaming to References -->
                 <source-links
-                  v-if="message.role === 'assistant' && isMessageComplete(message)"
+                  v-if="message.role === 'assistant' && isMessageFinished(message)"
                   :sources="getCitedSources(message)"
                 />
               </template>
@@ -196,7 +131,7 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
 
             <div class="sticky bottom-0 bg-default py-6">
               <UAlert
-                v-if="chat.error"
+                v-if="chat?.error"
                 color="error"
                 variant="subtle"
                 icon="i-lucide-circle-alert"
@@ -206,23 +141,26 @@ function isMessageComplete (message: (typeof chat)['messages'][number]) {
               />
               <UChatPrompt
                 v-model="input"
+                :error="chat?.error"
                 :rows="3"
+                variant="subtle"
                 @submit="onSubmit"
               >
                 <UChatPromptSubmit
                   submitted-color="error"
                   submitted-variant="soft"
-                  :status="chat.status"
-                  @stop="chat.stop()"
-                  @reload="chat.regenerate()" />
+                  :status="status"
+                  @stop="chat?.stop()"
+                  @reload="chat?.regenerate()"
+                />
               </UChatPrompt>
-              <p v-if="!hasSubmitted" class="text-xs text-slate-400 text-center py-3">
+              <p v-if="isBlankChat" class="text-xs text-slate-400 text-center py-3">
                 AI can make mistakes. Always verify the information.
               </p>
             </div>
           </UContainer>
         </div>
-      </UContainer>
+      </ClientOnly>
     </template>
   </UDashboardPanel>
 </template>
