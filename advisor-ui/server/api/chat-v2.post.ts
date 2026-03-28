@@ -57,6 +57,12 @@ export default defineEventHandler(async (event) => {
       const systemPrompt = buildSystemPrompt()
       const fullPrompt = `${systemPrompt}\n\n<context>\n${context}\n</context>`
 
+      // --- Extract sources for client-side citation rendering ---
+      const sources = dedupedChunks.map(c => ({
+        url: c.url,
+        title: c.title,
+      }))
+
       // --- Stream LLM response ---
       const result = streamText({
         model: getChatModel(),
@@ -65,7 +71,14 @@ export default defineEventHandler(async (event) => {
         messages: await convertToModelMessages(messages),
       })
 
-      writer.merge(result.toUIMessageStream())
+      // Attach sources as message metadata so the client can render citations
+      writer.merge(result.toUIMessageStream({
+        messageMetadata: ({ part }) => {
+          if (part.type === 'start') {
+            return { sources }
+          }
+        },
+      }))
     },
   })
 

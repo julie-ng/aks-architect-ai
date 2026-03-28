@@ -52,11 +52,15 @@ watch(status, (s) => console.log('[chat-v2] status:', s))
               >
                 <MDC
                   v-if="isTextUIPart(part)"
-                  :value="part.text"
-                  :cache-key="`${message.id}-${index}`"
+                  :value="renderCitedText(part, message)"
+                  :cache-key="`${message.id}-${index}-${part.text.length}`"
                   class="*:first:mt-0 *:last:mb-0"
                 />
               </template>
+              <source-links
+                v-if="message.role === 'assistant'"
+                :sources="getCitedSources(message)"
+              />
             </template>
           </UChatMessages>
 
