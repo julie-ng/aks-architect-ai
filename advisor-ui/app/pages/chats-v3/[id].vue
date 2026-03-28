@@ -36,57 +36,30 @@ const { chat, sessionTitle, sendMessage, messages } = useChatSession2(chatId)
     <template #body>
       Hello World
 
-      <div v-if="messages">
-        Has messages
-        <pre><code>{{ messages }}</code></pre>
-      </div>
-
-      <UContainer v-if="chat" class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">
-        Has chat!
-
-        <div v-if="chat.messagses">
-          <h2 class="text-green-600">Has <code>chat.state</code>!</h2>
-          <pre><code>{{ chat.messages }}</code></pre>
+      <ClientOnly>
+        got messages? {{ messages }}
+        <div v-if="messages">
+          Has messages
+          <pre><code>{{ messages }}</code></pre>
         </div>
-        <div v-else>
-          <h2 class="text-red-600">No messages - use <code>chat.state</code></h2>
-          <pre><code>{{ chat.state }}</code></pre>
-        </div>
-        <!-- <UChatMessages
-          :messages="chat.messages"
-          :status="chat.status"
-          :ui="{ indicator: purpleIndicatorDots }"
-          class="flex-1"
-          auto-scroll
-        >
-          <template #content="{ message }">
-            <template
-              v-for="(part, index) in message.parts"
-              :key="`${message.id}-${part.type}-${index}`"
-            >
-              <MDC
-                v-if="isTextUIPart(part)"
-                :value="part.text"
-                :cache-key="`${message.id}-${index}`"
-                class="*:first:mt-0 *:last:mb-0"
-              />
-            </template>
-          </template>
-        </UChatMessages> -->
+      </ClientOnly>
 
-        <!-- <UChatPrompt
-          v-model="input"
-          :error="chat.error"
-          variant="subtle"
-          class="sticky bottom-0"
-          @submit="onSubmit"
-        >
-          <UChatPromptSubmit
-            :status="chat.status"
-            @stop="chat.stop()"
-            @reload="chat.regenerate()"
-          />
-        </UChatPrompt> -->
+      <UContainer class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">
+        <ClientOnly>
+          <div v-if="chat" >
+            Has chat!
+            <div v-if="chat.messagses">
+              <h2 class="text-green-600">Has <code>chat.state</code>!</h2>
+              <pre><code>{{ chat.messages }}</code></pre>
+            </div>
+            <div v-else>
+              <h2 class="text-red-600">No messages - use <code>chat.state</code></h2>
+              <pre><code>{{ chat.state }}</code></pre>
+            </div>
+          </div>
+        </ClientOnly>
+
+
       </UContainer>
     </template>
   </UDashboardPanel>
