@@ -1,6 +1,8 @@
 # AI SDK and Nuxt UI
 
-Some notes as I'm debugging why, in a composable, I cannot access messages
+## Problem
+
+Some notes as I'm debugging why, _in a composable_, I **cannot access messages**. Trying to figure out where the vue refs are lost.
 
 ```js
 // composables/useChatSession.ts
@@ -24,6 +26,39 @@ Apparently
 
 Conundrum: `messagesRef` works, but it's accessing private state 🤔
 
+#### Approach? - wrap with `computed()`
+
+If AI SDK and Nuxt UI are out of sync right now, encapsulate in a computed helper so that our templates are clean.
+
+```ts
+// Create a clean helper for your UI
+const messages = computed(() => chat.value.state.messagesRef)
+const status = computed(() => chat.value.state.statusRef)
+```
+
+#### Approach? - `toRef()`
+
+```
+const messages = toRef(chatInstance, 'messages') 
+const status = toRef(chatInstance, 'status')
+```
+
+### Client vs Server Side 
+
+Instead of relying on `onMounted(() => xyz.setup())` in templates, we could use inside the composable `xyz`:
+
+```js
+if (import.meta.server) {
+  // runs server-side only
+}
+if (import.meta.client) {
+  // runs client-side only
+}
+```
+
+> [!WARNING]
+> `import.meta.client` has no access to DOM. So if need autoscrolling, need to use `onMounted` hook.
+
 ---
 
 ## Nuxt UI
@@ -34,7 +69,15 @@ Conundrum: `messagesRef` works, but it's accessing private state 🤔
 - [Playground > pages/chat.vue](https://github.com/nuxt/ui/blob/v4/playgrounds/nuxt/app/pages/chat.vue), uses `new Chat({ messages })`
 
 ## AI SDK
-N.B. there is a AI SDK Core vs AI SDK UI
+
+The SDK has two (2) parts:
+
+| SDK | Rendering | Interface |
+|:--|:--|:--|
+| AI SDK "Core" | Server-side | `Message[]` |
+| AI SDK "UI" | Client-side | `UIMessage[]` |
+
+The main difference is that `UIMessage` uses the `parts` structure (for multi-modal support) rather than just a content string.
 
 ### AI SDK UI 
 
