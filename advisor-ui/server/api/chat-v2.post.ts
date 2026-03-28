@@ -1,5 +1,5 @@
 import type { UIMessage } from 'ai'
-import { streamText, convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse } from 'ai'
+import { streamText, convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs } from 'ai'
 import type { RetrieveResponse } from '../types/retrieval'
 
 /**
@@ -78,12 +78,22 @@ export default defineEventHandler(async (event) => {
           await checkOllamaModel(config.ai.ollamaBaseUrl, config.ai.chatModel)
         }
 
+        // --- Configure tools (only when a design is linked) ---
+        const tools = designId
+          ? { getDesignSnapshot: createDesignSnapshotTool(designId) }
+          : undefined
+
         // --- Stream LLM response ---
         const result = streamText({
           model: getChatModel(),
           temperature: config.ai.chatTemperature,
           system: fullPrompt,
           messages: await convertToModelMessages(messages),
+          // Tools + step limit to prevent runaway tool loops
+          ...(tools
+            ? { tools, stopWhen: stepCountIs(2) }
+            : {}
+          ),
         })
 
         // Attach sources as message metadata so the client can render citations

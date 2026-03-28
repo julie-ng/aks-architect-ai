@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { isTextUIPart } from 'ai'
+import { isTextUIPart, isToolUIPart } from 'ai'
+import { isToolStreaming } from '@nuxt/ui/utils/ai'
 import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
 
 const route = useRoute()
@@ -93,6 +94,35 @@ watch(status, (s) => console.log('[chat-v2] status:', s))
                     :cache-key="`${message.id}-${index}-${part.text.length}`"
                     class="*:first:mt-0 *:last:mb-0"
                   />
+
+                  <!-- Design snapshot tool -->
+                  <UChatTool
+                    v-else-if="isToolUIPart(part)"
+                    :text="isToolStreaming(part) ? 'Loading design snapshot...' : 'Loaded design snapshot'"
+                    :streaming="isToolStreaming(part)"
+                    icon="i-lucide-clipboard-list"
+                  >
+                    <design-snapshot-card
+                      v-if="!isToolStreaming(part) && part.output?.found"
+                      :title="part.output.title"
+                      :requirements="part.output.requirements"
+                      :decisions="part.output.decisions"
+                    />
+                    <div
+                      v-else-if="!isToolStreaming(part) && part.output && !part.output.found"
+                      class="text-sm text-muted py-2"
+                    >
+                      Design no longer available.
+                    </div>
+                    <UAlert
+                      v-else-if="!isToolStreaming(part) && part.errorText"
+                      color="error"
+                      variant="subtle"
+                      icon="i-lucide-circle-alert"
+                      title="Could not load design snapshot"
+                      :description="part.errorText"
+                    />
+                  </UChatTool>
                 </template>
                 <!-- TODO: consider renaming to References -->
                 <source-links
