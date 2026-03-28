@@ -14,6 +14,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
 
   const messages = ref<UIMessage[]>([])
   const title = ref('New Chat')
+  const designId = ref<string | null>(null)
 
   /**
    * Load a chat session's messages and title from the API.
@@ -27,6 +28,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     const data = await requestFetch<ChatSession>(`/api/sessions/${_id}`)
     messages.value = data.messages
     title.value = data.title
+    designId.value = data.designId ?? null
   }
 
   /**
@@ -81,6 +83,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   return {
     messages,
     title,
+    designId,
     load,
     setId,
     generateTitle,

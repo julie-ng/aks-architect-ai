@@ -1,5 +1,7 @@
 import type { UIMessage } from 'ai'
 import { streamText, convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse } from 'ai'
+import { eq } from 'drizzle-orm'
+import { designs } from '../db/schema'
 import type { RetrieveResponse } from '../types/retrieval'
 
 /**
@@ -14,7 +16,10 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
   try {
-    const { messages }: { messages: UIMessage[] } = await readBody(event)
+    const { messages, designId }: {
+      messages: UIMessage[]
+      designId?: string
+    } = await readBody(event)
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
@@ -47,17 +52,43 @@ export default defineEventHandler(async (event) => {
         `${config.retrievalApiHost}/api/retrieve`,
         {
           method: 'POST',
-          body: { question, history },
+          body: {
+            question,
+            history,
+            ...(designId
+              ? { design_id: designId }
+              : {}
+            ),
+          },
         },
       )
       console.timeEnd('[chat-v2] retrieve')
       console.log('[chat-v2] reformulated:', retrieveResponse.reformulated_query)
 
-      // --- Build system prompt with RAG context ---
+      // --- Fetch design context if linked ---
+      let designContext = ''
+      if (designId) {
+        const [design] = await db().select({
+          requirements: designs.requirements,
+          decisions: designs.decisions,
+        }).from(designs).where(eq(designs.id, designId))
+
+        if (design) {
+          designContext = formatDesignContext(
+            design.requirements as Record<string, string | string[]>,
+            design.decisions as Record<string, string | string[]>,
+          )
+        }
+      }
+
+      // --- Build system prompt with RAG context + optional design context ---
       const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
       const context = formatContext(dedupedChunks)
       const systemPrompt = buildSystemPrompt()
-      const fullPrompt = `${systemPrompt}\n\n<context>\n${context}\n</context>`
+      let fullPrompt = `${systemPrompt}\n\n<context>\n${context}\n</context>`
+      if (designContext) {
+        fullPrompt += `\n\n<design>\nThe user has an AKS architecture design with these choices. Tailor your advice to their specific configuration:\n${designContext}\n</design>`
+      }
 
       // --- Extract sources for client-side citation rendering ---
       const sources = dedupedChunks.map(c => ({

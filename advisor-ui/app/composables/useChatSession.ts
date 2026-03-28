@@ -50,7 +50,14 @@ export function useChatSession (chatId: string) {
     chat.value = new Chat({
       id: chatId,
       messages: chatSessionStore.messages || [],
-      transport: new DefaultChatTransport({ api: '/api/chat-v2' }),
+      transport: new DefaultChatTransport({
+        api: '/api/chat-v2',
+        // Send designId on every request so the server can inject design context.
+        // Transport body is merged into every sendMessage request (unlike Chat constructor body, which is ignored).
+        body: chatSessionStore.designId
+          ? { designId: chatSessionStore.designId }
+          : undefined,
+      }),
       onFinish ({ messages }) {
         chatSessionStore.updateMessages(messages)
       },
