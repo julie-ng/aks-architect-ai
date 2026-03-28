@@ -1,51 +1,26 @@
 <script setup lang="ts">
-import { isTextUIPart, DefaultChatTransport } from 'ai'
-import { Chat } from '@ai-sdk/vue'
+import { isTextUIPart } from 'ai'
 
 const route = useRoute()
 const chatId = route.params.id as string
 
 const chatsStore = useChatsStore()
 
+// SSR: load session data before hydration (route-level concern)
 await callOnce(`chat-session-${chatId}`, () => chatsStore.loadSession(chatId))
 
+// Composable owns all chat behavior — page is pure template
+const { chat, sessionTitle, sendMessage, setup } = useChatSession(chatId)
+
+onMounted(() => setup())
+
 const input = ref('')
-// Chat class is client-only (manages streaming connections + reactive DOM state).
-// Created in onMounted because it needs session data from the store.
-// `isChatReady` gates the template since `chat` is a non-reactive `let`.
-const isChatReady = ref(false)
-let chat: Chat
-
-onMounted(() => {
-  const session = chatsStore.getSession(chatId)!
-
-  chat = new Chat({
-    id: chatId,
-    messages: session.messages,
-    transport: new DefaultChatTransport({ api: '/api/chat-v2' }),
-    onError (error) {
-      console.error('[chat-v2] error:', error)
-    },
-  })
-
-  isChatReady.value = true
-})
-
 const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
-const sessionTitle = computed(() => chatsStore.getSession(chatId)?.title ?? 'New Chat')
-let hasGeneratedTitle = false
 
 function onSubmit () {
   if (!input.value.trim()) return
-  const message = input.value
+  sendMessage(input.value)
   input.value = ''
-
-  chat.sendMessage({ text: message })
-
-  if (!hasGeneratedTitle) {
-    hasGeneratedTitle = true
-    chatsStore.generateTitle(chatId, message)
-  }
 }
 </script>
 
@@ -61,7 +36,7 @@ function onSubmit () {
       </div>
     </template>
     <template #body>
-      <UContainer v-if="isChatReady" class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">
+      <UContainer v-if="chat" class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">
         <UChatMessages
           :messages="chat.messages"
           :status="chat.status"
