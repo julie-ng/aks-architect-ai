@@ -1,5 +1,6 @@
 import { DefaultChatTransport } from 'ai'
 import { Chat } from '@ai-sdk/vue'
+import { toRef } from 'vue'
 
 /**
  * Wraps AI SDK's Chat class with application behavior.
@@ -18,16 +19,17 @@ export function useChatSession (chatId: string) {
   // AI SDK Chat instance as a shallowRef — null until setup() runs (client-only).
   // Must be shallowRef (not ref) because Chat uses prototype getters (messages, status, error)
   // that break when Vue's reactive proxy wraps the instance deeply.
-  const chat = ref<Chat | null>(null)
+  // const chat = ref<Chat | null>(null)
 
   // Title generation should only fire once per session
-  let _hasGeneratedTitle = false
+  const _hasGeneratedTitle = false
 
   // --- Getters ---
 
   // Reactive title from the store — updates when generateTitle() completes
   const sessionTitle = computed(() => chatsStore.getSession(chatId)?.title ?? 'New Chat')
 
+  let chatInstance
   // --- Actions ---
 
   /**
@@ -38,7 +40,7 @@ export function useChatSession (chatId: string) {
     const session = chatsStore.getSession(chatId)!
     console.log('[useChatSession] setup(), session:', session?.id, 'messages:', session?.messages.length)
 
-    chat.value = new Chat({
+    chatInstance = new Chat({
       id: chatId,
       messages: session.messages,
       transport: new DefaultChatTransport({ api: '/api/chat-v2' }),
@@ -63,19 +65,19 @@ export function useChatSession (chatId: string) {
    *
    * @param text - The user's message text
    */
-  function sendMessage (text: string) {
-    chat.value!.sendMessage({ text })
+  // function sendMessage (text: string) {
+  //   chat.value!.sendMessage({ text })
 
-    // Generate a title from the first user message (fire-and-forget)
-    if (!_hasGeneratedTitle) {
-      _hasGeneratedTitle = true
-      chatsStore.generateTitle(chatId, text)
-    }
-  }
+  //   // Generate a title from the first user message (fire-and-forget)
+  //   if (!_hasGeneratedTitle) {
+  //     _hasGeneratedTitle = true
+  //     chatsStore.generateTitle(chatId, text)
+  //   }
+  // }
 
   return {
     // AI SDK Chat instance — template binds to chat.messages, chat.status, chat.error
-    chat,
+    chat: chatInstance,
 
     // State
     sessionTitle,
