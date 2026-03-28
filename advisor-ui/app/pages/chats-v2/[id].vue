@@ -8,7 +8,7 @@ const chatId = route.params.id as string
 await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId))
 
 // Composable owns all chat behavior — page is pure template
-const { chat, messages, status, sendMessage } = useChatSession(chatId)
+const { chat, messages, status, title, sendMessage } = useChatSession(chatId)
 
 const input = ref('')
 const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
@@ -18,6 +18,10 @@ function onSubmit () {
   sendMessage(input.value)
   input.value = ''
 }
+
+// Debugging
+console.log('[chat-v2] status:', status)
+watch(status, (s) => console.log('[chat-v2] status:', s))
 </script>
 
 <template>
@@ -25,6 +29,12 @@ function onSubmit () {
     id="chat-v2"
     :ui="{ body: 'p-0 sm:p-0' }"
   >
+    <template #header>
+      <!-- TODO: temporary debug header — replace with ChatTitleHeader -->
+      <div class="px-4 py-2 text-sm text-muted">
+        {{ title }}
+      </div>
+    </template>
     <template #body>
       <ClientOnly>
         <UContainer class="min-h-dvh flex flex-col py-4 sm:py-6 max-w-3xl">

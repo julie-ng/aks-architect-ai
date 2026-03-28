@@ -3,7 +3,7 @@ import { Chat } from '@ai-sdk/vue'
 
 /**
  * Wraps AI SDK's Chat class with application behavior.
- * Owns: Chat creation, message persistence.
+ * Owns: Chat creation, message persistence, title generation.
  * Exposes messages/status as computed fallbacks — store data for SSR, Chat getters on client.
  *
  * @param chatId - The session ID for this chat
@@ -18,13 +18,20 @@ export function useChatSession (chatId: string) {
   // which would break prototype getters like chat.messages, chat.status, chat.error.
   const chat = shallowRef<Chat | null>(null)
 
+  // Title generation should only fire once per session
+  let _hasGeneratedTitle = false
+
   // --- Getters ---
 
-  // Before Chat is created: read from store (SSR-loaded data).
-  // After Chat is created: read from chat.messages (getter on VueChatState).
   const messages = computed(() => {
-    if (chat.value) return chat.value.messages
-    return chatSessionStore.messages
+    // client-side only - read chat.messages getter on VueChatState
+    if (chat.value) {
+      return chat.value.messages
+    }
+    else {
+      // SSR-loaded data
+      return chatSessionStore.messages
+    }
   })
 
   // Chat status: ready until Chat is created, then live from Chat instance
@@ -53,12 +60,18 @@ export function useChatSession (chatId: string) {
   // --- Actions ---
 
   /**
-   * Send a user message.
+   * Send a user message. Triggers title generation on first message.
    *
    * @param text - The user's message text
    */
   function sendMessage (text: string) {
     chat.value!.sendMessage({ text })
+
+    // Generate a title from the first user message (fire-and-forget, no await)
+    if (!_hasGeneratedTitle) {
+      _hasGeneratedTitle = true
+      chatSessionStore.generateTitle(chatId, text)
+    }
   }
 
   return {
@@ -68,6 +81,7 @@ export function useChatSession (chatId: string) {
     // Computed reactive state — safe for SSR + client
     messages,
     status,
+    title: computed(() => chatSessionStore.title),
 
     // Actions
     sendMessage,
