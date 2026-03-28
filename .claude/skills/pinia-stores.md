@@ -146,23 +146,30 @@ await callOnce('chat-sessions', () => chatsStore.fetchSessions())
 
 ### Client-only code that depends on fetched data
 
-Some things genuinely can't run during SSR (e.g. AI SDK's `Chat` class which manages streaming connections). Split the page into:
+Some things genuinely can't run during SSR (e.g. AI SDK's `Chat` class which manages streaming connections). Prefer `import.meta.client` in a composable over `onMounted` in the component — it keeps pages thin and avoids needing a "ready" flag. Reserve `onMounted` for cases that genuinely require DOM access (e.g. scroll behavior, focus management).
 
-1. **SSR-safe data fetch** — `callOnce` + store action with `requestFetch`
-2. **Client-only initialization** — stays in `onMounted`, uses data already in the store
+```ts
+// ✅ Preferred — composable handles client-only init
+// useChatSession.ts
+if (import.meta.client) {
+  chatSessionStore.setId(chatId)
+  chat.value = new Chat({ id: chatId, messages: chatSessionStore.messages || [] })
+}
+```
 
 ```vue
+<!-- Page stays thin — no onMounted needed -->
 <script setup lang="ts">
-const chatsStore = useChatsStore()
+await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId))
+const { chat, messages, status } = useChatSession(chatId)
+</script>
+```
 
-// 1. SSR: fetch session data (rendered on server, hydrated on client)
-await callOnce(`chat-${chatId}`, () => chatsStore.fetchSession(chatId))
-
-// 2. Client-only: initialize streaming chat class
-let chat: Chat
+```vue
+<!-- ✅ onMounted is correct when you need DOM access -->
+<script setup lang="ts">
 onMounted(() => {
-  const session = chatsStore.getSession(chatId)
-  chat = new Chat({ id: chatId, messages: session.messages, ... })
+  scrollToBottom()
 })
 </script>
 ```

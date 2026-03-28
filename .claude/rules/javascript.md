@@ -38,6 +38,65 @@ All exported functions must have JSDoc comments with `@param` and `@returns` tag
 export function formatContext (chunks: RetrieveChunk[]): string {
 ```
 
+## Code Conventions
+
+### Internal / non-exported identifiers
+
+Prefix with `_` to signal private/internal use — applies to variables, functions, and store helpers that are not part of the public API:
+
+```ts
+// ✅ Private store helper
+const _isCacheFresh = (id) => { ... }
+
+// ✅ Internal composable variable
+let _hasGeneratedTitle = false
+```
+
+### Conditional spreads — multiline
+
+Always expand conditional spreads across multiple lines. Never inline them:
+
+```ts
+// ✅
+body: {
+  question,
+  history,
+  ...(designId
+    ? { design_id: designId }
+    : {}
+  ),
+}
+
+// ❌
+body: { question, history, ...(designId ? { design_id: designId } : {}) }
+```
+
+### Prefer if/else over early return
+
+Use explicit `if/else` blocks instead of early returns. Easier to read, easier to annotate with comments:
+
+```ts
+// ✅
+if (condition) {
+  return doA()
+}
+else {
+  return doB()
+}
+
+// ❌
+if (!condition) return
+doB()
+```
+
+### Extract helpers early — don't stuff pages or routes
+
+Pages (`app/pages/`) and server routes (`server/api/`) should be thin orchestrators. Business logic, formatting, and data transformation belong in helpers/utils from the start — not refactored out later:
+
+- **Pages** → delegate to composables and stores
+- **Server routes** → delegate to `server/utils/` helpers
+- If a function is more than ~5 lines or has a name, it belongs in its own file
+
 ## File Naming
 
 - Reusable utility/helper functions: `.utils.js` suffix (e.g., `filename.utils.js`)

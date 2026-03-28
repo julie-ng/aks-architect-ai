@@ -5,63 +5,123 @@ description: AI SDK v6 patterns, gotchas, and conventions for this project. Use 
 
 # AI SDK v6 (`ai` + `@ai-sdk/vue`)
 
-## Chat class — body must go on sendMessage, not constructor
+## Chat class — use `shallowRef`, never `ref`
 
-The `body` option on `new Chat({ body: { ... } })` is **silently ignored** — fields are never sent to the server. This is a known AI SDK v6 behavior.
+The `Chat` class exposes `messages`, `status`, and `error` as prototype getters. Wrapping the instance in `ref()` deep-proxies it and breaks these getters — they return `undefined`.
 
-### Wrong
+```ts
+// ✅ shallowRef — prototype getters work correctly
+const chat = shallowRef<Chat<UIMessage> | null>(null)
 
-```typescript
-// Constructor-level body is NOT sent with requests
-chat = new Chat({
-  id: chatId,
-  messages: session.messages,
-  body: {
-    domains: ['networking', 'security'],
-    designId: session.designId,
-  },
-})
-
-chat.sendMessage({ text: message })
+// ❌ ref — deep proxy breaks prototype getters
+const chat = ref<Chat<UIMessage> | null>(null)
 ```
 
-### Correct
+## Chat class — initialize with `import.meta.client`, not `onMounted`
 
-```typescript
-// Build body once, pass on every sendMessage call
-const chatBody = {
-  domains: ['networking', 'security'],
-  ...(session.designId ? { designId: session.designId } : {}),
+The `Chat` class is client-only (streaming connections, browser APIs). Use `import.meta.client` guard in the composable — not `onMounted` in the component. This keeps the component template clean and avoids the need for a separate "ready" flag.
+
+```ts
+// ✅ In composable — import.meta.client guard
+if (import.meta.client) {
+  chat.value = new Chat({ ... })
 }
 
-chat = new Chat({
+// ❌ In component — onMounted forces a "ready" flag workaround
+onMounted(() => {
+  chat = new Chat({ ... })
+})
+```
+
+## Chat class — use `DefaultChatTransport` for request body
+
+`DefaultChatTransport` body IS sent with every request. The `Chat` constructor `body` option is silently ignored — never put fields there.
+
+```ts
+// ✅ DefaultChatTransport — body is forwarded on every request
+chat.value = new Chat({
   id: chatId,
-  messages: session.messages,
+  messages: chatSessionStore.messages || [],
+  transport: new DefaultChatTransport({
+    api: '/api/chat',
+    body: chatSessionStore.designId
+      ? { designId: chatSessionStore.designId }
+      : undefined,
+  }),
 })
 
-chat.sendMessage({ text: message }, { body: chatBody })
+// ❌ Constructor body — silently ignored, never sent
+chat = new Chat({
+  body: { designId: session.designId },
+})
 ```
 
-### Docs
+## Wrap chat UI in `<ClientOnly>`, not `v-if`
 
-- Stale body data: https://ai-sdk.dev/docs/troubleshooting/use-chat-stale-body-data
-- Custom request options: https://ai-sdk.dev/docs/troubleshooting/use-chat-custom-request-options
+Chat sessions load messages from the DB before hydration. Using `v-if="chat"` causes a hydration mismatch (server renders `<!---->`, client renders `<div>`). Use `<ClientOnly>` instead — it's explicit about intent and avoids the mismatch.
 
-## Server-side patterns
+```vue
+<!-- ✅ -->
+<ClientOnly>
+  <UChatMessages :messages="messages" ... />
+  <UChatPrompt ... />
+</ClientOnly>
 
-- Use `UIMessage` type + `convertToModelMessages()` from `ai`
-- Wrap handler in `defineLazyEventHandler` for one-time async init
-- Destructure custom body fields directly from `readBody(event)`:
-
-```typescript
-const { messages, domains, designId } = await readBody(event)
+<!-- ❌ causes hydration mismatch -->
+<UChatMessages v-if="chat" :messages="messages" ... />
 ```
 
-- Stream responses via `result.toUIMessageStreamResponse()`
-- Attach metadata (sources, reformulated query) via `messageMetadata` callback
+See: `app/pages/chat/[id].vue`
+
+## Composable pattern for `messages` and `status`
+
+Expose `messages` and `status` as computed fallbacks — store values during SSR, Chat getters on client. This avoids blank flashes during hydration.
+
+```ts
+const messages = computed(() => {
+  if (chat.value) { return chat.value.messages }
+  else { return chatSessionStore.messages }
+})
+
+const status = computed(() => chat.value?.status ?? 'ready')
+```
+
+## Server-side — use `createUIMessageStream`
+
+`createUIMessageStream` opens the stream immediately, so the client sees indicator dots during RAG retrieval. Do NOT use `streamText(...).toUIMessageStreamResponse()` — the stream doesn't open until LLM starts responding.
+
+```ts
+// ✅ Stream opens immediately — client sees indicator during retrieval
+const stream = createUIMessageStream({
+  execute: async (writer) => {
+    const chunks = await fetchRAGContext(question)
+    // ... attach metadata, run streamText, merge into writer
+  },
+})
+return createUIMessageStreamResponse({ stream })
+
+// ❌ Stream opens only when LLM starts — blank gap during retrieval
+return result.toUIMessageStreamResponse()
+```
+
+## Server-side — reading the request body
+
+```ts
+const { messages, designId } = await readBody(event)
+```
+
+Convert messages for the LLM with `convertToModelMessages()` from `ai`.
+
+## Tool calling
+
+- Register tools in the `tools` option of `streamText`
+- Use `stepCountIs(2)` to prevent tool loops (allows 1 tool call + 1 follow-up response)
+- Check `isToolUIPart(part)` from `ai` to render tool parts in the template
+- Check `isToolStreaming(part)` from `@nuxt/ui/utils/ai` to show loading state
 
 ## Provider setup
 
 - Factory function in `server/utils/provider.ts`
 - Switched via `NUXT_AI_PROVIDER` env var: `ollama` (local) or `anthropic` (prod)
+- Default local model: `gemma3:4b`, production: `claude-sonnet-4-6`
 - `ollama-ai-provider-v2` requires zod v4
