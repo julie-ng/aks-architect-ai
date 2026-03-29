@@ -2,6 +2,9 @@
 
 Docs and references for humans that I keep coming back to.
 
+- [Nuxt - AI SDK](./Nuxt%20-%20AI%20SDK.md)
+- [Nuxt - Chat Design Architecture](./Nuxt%20-%20Chat%20Design%20Architecture.md)
+
 ## AI Engineering
 
 Patterns and goals for a "smart" architect assistant/agent. 
