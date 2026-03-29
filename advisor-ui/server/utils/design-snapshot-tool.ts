@@ -20,11 +20,12 @@ export function createDesignSnapshotTool (designId: string) {
       }).from(designs).where(eq(designs.id, designId))
 
       if (!design) {
-        return { found: false as const, title: null, requirements: {}, decisions: {} }
+        return { found: false as const, designId, title: null, requirements: {}, decisions: {} }
       }
 
       return {
         found: true as const,
+        designId,
         title: design.title,
         requirements: design.requirements as Record<string, string | string[]>,
         decisions: design.decisions as Record<string, string | string[]>,

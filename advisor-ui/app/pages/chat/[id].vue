@@ -79,7 +79,7 @@ function onSubmit () {
               }"
               :assistant="{
                 side: 'left',
-                variant: 'outline',
+                variant: 'inline',
                 avatar: {
                   icon: 'i-lucide-bot-message-square',
                   color: 'primary',
@@ -90,6 +90,7 @@ function onSubmit () {
               <template #leading="{ avatar, message }">
                 <ChatAssistantAvatar
                   v-if="message.role === 'assistant'"
+                  class="-mt-1 mr-4"
                   :icon="avatar.icon"
                   :pulsing="status === 'submitted'"
                   :pinging="status === 'streaming' && !isMessageFinished(message)"
@@ -113,12 +114,15 @@ function onSubmit () {
                   <!-- Design snapshot tool -->
                   <UChatTool
                     v-else-if="isToolUIPart(part)"
+                    :loading="isToolStreaming(part)"
                     :text="isToolStreaming(part) ? 'Loading design snapshot...' : 'Loaded design snapshot'"
                     :streaming="isToolStreaming(part)"
-                    icon="i-lucide-clipboard-list"
+                    icon="i-lucide-map"
                   >
+                    <!-- class="border border-slate-200 text-primary rounded-sm px-2 py-1" -->
                     <design-snapshot-card
                       v-if="!isToolStreaming(part) && part.output?.found"
+                      :design-id="part.output.designId"
                       :title="part.output.title"
                       :requirements="part.output.requirements"
                       :decisions="part.output.decisions"
