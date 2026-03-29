@@ -23,7 +23,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
    * @param chatId - The session ID to load
    */
   async function load (chatId: string) {
-    console.log(`useChatSessionStore.load(${chatId})`)
+    // console.log(`useChatSessionStore.load(${chatId})`)
     if (!loggedIn.value) return
     _id = chatId
     const data = await requestFetch<ChatSession>(`/api/sessions/${_id}`)

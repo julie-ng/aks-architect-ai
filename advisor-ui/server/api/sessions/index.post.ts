@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { id, title, designId } = result.data
-  console.log('[session] create', { id, designId: designId ?? null })
+  logger.info({ sessionId: id, designId: designId ?? null }, 'session created')
 
   const [session] = await db().insert(chatSessions).values({
     id,

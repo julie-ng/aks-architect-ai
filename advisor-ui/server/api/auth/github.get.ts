@@ -33,7 +33,7 @@ export default defineOAuthGitHubEventHandler({
     return sendRedirect(event, '/')
   },
   onError (event, error) {
-    console.error('GitHub OAuth error:', error)
+    logger.error({ error }, 'GitHub OAuth error')
     // throw createError({
     //   status: 500,
     //   statusText: 'GitHub OAuth Error.',

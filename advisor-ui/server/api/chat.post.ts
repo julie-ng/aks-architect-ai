@@ -20,6 +20,8 @@ export default defineEventHandler(async (event) => {
       designId?: string
     } = await readBody(event)
 
+    logger.info({ designId: designId ?? null }, 'chat request received')
+
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         // --- Extract question from last user message ---
@@ -36,7 +38,7 @@ export default defineEventHandler(async (event) => {
         const history = extractConversationHistory(messages, lastUserMessage)
 
         // --- RAG retrieval (client already sees indicator dots) ---
-        console.time('[chat-v2] retrieve')
+        const retrieveStart = Date.now()
         const retrieveResponse = await $fetch<RetrieveResponse>(
           `${config.retrievalApiHost}/api/retrieve`,
           {
@@ -51,8 +53,11 @@ export default defineEventHandler(async (event) => {
             },
           },
         )
-        console.timeEnd('[chat-v2] retrieve')
-        console.log('[chat-v2] reformulated:', retrieveResponse.reformulated_query)
+        logger.info({
+          duration: Date.now() - retrieveStart,
+          reformulatedQuery: retrieveResponse.reformulated_query,
+          chunks: retrieveResponse.chunks.length,
+        }, 'retrieval complete')
 
         // --- Fetch design context if linked ---
         const designContext = designId
