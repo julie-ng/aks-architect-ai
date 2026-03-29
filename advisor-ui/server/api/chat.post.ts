@@ -108,7 +108,10 @@ export default defineEventHandler(async (event) => {
 
         // --- Configure tools (only when a design is linked) ---
         const tools = designId
-          ? { getDesignSnapshot: createDesignSnapshotTool(designId) }
+          ? {
+            getDesignSnapshot: createDesignSnapshotTool(designId),
+            proposeDesignUpdate: createProposeDesignUpdateTool(),
+          }
           : undefined
 
         // --- Stream LLM response ---

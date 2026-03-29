@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isTextUIPart, isToolUIPart } from 'ai'
+import { isTextUIPart, isToolUIPart, getToolName } from 'ai'
 import { isToolStreaming } from '@nuxt/ui/utils/ai'
 import { extractErrorTitle, extractErrorMessage } from '~~/shared/utils/chat-error'
 
@@ -9,7 +9,8 @@ const chatId = route.params.id as string
 
 // Load session data — runs on SSR and on every client remount (page-key forces remount on nav).
 // Do NOT use callOnce here — its permanent cache prevents reload when navigating between sessions.
-await useChatSessionStore().load(chatId)
+const chatSessionStore = useChatSessionStore()
+await chatSessionStore.load(chatId)
 
 
 // Composable owns all chat behavior — page is pure template
@@ -29,6 +30,10 @@ const purpleIndicatorDots = '*:bg-indigo-500 dark:*:bg-indigo-300'
 const messagesWrapperStyle = computed(() => ({
   minHeight: isBlankChat.value ? '0px' : '100dvh',
 }))
+
+function onProposalAccepted (text: string) {
+  sendMessage(text)
+}
 
 function onSubmit () {
   if (!input.value.trim()) return
@@ -113,13 +118,12 @@ function onSubmit () {
 
                   <!-- Design snapshot tool -->
                   <UChatTool
-                    v-else-if="isToolUIPart(part)"
+                    v-else-if="isToolUIPart(part) && getToolName(part) === 'getDesignSnapshot'"
                     :loading="isToolStreaming(part)"
                     :text="isToolStreaming(part) ? 'Loading design snapshot...' : 'Loaded design snapshot'"
                     :streaming="isToolStreaming(part)"
                     icon="i-lucide-map"
                   >
-                    <!-- class="border border-slate-200 text-primary rounded-sm px-2 py-1" -->
                     <design-snapshot-card
                       v-if="!isToolStreaming(part) && part.output?.found"
                       :design-id="part.output.designId"
@@ -139,6 +143,31 @@ function onSubmit () {
                       variant="subtle"
                       icon="i-lucide-circle-alert"
                       title="Could not load design snapshot"
+                      :description="part.errorText"
+                    />
+                  </UChatTool>
+
+                  <!-- Propose design update tool -->
+                  <UChatTool
+                    v-else-if="isToolUIPart(part) && getToolName(part) === 'proposeDesignUpdate'"
+                    :loading="isToolStreaming(part)"
+                    :text="isToolStreaming(part) ? 'Preparing suggestion...' : 'Design update suggestion'"
+                    :streaming="isToolStreaming(part)"
+                    icon="i-lucide-lightbulb"
+                    open
+                  >
+                    <design-update-proposal
+                      v-if="!isToolStreaming(part) && part.output"
+                      :proposal="part.output"
+                      :design-id="chatSessionStore.designId"
+                      @accept="onProposalAccepted"
+                    />
+                    <UAlert
+                      v-else-if="!isToolStreaming(part) && part.errorText"
+                      color="error"
+                      variant="subtle"
+                      icon="i-lucide-circle-alert"
+                      title="Could not prepare suggestion"
                       :description="part.errorText"
                     />
                   </UChatTool>
