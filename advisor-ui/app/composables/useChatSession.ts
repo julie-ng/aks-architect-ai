@@ -82,8 +82,9 @@ export function useChatSession (chatId: string) {
   function sendMessage (text: string) {
     chat.value!.sendMessage({ text })
 
-    // Generate a title from the first user message (fire-and-forget, no await)
-    if (!_hasGeneratedTitle) {
+    // Generate a title from the first user message (fire-and-forget, no await).
+    // Skip if a design is linked — the session already has a "[Design] ..." title.
+    if (!_hasGeneratedTitle && !chatSessionStore.designId) {
       _hasGeneratedTitle = true
       chatSessionStore.generateTitle(text)
     }
