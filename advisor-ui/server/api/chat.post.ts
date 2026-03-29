@@ -60,25 +60,40 @@ export default defineEventHandler(async (event) => {
           chunks: retrieveResponse.chunks.length,
         }, 'retrieval complete')
 
-        // --- Fetch design context + detect changes (parallelized) ---
-        const [designContext, designChanged] = designId
+        // --- Fetch design context, detect changes, and load framework schema (parallelized) ---
+        const [designContext, designChanged, frameworkSchema] = designId
           ? await Promise.all([
             fetchDesignContext(designId),
             sessionId ? detectDesignChange(designId, sessionId) : Promise.resolve(false),
+            buildFrameworkSchema(event),
           ])
-          : ['', false]
+          : ['', false, '']
 
-        logger.info({ designChanged, hasDesignContext: !!designContext }, 'design change detection')
+        logger.info({ designChanged, hasDesignContext: !!designContext, frameworkSchemaLength: frameworkSchema.length }, 'design change detection')
 
-        // --- Assemble system prompt ---
+        // --- Assemble system prompt (domain-filtered to reduce token count) ---
+        const domains = selectDomains(question)
         const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
         const ragContext = formatContext(dedupedChunks)
         const fullPrompt = assembleSystemPrompt(
-          buildSystemPrompt(),
+          buildSystemPrompt(domains),
           ragContext,
-          designContext,
-          designChanged,
+          {
+            designContext,
+            designChanged,
+            frameworkSchema,
+          },
         )
+
+        const messagesChars = JSON.stringify(messages).length
+        const systemPromptTokens = Math.round(fullPrompt.length / 4)
+        const messagesTokens = Math.round(messagesChars / 4)
+        logger.info({
+          domains,
+          systemPromptTokens,
+          messagesTokens,
+          totalEstimatedTokens: systemPromptTokens + messagesTokens,
+        }, 'assembled system prompt')
 
         // --- Extract sources for client-side citation rendering ---
         const sources = dedupedChunks.map(c => ({
