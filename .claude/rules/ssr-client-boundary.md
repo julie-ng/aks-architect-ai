@@ -53,19 +53,26 @@ onMounted(() => {
 })
 ```
 
-## SSR data loading — `callOnce` in the page
+## SSR data loading — `callOnce` vs direct `await`
 
-Load session/DB data with `callOnce` at the page level before the composable runs. The composable then picks it up from the store.
+Load data at the page level before the composable runs. The composable then picks it up from the store. **Which pattern depends on whether the page uses `page-key`:**
 
 ```vue
+<!-- ✅ Stable page (layout, index) — callOnce prevents double load -->
 <script setup lang="ts">
-// Runs on server, skipped on client hydration
-await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId))
+await callOnce('chat-sessions', () => chatsStore.fetchSessions())
+</script>
 
-// Composable reads from store during SSR, initializes Chat on client
+<!-- ✅ Param-driven page with page-key — direct await, no callOnce -->
+<script setup lang="ts">
+// page-key forces remount on param change, which breaks callOnce's dedup.
+// Direct await runs on both SSR + client hydration — accepted cost of page-key.
+await useChatSessionStore().load(chatId)
 const { messages, status } = useChatSession(chatId)
 </script>
 ```
+
+`callOnce` caches by key for the app lifecycle. With `:page-key="$route.fullPath"`, Vue recreates the component on navigation — but `callOnce` still thinks it already ran, so it skips. This causes stale data. `mode: 'navigation'` doesn't fix it either.
 
 ## Non-reactive `let` in stores doesn't hydrate
 

@@ -140,6 +140,29 @@ await callOnce('chat-sessions', () => chatsStore.fetchSessions())
 </script>
 ```
 
+### `callOnce` vs direct `await` — when each applies
+
+`callOnce` works for **stable components** that mount once per app lifecycle — layouts, index pages, anything without `page-key`.
+
+`callOnce` does **NOT** work for **param-driven pages that use `page-key`** (e.g. `chat/[id].vue`). With `:page-key="$route.fullPath"` on `<NuxtPage>`, Vue destroys and recreates the component on every navigation. `callOnce` either skips the reload (stale data) or double-fires (`mode: 'navigation'` still runs on both SSR and client hydration).
+
+For these pages, use a direct `await` instead:
+
+```vue
+<!-- ✅ Param-driven page with page-key — direct await -->
+<script setup lang="ts">
+const chatId = route.params.id as string
+await useChatSessionStore().load(chatId)
+</script>
+
+<!-- ✅ Layout or index — callOnce -->
+<script setup lang="ts">
+await callOnce('chat-sessions', () => chatsStore.fetchSessions())
+</script>
+```
+
+The direct `await` runs twice (SSR + client hydration) — this is the accepted cost of `page-key` forcing a remount, which is required when the page creates client-only instances (like AI SDK Chat) that must be recreated per route param.
+
 ### Why not `useFetch` inside stores?
 
 `useFetch` is a composable that must be called in setup scope and returns reactive `data`/`error` refs. It's designed for component-level data binding. Stores already manage their own reactive state, so using `useFetch` inside a store would create two competing reactive layers. Use `requestFetch()` (for SSR reads) or `$fetch()` (for mutations) instead.

@@ -7,8 +7,10 @@ const route = useRoute()
 const { user } = useUserSession()
 const chatId = route.params.id as string
 
-// SSR: load session data before hydration (route-level concern)
-await callOnce(`chat-session-${chatId}`, () => useChatSessionStore().load(chatId))
+// Load session data — runs on SSR and on every client remount (page-key forces remount on nav).
+// Do NOT use callOnce here — its permanent cache prevents reload when navigating between sessions.
+await useChatSessionStore().load(chatId)
+
 
 // Composable owns all chat behavior — page is pure template
 const { chat, messages, status, sendMessage, title, isMessageFinished } = useChatSession(chatId)
@@ -35,8 +37,8 @@ function onSubmit () {
 }
 
 // Debugging
-console.log('[chat-v2] status:', status)
-watch(status, (s) => console.log('[chat-v2] status:', s))
+// console.log('[chat-v2] status:', status)
+// watch(status, (s) => console.log('[chat-v2] status:', s))
 </script>
 
 <template>
