@@ -1,19 +1,19 @@
 # AKS Architect AI
 
-Prototype and Capstone Project for AI Engineering Bootcamp.
+Capstone Project for AI Engineering Bootcamp. 
+
+> [!IMPORTANT]
+> This project was created for experimentation with AI engineering, especially context engineering to provide new business value. It is **neither personal recommendations nor official Microsoft guidance**. Although grounded in official docs, always verify AI recommendations against sources.
 
 ## Use Case
 
 A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster but needs help defining an architecture. This AI application combines RAG of official documents with human curation to advise the user:
 
 - [X] Chatbot interface to answer questions - uses RAG of official docs.
-- [ ] Interactive UI with questions for user to determine fundamental requirements, i.e. compliant industry vs startup, etc.
+- [X] Interactive UI with questions for user to determine fundamental requirements, i.e. compliant industry vs startup, etc.
   - [x] Separate form UI
-  - [ ] UI integrated into chat
-- [ ] Architectural Decisions for specific components made by AI Agents.
-
-> [!IMPORTANT]
-> This is a prototype application for experimenting with AI engineering, especially context engineering to provide new business value. It is **not official Microsoft guidance**. Always verify AI recommendations against sources.
+  - [X] UI integrated into chat
+- [X] Architectural _Suggestions_ for specific components made by AI Agents.
 
 ## Architecture
 
@@ -23,7 +23,11 @@ N.B. Models are configurable for different environments, e.g. Ollama for dev vs 
 
 #### Updates
 
-- 26.03. - Switched reformulation to Haiku, saving ~3 sec. in retrieval latency
+- 29.03. - LLM proposes design updates via interactive Accept/Decline cards in chat ([`23dcfb0`](https://github.com/julie-ng/aks-architect-ai/commit/23dcfb0))
+- 29.03. - Domain-filtered system prompt to stay within token rate limits ([`79212ce`](https://github.com/julie-ng/aks-architect-ai/commit/79212ce))
+- 28.03. - LLM detects and acknowledges design changes mid-conversation ([`d9057f1`](https://github.com/julie-ng/aks-architect-ai/commit/d9057f1))
+- 27.03. - Design context injected into chat (links design to conversation) ([`0610636`](https://github.com/julie-ng/aks-architect-ai/commit/0610636))
+- 26.03. - Switched reformulation to Haiku, saving ~3 sec. in retrieval latency ([`ecb459d`](https://github.com/julie-ng/aks-architect-ai/commit/ecb459d))
 
 ## Project Structure
 
@@ -40,20 +44,26 @@ This is a monorepo with many moving parts.
 
 ## LLMs
 
-Models used/considered
+Models are configurable per environment via `AI_PROVIDER` env var.
 
-| Provider | Model | Environment | Purpose |
-|:--|:--|:--|:--|
-| Ollama | `nomic-embed-text` | Local | Embedding |
-| Ollama | `gemma3:4b` | Local | Chat, title generation,  query reformulation |
-| Anthropic | Sonnet 4.6 | Test | Chat LLM |
-| Anthropic | Haiku 4.5 | Test | Title generation |
+| Task | Ollama | Anthropic |
+|:--|:--|:--|
+| Embedding | `nomic-embed-text` | - |
+| Tagging Chunks | `gemma3:4b` | - |
+| Chat | `gemma3:4b` | Sonnet 4.6 |
+| Chat title generation | `gemma3:270m` | Haiku 4.5 |
+| Query reformulation | `gemma3:270m` | Haiku 4.5 |
+
+> [!TIP]
+> Ultimately switched all runtime models to Anthropic for performance and quality reasons. For chat `gemma3:4b` (largest my M3 MacBook Pro can run comfortably) was fine with RAG and citing sources. But it couldn't properly keep up directions in long system prompt (~10k tokens) and tools.
 
 ## RAG Pipeline
 
+The pipeline grounds the LLM in official AKS documentation from [https://learn.microsoft.com](https://learn.microsoft.com)
+
 ### Scrape Docs
 
-Configure which web pages are crawled in [`SOURCES.yaml`](./web-scraper/SOURCES.yaml)
+Configure which web pages are crawled in [`SOURCES/`](./web-scraper/SOURCES/) directory.
 
 ```bash
 # Clear old cache
