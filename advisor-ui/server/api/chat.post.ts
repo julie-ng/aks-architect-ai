@@ -85,14 +85,22 @@ export default defineEventHandler(async (event) => {
           },
         )
 
-        const messagesChars = JSON.stringify(messages).length
+        // --- Truncate history to keep input tokens within rate limits ---
+        // The system prompt + design context carry persistent state, so older
+        // messages can be dropped without losing architectural context.
+        const MAX_MESSAGES = 20
+
         const systemPromptTokens = Math.round(fullPrompt.length / 4)
-        const messagesTokens = Math.round(messagesChars / 4)
+        const messagesTokens = Math.round(JSON.stringify(messages).length / 4)
         logger.info({
           domains,
           systemPromptTokens,
           messagesTokens,
           totalEstimatedTokens: systemPromptTokens + messagesTokens,
+          ...(messages.length > MAX_MESSAGES
+            ? { truncatedFrom: messages.length, truncatedTo: MAX_MESSAGES }
+            : {}
+          ),
         }, 'assembled system prompt')
 
         // --- Extract sources for client-side citation rendering ---
@@ -114,12 +122,16 @@ export default defineEventHandler(async (event) => {
           }
           : undefined
 
+        const recentMessages = messages.length > MAX_MESSAGES
+          ? messages.slice(-MAX_MESSAGES)
+          : messages
+
         // --- Stream LLM response ---
         const result = streamText({
           model: getChatModel(),
           temperature: config.ai.chatTemperature,
           system: fullPrompt,
-          messages: await convertToModelMessages(messages),
+          messages: await convertToModelMessages(recentMessages),
           // Tools + step limit to prevent runaway tool loops
           ...(tools
             ? { tools, stopWhen: stepCountIs(3) }
