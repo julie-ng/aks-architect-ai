@@ -87,6 +87,17 @@ function onSubmit () {
               }"
               auto-scroll
             >
+              <template #leading="{ avatar, message }">
+                <ChatAssistantAvatar
+                  v-if="message.role === 'assistant'"
+                  :icon="avatar.icon"
+                  :pulsing="status === 'submitted'"
+                  :pinging="status === 'streaming' && !isMessageFinished(message)"
+                />
+                <div v-if="message.role === 'user'">
+                  <UAvatar :src="avatar.src" :alt="avatar.alt" />
+                </div>
+              </template>
               <template #content="{ message }">
                 <template
                   v-for="(part, index) in message.parts"
