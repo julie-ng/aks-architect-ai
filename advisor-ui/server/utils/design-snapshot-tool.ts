@@ -10,7 +10,11 @@ import { designs } from '../db/schema'
  */
 export function createDesignSnapshotTool (designId: string) {
   return tool({
-    description: 'Retrieve the current AKS architecture design snapshot including requirements and decisions. Call this when the user asks about their design choices or when you need to reference their architecture configuration.',
+    description: `Retrieve the current AKS architecture design snapshot including requirements and decisions.
+Call this when:
+- The system prompt contains a <design-change> signal (ALWAYS call in this case)
+- The user asks about their design choices
+- You need to reference their architecture configuration`,
     inputSchema: z.object({}),
     async execute () {
       const [design] = await db().select({

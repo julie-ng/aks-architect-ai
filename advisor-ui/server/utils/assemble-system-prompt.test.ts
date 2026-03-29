@@ -24,4 +24,26 @@ describe('assembleSystemPrompt', () => {
     const result = assembleSystemPrompt('base', 'chunks', '')
     expect(result).not.toContain('<design>')
   })
+
+  it('appends design-change signal when designChanged is true', () => {
+    const result = assembleSystemPrompt('base', 'chunks', 'decisions here', true)
+    expect(result).toContain('<design-change>')
+    expect(result).toContain('MUST call the getDesignSnapshot tool')
+    expect(result).toContain('</design-change>')
+  })
+
+  it('omits design-change signal when designChanged is false', () => {
+    const result = assembleSystemPrompt('base', 'chunks', 'decisions here', false)
+    expect(result).not.toContain('<design-change>')
+  })
+
+  it('omits design-change signal when designChanged is undefined', () => {
+    const result = assembleSystemPrompt('base', 'chunks', 'decisions here')
+    expect(result).not.toContain('<design-change>')
+  })
+
+  it('omits design-change signal when designContext is empty even if designChanged is true', () => {
+    const result = assembleSystemPrompt('base', 'chunks', '', true)
+    expect(result).not.toContain('<design-change>')
+  })
 })

@@ -15,12 +15,13 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
   try {
-    const { messages, designId }: {
+    const { messages, designId, sessionId }: {
       messages: UIMessage[]
       designId?: string
+      sessionId?: string
     } = await readBody(event)
 
-    logger.info({ designId: designId ?? null }, 'chat request received')
+    logger.info({ designId: designId ?? null, sessionId: sessionId ?? null }, 'chat request received')
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
@@ -59,10 +60,15 @@ export default defineEventHandler(async (event) => {
           chunks: retrieveResponse.chunks.length,
         }, 'retrieval complete')
 
-        // --- Fetch design context if linked ---
-        const designContext = designId
-          ? await fetchDesignContext(designId)
-          : ''
+        // --- Fetch design context + detect changes (parallelized) ---
+        const [designContext, designChanged] = designId
+          ? await Promise.all([
+            fetchDesignContext(designId),
+            sessionId ? detectDesignChange(designId, sessionId) : Promise.resolve(false),
+          ])
+          : ['', false]
+
+        logger.info({ designChanged, hasDesignContext: !!designContext }, 'design change detection')
 
         // --- Assemble system prompt ---
         const dedupedChunks = deduplicateChunks(retrieveResponse.chunks)
@@ -71,6 +77,7 @@ export default defineEventHandler(async (event) => {
           buildSystemPrompt(),
           ragContext,
           designContext,
+          designChanged,
         )
 
         // --- Extract sources for client-side citation rendering ---
@@ -97,7 +104,7 @@ export default defineEventHandler(async (event) => {
           messages: await convertToModelMessages(messages),
           // Tools + step limit to prevent runaway tool loops
           ...(tools
-            ? { tools, stopWhen: stepCountIs(2) }
+            ? { tools, stopWhen: stepCountIs(3) }
             : {}
           ),
         })

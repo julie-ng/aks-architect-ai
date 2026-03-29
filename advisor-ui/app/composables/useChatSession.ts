@@ -52,11 +52,16 @@ export function useChatSession (chatId: string) {
       messages: chatSessionStore.messages || [],
       transport: new DefaultChatTransport({
         api: '/api/chat',
-        // Send designId on every request so the server can inject design context.
-        // Transport body is merged into every sendMessage request (unlike Chat constructor body, which is ignored).
-        body: chatSessionStore.designId
-          ? { designId: chatSessionStore.designId }
-          : undefined,
+        // Send sessionId + designId on every request so the server can inject design context
+        // and detect design changes. Transport body is merged into every sendMessage request
+        // (unlike Chat constructor body, which is ignored).
+        body: {
+          sessionId: chatId,
+          ...(chatSessionStore.designId
+            ? { designId: chatSessionStore.designId }
+            : {}
+          ),
+        },
       }),
       onFinish ({ messages }) {
         chatSessionStore.updateMessages(messages)
