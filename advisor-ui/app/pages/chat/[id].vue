@@ -52,7 +52,7 @@ function onSubmit () {
     </template>
     <template #body>
       <ClientOnly>
-        <div class="max-w-3xl w-full mx-auto">
+        <div class="max-w-200 w-full mx-auto">
           <UContainer
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
             :style="messagesWrapperStyle">
@@ -171,3 +171,11 @@ function onSubmit () {
     </template>
   </UDashboardPanel>
 </template>
+
+<style scoped>
+/* Override Tailwind my-12 on MDC-rendered hr */
+:deep(hr) {
+  margin-top: 2.5rem !important;
+  margin-bottom: 2.5rem !important;
+}
+</style>
