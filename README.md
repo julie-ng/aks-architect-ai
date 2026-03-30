@@ -19,10 +19,11 @@ A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster 
 
 N.B. Models are configurable for different environments, e.g. Ollama for dev vs Anthropic for prod.
 
-![Architecture](./docs/diagrams/architecture-v1.1.png)
+![Architecture](./docs/diagrams/architecture-v1.1-revised.png)
 
 #### Updates
 
+- 30.03. - Added missing path between `retrieval.py` and `nomic-embed-text` for user question reformulation. 
 - 29.03. - LLM proposes design updates via interactive Accept/Decline cards in chat ([`23dcfb0`](https://github.com/julie-ng/aks-architect-ai/commit/23dcfb0))
 - 29.03. - Domain-filtered system prompt to stay within token rate limits ([`79212ce`](https://github.com/julie-ng/aks-architect-ai/commit/79212ce))
 - 28.03. - LLM detects and acknowledges design changes mid-conversation ([`d9057f1`](https://github.com/julie-ng/aks-architect-ai/commit/d9057f1))
