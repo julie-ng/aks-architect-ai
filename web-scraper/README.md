@@ -13,11 +13,12 @@ This is JavaScript based web crawler for the official docs. It scrapes the pages
 * Auto-crawling 700+ AKS docs diluted retrieval quality despite priority boosting. 
 * Manually curating ~50 high-value sources produced better results
  
-Conclusion: domain expertise in source selection mattered more than volume - important insight for creating business value with AI. It's not a magic solution but rather **effective AI _amplifies human expertise_**.
+> [!IMPORTANT]
+> **Conclusion**: domain expertise in source selection mattered more than volume - important insight for creating business value with AI. It's not a magic solution but rather **effective AI _amplifies human expertise_**.
 
 ## Sources
 
-This application uses YAML files to configure which URLs to crawl. See [`./SOURCES/`](./SOURCES/) for details.
+This application uses YAML files to configure which URLs to crawl. 
 
 - Docs are grouped manually - mostly for human curation to keep track of what we have and/or missing.
 - URLs can be tagged by
@@ -26,8 +27,7 @@ This application uses YAML files to configure which URLs to crawl. See [`./SOURC
 
 ### Example File
 
-> [!IMPORTANT]
-> This project prioritizes [Baseline Architecture for AKS](https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks/baseline-aks) above all other docs with a priority score of `25`. This long reference architecture serves as a guiding "framework" for LLM and app to steer the user's architectural decisions.
+See [`./SOURCES/`](./SOURCES/) for more.
 
 ```yaml
 group_title: Baseline Architectures from Azure Architecture Center
@@ -54,6 +54,8 @@ urls:
       - enterprise
 ```
 
+> [!NOTE]
+> This project prioritizes [Baseline Architecture for AKS](https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks/baseline-aks) above all other docs with a priority score of `25`. This long reference architecture serves as a guiding "framework" for LLM and app to steer the user's architectural decisions.
 
 ## Commands
 
