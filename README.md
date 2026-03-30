@@ -1,19 +1,19 @@
-# AKS Architect AI
+# AI Assistant for AKS
 
-Capstone Project for AI Engineering Bootcamp. 
-
-> [!IMPORTANT]
-> This project was created for experimentation with AI engineering, especially context engineering to provide new business value. It is **neither personal recommendations nor official Microsoft guidance**. Although grounded in official docs, always verify AI recommendations against sources.
+Capstone Project for [ByteByteAI Engineering Bootcamp](https://bytebyteai.com/) - built in 3 weeks in March 2026.
 
 ## Use Case
 
 A customer who is new to Kubernetes and/or Azure wants to deploy an AKS cluster but needs help defining an architecture. This AI application combines RAG of official documents with human curation to advise the user:
 
-- [X] Chatbot interface to answer questions - uses RAG of official docs.
-- [X] Interactive UI with questions for user to determine fundamental requirements, i.e. compliant industry vs startup, etc.
-  - [x] Separate form UI
-  - [X] UI integrated into chat
-- [X] Architectural _Suggestions_ for specific components made by AI Agents.
+| Feature Highlights | Preview |
+|:--|:--|
+| <ul><li>**RAG-grounded citations** — responses cite specific chunks from official Microsoft docs with inline `[n]` references</li><li>**Priority-boosted retrieval** — human-curated source scores ensure authoritative references surface even if not the closest vector match</li><li>**Personalized and interactive guidance** — user's architecture decisions and requirements are injected into the LLM context. User can interact both via text and UI through **LLM tools**.</li><li>**Modular context assembly** — system prompt is composed from interchangeable markdown sections + dynamic XML blocks, e.g. `<design>`, separating knowledge curation from application code</li></ul> | <img src="docs/screenshots/chat-with-citations-tools.png" alt="Preview of AI Assistant Chat" width="360" align="right"> |
+
+See more features in [`advisor-ui/README.md`](./advisor-ui/) as well as the `README`s in [`rag-pipeline/`](./rag-pipeline), [`retrieval-api/`](./retrieval-api), and [`web-scraper/`](./web-scraper) subdirectories for implementation details.
+
+> [!IMPORTANT]
+> This project was created for experimentation with AI engineering, especially context engineering to provide new business value. It is **neither personal recommendations nor official Microsoft guidance**. Although grounded in official docs, always verify AI recommendations against sources.
 
 ## Architecture
 
@@ -56,7 +56,7 @@ Models are configurable per environment via `AI_PROVIDER` env var.
 | Query reformulation | `gemma3:270m` | Haiku 4.5 |
 
 > [!TIP]
-> Ultimately switched all runtime models to Anthropic for performance and quality reasons. For chat `gemma3:4b` (largest my M3 MacBook Pro can run comfortably) was fine with RAG and citing sources. But it couldn't properly keep up directions in long system prompt (~10k tokens) and tools.
+> Ultimately switched all runtime models to Anthropic for performance and quality reasons. For chat `gemma3:4b` (largest my M3 MacBook Pro can run comfortably) was fine with RAG and citing sources. But it couldn't properly follow directions in long system prompt (~10k tokens) and tools.
 
 ## RAG Pipeline
 
