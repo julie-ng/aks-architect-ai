@@ -8,12 +8,6 @@ const designsStore = useDesignsStore()
 await callOnce('chat-sessions', () => chatsStore.fetchSessions())
 await callOnce('designs', () => designsStore.fetchDesigns())
 
-// const { data: guidePages } = await useAsyncData('guide-pages', () => {
-//   return queryCollection('guide')
-//     .select('title', 'path')
-//     .all()
-// })
-
 const links = computed(() => {
   const groups = [
     [
@@ -22,16 +16,6 @@ const links = computed(() => {
         to: '/',
         icon: 'i-lucide-home',
       },
-      // {
-      //   label: 'AKS Guide',
-      //   to: '/guide',
-      //   icon: 'i-lucide-book-text', // noteboook-text
-      //   defaultOpen: route.path.startsWith('/guide'),
-      //   children: guidePages.value?.map(p => ({
-      //     label: p.title,
-      //     to: p.path,
-      //   })),
-      // },
       {
         label: 'Architecture Planner',
         to: '/designs',
