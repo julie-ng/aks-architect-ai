@@ -144,6 +144,8 @@ const selectedTab = computed({
         @update:decision="onDecisionChange"
         @reset:all-decisions="onResetAllDecisions"
       />
+
+
     </template>
 
     <template #sticky-sidebar>
@@ -154,6 +156,7 @@ const selectedTab = computed({
         <p v-else class="text-xs text-muted">
           Make architectural decisions to see scores.
         </p>
+        <disclaimer-alert class="mt-6 mb-4" />
       </div>
     </template>
   </DesignPanel>

@@ -79,7 +79,10 @@ useHead({
         :to="`${design.configurePath}?tab=decisions`"
         variant="subtle"
         color="neutral"
+        class="mb-6"
       />
+
+      <disclaimer-alert />
     </template>
 
     <template #sticky-sidebar>

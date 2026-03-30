@@ -62,9 +62,11 @@ function onSubmit () {
             class="flex-1 flex flex-col gap-4 pt-4 sm:gap-6 min-h-0 transition-[min-height] duration-700 ease-in-out"
             :style="messagesWrapperStyle">
 
-            <p v-if="isBlankChat" class="text-gray-400 text-center py-4 my-4">
-              Ask a question about AKS architecture to get started.
-            </p>
+            <div v-if="isBlankChat" class="text-center py-4 my-4">
+              <p class="text-slate-600 font-semibold text-xl">
+                Ask a question about AKS architecture to get started
+              </p>
+            </div>
 
             <UChatMessages
               :messages="messages"
@@ -205,9 +207,10 @@ function onSubmit () {
                   @reload="chat?.regenerate()"
                 />
               </UChatPrompt>
-              <p v-if="isBlankChat" class="text-xs text-slate-400 text-center py-3">
-                AI can make mistakes. Always verify the information.
-              </p>
+              <div v-if="isBlankChat" class="text-xs text-slate-400 text-center py-3">
+                <disclaimer-alert />
+                <p>AI can make mistakes. Always verify the information.</p>
+              </div>
             </div>
           </UContainer>
         </div>
