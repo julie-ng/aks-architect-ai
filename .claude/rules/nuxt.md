@@ -17,13 +17,13 @@ All files use kebab-case.
 ### Components
 
 Multi-word, .vue extension:
-- ✅ `receipt/edit-form.vue`, `blob/sas-link.vue`
-- ❌ `ReceiptEdit.vue`, `BlobSasLink.vue`
+- ✅ `source-links.vue`, `design/edit-modal.vue`, `design-update-proposal.vue`
+- ❌ `SourceLinks.vue`, `Design/EditModal.vue`
 
 ### Stores
 
 `<name>.store.ts` convention:
-- ✅ `chats.store.ts`, `settings.store.ts`
+- ✅ `chats.store.ts`, `chat-session.store.ts`, `designs.store.ts`
 - ❌ `chatSessions.ts`, `useChatsStore.ts`
 
 ### Utils
@@ -63,7 +63,7 @@ Wrap content that should not be server-rendered in `<ClientOnly>`:
 </ClientOnly>
 ```
 
-Reference: `app/components/Upload/OverviewTabContent.vue`
+Reference: `app/pages/chat/[id].vue` (wraps the AI SDK `Chat`-backed chat UI)
 
 ### Pinia — Store as Data Abstraction Layer
 
@@ -74,16 +74,22 @@ Stores are the single source of truth for all data access and URL construction. 
 All route paths for a model live in the store as computed getters. Never construct URLs inline in templates or pages:
 
 ```ts
-// ✅ In the store
+// ✅ In the store — getter for the raw-data case
 const getPathById = computed(() => (id: string): string => `/designs/${id}`)
-const getEditPathById = computed(() => (id: string): string => `/designs/${id}/edit`)
+const getConfigurePathById = computed(() => (id: string): string => `/designs/${id}/configure`)
+
+// ✅ Or as a Design model getter when you hold a model instance
+get configurePath (): string | null {
+  return this.id ? `/designs/${this.id}/configure` : null
+}
 
 // ✅ In a template
 :to="designsStore.getPathById(design.id)"
+:to="design.configurePath"
 
-// ❌ Never construct paths outside the store
+// ❌ Never construct paths inline
 :to="`/designs/${design.id}`"
-:to="`${designsStore.getPathById(id)}/edit`"
+:to="`/designs/${design.id}/configure`"
 ```
 
 #### SSR-Compatible Data Fetching
@@ -141,11 +147,11 @@ Avoid `storeToRefs()`. It exposes internal refs directly to consumers, bypassing
 const { sortedSessions } = storeToRefs(chatsStore)
 ```
 
-#### Syncing to LocalStorage
+#### Client-Side Persistence
 
-If syncing state to browser, use [@vueuse/core composables, e.g. `useLocalStorage()`](https://vueuse.org/core/useLocalStorage/), authored by official Vue.js members. Avoid additional and 3rd party dependencies.
+Sessions, messages, and designs persist to **Postgres via server API routes** (Drizzle ORM) — not `localStorage`. Stores are in-memory caches over those APIs; there is no browser-storage sync in this app.
 
-Note `useLocalStorage()` handles serialization and automatically strips reactive refs.
+If a future feature genuinely needs browser storage, prefer [@vueuse/core `useLocalStorage()`](https://vueuse.org/core/useLocalStorage/) (official Vue.js members) over adding a 3rd-party dependency — it handles serialization and strips reactive refs. Pair it with `skipHydrate()` (below) to avoid SSR overwriting client-only values.
 
 #### Code Style
 
@@ -179,13 +185,13 @@ If a composable fetches content that never changes at runtime (e.g. YAML schemas
 
 ```ts
 // ✅ Static content — plain await
-export async function useSpecSchema (collection: 'requirements' | 'components') {
+export async function useSpecSchema (collection: 'requirements' | 'decisions') {
   const entries = await queryCollection(collection).select('path', 'spec').all()
   // ...
 }
 
 // ❌ Unnecessary reactivity wrapping for static content
-export async function useSpecSchema (collection: 'requirements' | 'components') {
+export async function useSpecSchema (collection: 'requirements' | 'decisions') {
   const { data: entries } = await useAsyncData(`spec-${collection}`, () =>
     queryCollection(collection).select('path', 'spec').all()
   )

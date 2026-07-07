@@ -114,8 +114,8 @@ Convert messages for the LLM with `convertToModelMessages()` from `ai`.
 
 ## Tool calling
 
-- Register tools in the `tools` option of `streamText`
-- Use `stepCountIs(2)` to prevent tool loops (allows 1 tool call + 1 follow-up response)
+- Register tools in the `tools` option of `streamText` (only when a design is linked — `getDesignSnapshot`, `proposeDesignUpdate`)
+- Use `stopWhen: stepCountIs(3)` to prevent runaway tool loops (see `chat.post.ts`)
 - Check `isToolUIPart(part)` from `ai` to render tool parts in the template
 - Check `isToolStreaming(part)` from `@nuxt/ui/utils/ai` to show loading state
 

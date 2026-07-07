@@ -13,4 +13,4 @@ Never hardcode configuration values. Use this pattern:
   - Otherwise, write a simple `config` module (see `rag-pipeline/config.py`)
 - **`.env`** defines shared values; `.env.sample` mirrors it (with empty or super generic defaults) for git
 - **`docker-compose.dev.yaml`** uses `${VAR}` interpolation from `.env`
-  - Only set vars here if they depend on compose context (e.g. `QDRANT_URL: http://qdrant:6333`)
+  - Only set vars here if they depend on compose context (e.g. the in-network Postgres host: `DATABASE_URL: postgresql://.../@postgres:5432/...`)

@@ -97,36 +97,21 @@ Pages (`app/pages/`) and server routes (`server/api/`) should be thin orchestrat
 - **Server routes** → delegate to `server/utils/` helpers
 - If a function is more than ~5 lines or has a name, it belongs in its own file
 
-## File Naming
-
-- Reusable utility/helper functions: `.utils.js` suffix (e.g., `filename.utils.js`)
-- Corresponding tests: `.utils.test.js` suffix (e.g., `filename.utils.test.js`)
-- Generate tests wherever possible
-
 ## Utility Functions
 
-### Structure
+### Naming & Structure
 
-For better overview of util functions, each function gets its own file. To illustrate, below is an example where `category` subfolder is optional.
+Utils are **flat, one exported function per file, kebab-case, file name matches the function** — no `.utils` suffix, no `category/` subfolders, no `index.ts` barrels. Tests sit beside the file as `<name>.test.ts`. Generate tests wherever possible. See the `nuxt.md` rule for the canonical statement.
 
 ```
-utils/category/fn-1.ts
-utils/category/fn-1.test.ts
-utils/category/fn-2.ts
-utils/category/fn-2.test.ts
-utils/category/index.ts
-```
-
-And then in code, do
-
-```js
-import { fn1, fn2 } from 'utils/category'
+app/utils/shorten-citation-title.ts        → export function shortenCitationTitle()
+app/utils/shorten-citation-title.test.ts
 ```
 
 ### Placement
 
-| Location | Purpose |
-|:--|:--|
-| `app/utils/` | Frontend-only (UI helpers, badge styles) |
-| `server/utils/` | Backend-only (Azure SDK wrappers, auth helpers) |
-| `shared/utils/` | Both client and server (text, string, date manipulation) |
+| Location | Purpose | Import alias |
+|:--|:--|:--|
+| `app/utils/` | Frontend-only (UI helpers, citation/text formatting) — auto-imported | (auto) |
+| `server/utils/` | Backend-only (LLM provider/tools, prompt assembly, auth guards) — auto-imported | (auto) |
+| `shared/utils/` | Both client and server (zod schemas, spec helpers) — **not** auto-imported | `~~/shared/utils/...` |
