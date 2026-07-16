@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS chunks (
   chunk_index INTEGER NOT NULL,
   chunk_total INTEGER NOT NULL,
   crawled_at TIMESTAMPTZ,
-  embedding vector(768) NOT NULL
+  embedding vector(1024) NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS chunks_embedding_idx
