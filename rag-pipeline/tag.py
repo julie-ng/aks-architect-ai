@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 import anthropic
+import boto3
 import ollama
 
 from config import config as cfg
@@ -61,6 +62,35 @@ def _call_anthropic(messages: list[dict], model: str) -> str:
     return response.content[0].text.strip()
 
 
+# One module-level client, created lazily so ollama-only runs don't need AWS creds.
+_bedrock_client = None
+
+
+def _call_bedrock(messages: list[dict], model: str) -> str:
+    """Tag via Bedrock (Nova Micro) using the Converse API.
+
+    Credentials come from the standard AWS chain (locally: AWS_PROFILE=process;
+    on Lambda: execution role); region from config.
+    """
+    global _bedrock_client
+    if _bedrock_client is None:
+        _bedrock_client = boto3.client("bedrock-runtime", region_name=cfg.aws_region)
+
+    system = next((m["content"] for m in messages if m["role"] == "system"), "")
+    user_messages = [
+        {"role": m["role"], "content": [{"text": m["content"]}]}
+        for m in messages
+        if m["role"] != "system"
+    ]
+    response = _bedrock_client.converse(
+        modelId=model,
+        system=[{"text": system}],
+        messages=user_messages,
+        inferenceConfig={"maxTokens": 256, "temperature": 0.1},
+    )
+    return response["output"]["message"]["content"][0]["text"].strip()
+
+
 def tag_chunk(text: str, title: str, taxonomy_prompt: str) -> list[str]:
     """Send a chunk to the LLM and parse the returned tags."""
     user_prompt = f"""## Available Tags
@@ -80,7 +110,9 @@ Return ONLY a JSON array of matching tags:"""
         {"role": "user", "content": user_prompt},
     ]
 
-    if cfg.tagging_provider == "anthropic":
+    if cfg.tagging_provider == "bedrock":
+        content = _call_bedrock(messages, cfg.tagging_model)
+    elif cfg.tagging_provider == "anthropic":
         content = _call_anthropic(messages, cfg.tagging_model)
     else:
         content = _call_ollama(messages, cfg.tagging_model)

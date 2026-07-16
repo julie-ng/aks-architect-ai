@@ -3,19 +3,19 @@
 query.py — Search Postgres/pgvector for chunks relevant to a question.
 
 Usage:
-  uv run python query.py "How should I configure node pools for production AKS?"
-  uv run python query.py "What are the network policies for AKS?" --top 10
+  AWS_PROFILE=process uv run python query.py "How should I configure node pools for production AKS?"
+  AWS_PROFILE=process uv run python query.py "What are the network policies for AKS?" --top 10
 """
 
 import argparse
 import sys
 
-import ollama
 import psycopg
 from pgvector.psycopg import register_vector
 from psycopg.rows import dict_row
 
 from config import config as cfg
+from helpers.embedding import embed_text
 
 SEARCH_SQL = """
     SELECT id, text, url, title, tags, priority,
@@ -35,10 +35,9 @@ def main():
     conn = psycopg.connect(cfg.database_url, row_factory=dict_row)
     register_vector(conn)
 
-    # Embed the question
-    ollama_client = ollama.Client(host=cfg.ollama_host)
-    response = ollama_client.embeddings(model=cfg.embedding_model, prompt=cfg.embedding_prefix_query + args.question)
-    vector = response["embedding"]
+    # Embed the question. Titan takes raw text — no query prefix (see
+    # helpers/embedding.py); this is now identical to how embed.py embeds documents.
+    vector = embed_text(args.question)
 
     # Search
     with conn.cursor() as cur:

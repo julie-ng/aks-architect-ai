@@ -2,16 +2,17 @@
 """
 embed.py — Embed chunks and insert into Postgres/pgvector.
 
-Reads chunks.jsonl, generates vectors via Ollama (nomic-embed-text),
-and inserts them into the chunks table with full metadata.
+Reads tagged_chunks.jsonl, generates vectors via AWS Bedrock Titan
+(amazon.titan-embed-text-v2:0), and inserts them into the chunks table with
+full metadata.
 
 Prerequisites:
-  ollama pull nomic-embed-text
+  AWS credentials (locally: AWS_PROFILE=process; on Lambda: execution role)
   docker compose -f docker-compose.dev.yaml up -d
 
 Usage:
-  uv run python embed.py
-  uv run python embed.py --input chunks.jsonl
+  AWS_PROFILE=process uv run python embed.py
+  AWS_PROFILE=process uv run python embed.py --input tagged_chunks.jsonl
 """
 
 import argparse
@@ -19,11 +20,11 @@ import json
 import sys
 from pathlib import Path
 
-import ollama
 import psycopg
 from pgvector.psycopg import register_vector
 
 from config import config as cfg
+from helpers.embedding import embed_text
 
 INSERT_SQL = """
     INSERT INTO chunks
@@ -34,11 +35,15 @@ INSERT_SQL = """
          %(priority)s, %(tags)s, %(chunk_index)s, %(chunk_total)s, %(crawled_at)s, %(embedding)s)
 """
 
-
-def get_embedding(text: str) -> list[float]:
-    client = ollama.Client(host=cfg.ollama_host)
-    response = client.embeddings(model=cfg.embedding_model, prompt=cfg.embedding_prefix_document + text)
-    return response["embedding"]
+# HNSW index maintenance on every INSERT is I/O-heavy — on a small instance it
+# saturates disk and stalls the connection. So we DROP the index before the bulk
+# load and rebuild it once afterwards (far cheaper than 3040 incremental updates).
+# Must stay in sync with db/init.sql.
+HNSW_INDEX_NAME = "chunks_embedding_idx"
+CREATE_HNSW_SQL = f"""
+    CREATE INDEX IF NOT EXISTS {HNSW_INDEX_NAME}
+        ON chunks USING hnsw (embedding vector_cosine_ops)
+"""
 
 
 def main():
@@ -55,11 +60,14 @@ def main():
     conn = psycopg.connect(cfg.database_url)
     register_vector(conn)
 
-    # Clear existing chunks (equivalent to Qdrant collection recreation)
+    # Clear existing chunks and DROP the HNSW index so the bulk load is index-free
+    # (rebuilt once at the end). Prevents per-insert index maintenance from
+    # saturating disk I/O and dropping the connection mid-load.
     with conn.cursor() as cur:
         cur.execute("TRUNCATE chunks")
+        cur.execute(f"DROP INDEX IF EXISTS {HNSW_INDEX_NAME}")
     conn.commit()
-    print("Cleared chunks table")
+    print("Cleared chunks table and dropped HNSW index for bulk load")
 
     chunks = [json.loads(line) for line in input_path.read_text().splitlines() if line.strip()]
     total = len(chunks)
@@ -69,7 +77,7 @@ def main():
     batch: list[dict] = []
 
     for i, chunk in enumerate(chunks, 1):
-        vector = get_embedding(chunk["text"])
+        vector = embed_text(chunk["text"])
 
         batch.append(
             {
@@ -96,8 +104,14 @@ def main():
             print(f"  [{inserted:>{len(str(total))}}/{total}] inserted")
             batch = []
 
+    # Rebuild the HNSW index once over the fully-loaded table.
+    print(f"\n{inserted} vectors inserted. Building HNSW index (this can take a bit)...")
+    with conn.cursor() as cur:
+        cur.execute(CREATE_HNSW_SQL)
+    conn.commit()
+
     conn.close()
-    print(f"\nDone: {inserted} vectors inserted")
+    print("Done: vectors inserted and HNSW index rebuilt")
 
 
 if __name__ == "__main__":
