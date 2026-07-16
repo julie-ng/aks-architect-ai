@@ -26,13 +26,17 @@ flowchart LR
     db[("Aurora Serverless v2<br/>Postgres + pgvector")]
   end
 
-  msft -->|scrape| crawl
-  pipeline -.->|artifacts| s3
+  crawl -->|scrape| msft
   embed -->|"search_document"| bedrock
   embed -->|"1024-dim vectors"| db
 
   classDef awsBox fill:#ff9900,color:#000,stroke:#232f3e;
-  class crawl,chunk,embed,s3,bedrock,db awsBox;
+  classDef storageBox fill:#e91e63,color:#fff,stroke:#880e4f;
+  classDef aiBox fill:#1e88e5,color:#fff,stroke:#0d47a1;
+  class crawl,chunk,embed awsBox;
+  class s3,db storageBox;
+  class bedrock aiBox;
+  style shared fill:#f0f0f0,stroke:#bdbdbd,color:#000;
 ```
 
 ## 2. Runtime components (online)
