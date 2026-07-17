@@ -14,7 +14,6 @@ import asyncio
 import math
 from datetime import timedelta
 
-from temporalio import activity
 from temporalio.common import RetryPolicy
 
 from config import config as cfg
@@ -66,14 +65,15 @@ VECTORS_PREFIX = "vectors"
 MANIFEST_NAME = "manifest.json"
 
 
-def shard_prefix(run_id: str, index: int) -> str:
-    """A consistent log prefix for a fan-out shard activity: run/shard/attempt.
+def shard_fields(run_id: str, index: int) -> dict:
+    """Structured log fields for a fan-out shard activity → the JSON `details` object.
 
-    `activity.info().attempt` is 1 on the first try and climbs on retry, so a throttle
-    or a misconfig (e.g. the Ollama-vs-Bedrock incident) is visible in the logs. Call
-    only inside an activity.
+    Pass as `logger.info("msg", extra=shard_fields(...))`. Only adds what temporalio's
+    activity context does NOT already carry: the PIPELINE run_id (distinct from the
+    workflow-run UUID) and the shard index. The formatter merges in temporal's
+    activity_type/attempt/workflow_id automatically, so retries/misconfig stay visible.
     """
-    return f"[{activity.info().activity_type}] run={run_id} shard={index} attempt={activity.info().attempt}"
+    return {"run_id": run_id, "shard": index}
 
 
 def shard_name(index: int) -> str:

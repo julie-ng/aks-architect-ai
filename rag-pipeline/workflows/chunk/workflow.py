@@ -29,5 +29,5 @@ class ChunkWorkflow:
             start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
             task_queue=DEFAULT_QUEUE,
         )
-        workflow.logger.info("ChunkWorkflow produced %d shards for run %s", chunk_count, run_id)
+        workflow.logger.info("chunking complete", extra={"run_id": run_id, "shards": chunk_count})
         return chunk_count

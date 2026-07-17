@@ -17,5 +17,5 @@ def read_chunk_count(run_id: str) -> int:
     """Return the chunk (shard) count recorded in `<run_id>/manifest.json`."""
     manifest = storage.read_json_single(storage.run_key(MANIFEST_NAME, run_id=run_id))
     count = int(manifest["chunk_count"])
-    activity.logger.info("run %s manifest: %d chunks", run_id, count)
+    activity.logger.info("manifest read", extra={"run_id": run_id, "count": count})
     return count

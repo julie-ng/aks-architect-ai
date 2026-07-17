@@ -68,5 +68,5 @@ class EmbedWorkflow:
             retry_policy=DB_LOAD_RETRY,
         )
         summary = {"run_id": run_id, "embedded": count, "inserted": inserted}
-        workflow.logger.info("EmbedWorkflow: %s", summary)
+        workflow.logger.info("embedding complete", extra=summary)
         return summary

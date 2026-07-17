@@ -32,5 +32,8 @@ def read_sources(dataset_dir: str = DEFAULT_DATASET_DIR) -> list[dict]:
     for path in files:
         with path.open(encoding="utf-8") as f:
             docs.append(json.load(f))
-    activity.logger.info("read %d source documents from %s", len(docs), dataset_path)
+    activity.logger.info(
+        "read source documents",
+        extra={"docs": len(docs), "dataset": str(dataset_path)},
+    )
     return docs

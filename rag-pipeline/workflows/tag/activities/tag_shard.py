@@ -18,7 +18,7 @@ from temporalio.exceptions import ApplicationError
 from helpers import storage
 from helpers.taxonomy import format_taxonomy_prompt, load_taxonomy
 from tag import build_system_prompt, tag_chunk
-from workflows.shared import chunk_shard_key, shard_prefix, tagged_shard_key
+from workflows.shared import chunk_shard_key, shard_fields, tagged_shard_key
 
 # Built once per worker process and reused across every shard (the taxonomy is static
 # for a run). Lazily initialised so importing this module does no I/O.
@@ -43,7 +43,7 @@ def tag_shard(run_id: str, index: int) -> int:
     Idempotent: overwrites its own single output key on retry (blast radius = 1 shard).
     """
     system_prompt, valid_tags = _ensure_prompt()
-    prefix = shard_prefix(run_id, index)
+    fields = shard_fields(run_id, index)
 
     chunk = storage.read_json_single(storage.run_key(chunk_shard_key(index), run_id=run_id))
 
@@ -53,9 +53,11 @@ def tag_shard(run_id: str, index: int) -> int:
         code = e.response.get("Error", {}).get("Code", "")
         if code == "ValidationException":
             # Bad/stale model id or malformed input — retrying cannot fix it.
-            activity.logger.error("%s ValidationException (non-retryable): %s", prefix, e)
+            activity.logger.error("tag ValidationException (non-retryable)", extra={**fields, "error": str(e)})
             raise ApplicationError(f"Bedrock ValidationException: {e}", non_retryable=True) from e
-        activity.logger.warning("%s Bedrock error %s — will retry: %s", prefix, code or "?", e)
+        activity.logger.warning(
+            "tag Bedrock error — will retry", extra={**fields, "code": code or "?", "error": str(e)}
+        )
         raise  # ThrottlingException etc. → let the RetryPolicy back off and retry.
 
     assigned = [t for t in assigned if t in valid_tags]
@@ -65,5 +67,5 @@ def tag_shard(run_id: str, index: int) -> int:
     chunk["tags"] = tags
 
     storage.write_json_single(storage.run_key(tagged_shard_key(index), run_id=run_id), chunk)
-    activity.logger.info("%s → tagged %d", prefix, len(assigned))
+    activity.logger.info("tagged", extra={**fields, "tags": len(assigned)})
     return len(assigned)

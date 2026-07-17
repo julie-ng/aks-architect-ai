@@ -32,5 +32,13 @@ class PipelineWorkflow:
             "tag": tag_summary,
             "embed": embed_summary,
         }
-        workflow.logger.info("PipelineWorkflow complete: %s", result)
+        workflow.logger.info(
+            "pipeline complete",
+            extra={
+                "run_id": run_id,
+                "chunk_count": chunk_count,
+                "tagged": tag_summary.get("tagged"),
+                "inserted": embed_summary.get("inserted"),
+            },
+        )
         return result

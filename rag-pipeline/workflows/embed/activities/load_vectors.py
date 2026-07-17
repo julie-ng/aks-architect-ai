@@ -48,7 +48,9 @@ def load_vectors(run_id: str, count: int) -> int:
     """
     conn = psycopg.connect(cfg.database_url)
     log = activity.logger
-    log.info("[load_vectors] run=%s attempt=%d loading %d vectors", run_id, activity.info().attempt, count)
+    # temporalio's context supplies activity_type + attempt; we add the pipeline run_id.
+    fields = {"run_id": run_id}
+    log.info("load starting", extra={**fields, "count": count})
     try:
         register_vector(conn)
 
@@ -56,7 +58,7 @@ def load_vectors(run_id: str, count: int) -> int:
             cur.execute("TRUNCATE chunks")
             cur.execute(f"DROP INDEX IF EXISTS {HNSW_INDEX_NAME}")
         conn.commit()
-        log.info("[load_vectors] run=%s truncated chunks + dropped HNSW for index-free load", run_id)
+        log.info("truncated chunks + dropped HNSW for index-free load", extra=fields)
 
         inserted = 0
         batch: list[dict] = []
@@ -68,14 +70,14 @@ def load_vectors(run_id: str, count: int) -> int:
                     cur.executemany(INSERT_SQL, batch)
                 conn.commit()
                 inserted += len(batch)
-                log.info("[load_vectors] run=%s inserted %d/%d", run_id, inserted, count)
+                log.info("inserted batch", extra={**fields, "inserted": inserted, "count": count})
                 batch = []
 
-        log.info("[load_vectors] run=%s building HNSW index over %d rows", run_id, inserted)
+        log.info("building HNSW index", extra={**fields, "rows": inserted})
         with conn.cursor() as cur:
             cur.execute(CREATE_HNSW_SQL)
         conn.commit()
-        log.info("[load_vectors] run=%s DONE: %d vectors inserted + HNSW rebuilt", run_id, inserted)
+        log.info("load done: vectors inserted + HNSW rebuilt", extra={**fields, "inserted": inserted})
         return inserted
     finally:
         conn.close()

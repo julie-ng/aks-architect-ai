@@ -39,5 +39,8 @@ def chunk_documents(run_id: str, docs: list[dict]) -> int:
         storage.run_key(MANIFEST_NAME, run_id=run_id),
         {"chunk_count": total, "chunk_max_chars": cfg.chunk_max_chars},
     )
-    activity.logger.info("chunked %d docs into %d shards (run %s)", len(docs), total, run_id)
+    activity.logger.info(
+        "chunked docs into shards",
+        extra={"run_id": run_id, "docs": len(docs), "shards": total},
+    )
     return total

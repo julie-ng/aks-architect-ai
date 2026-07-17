@@ -14,8 +14,6 @@ Run: `AWS_PROFILE=process uv run python -m workflows.worker`
 
 import asyncio
 import concurrent.futures
-import logging
-import os
 
 from temporalio.client import Client
 from temporalio.worker import Worker
@@ -27,6 +25,7 @@ from workflows.chunk.workflow import ChunkWorkflow
 from workflows.embed.activities.embed_shard import embed_shard
 from workflows.embed.activities.load_vectors import load_vectors
 from workflows.embed.workflow import EmbedWorkflow
+from workflows.logging_config import configure_logging
 from workflows.manifest_activity import read_chunk_count
 from workflows.pipeline.workflow import PipelineWorkflow
 from workflows.shared import BEDROCK_QUEUE, DB_QUEUE, DEFAULT_QUEUE
@@ -36,27 +35,8 @@ from workflows.tag.workflow import TaggingWorkflow
 ALL_WORKFLOWS = [PipelineWorkflow, ChunkWorkflow, TaggingWorkflow, EmbedWorkflow]
 
 
-def _configure_logging() -> None:
-    """Send activity/workflow logs to the console. Level via LOG_LEVEL (default INFO).
-
-    temporalio logs through the stdlib `logging` module ("temporalio.activity" /
-    "temporalio.workflow"), which is silent until a handler is configured — hence the
-    previously-quiet worker. This wires up a console handler so activity.logger lines
-    (run/shard/attempt) actually print.
-    """
-    level = os.environ.get("LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)-5s %(name)s | %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    # Quiet the noisy libraries so our lines stand out.
-    for noisy in ("botocore", "boto3", "urllib3", "temporalio.client"):
-        logging.getLogger(noisy).setLevel(logging.WARNING)
-
-
 async def main() -> None:
-    _configure_logging()
+    configure_logging()
     client = await Client.connect(cfg.temporal_address, namespace=cfg.temporal_namespace)
 
     # One executor shared by all sync activities across the workers.

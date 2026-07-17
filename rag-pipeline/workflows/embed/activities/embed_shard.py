@@ -15,7 +15,7 @@ from temporalio.exceptions import ApplicationError
 
 from helpers import storage
 from helpers.embedding import embed_text
-from workflows.shared import shard_prefix, tagged_shard_key, vector_shard_key
+from workflows.shared import shard_fields, tagged_shard_key, vector_shard_key
 
 
 @activity.defn
@@ -25,7 +25,7 @@ def embed_shard(run_id: str, index: int) -> int:
     Idempotent: overwrites its own single output key on retry (blast radius = 1 shard).
     Returns the embedding dimension (a cheap sanity value).
     """
-    prefix = shard_prefix(run_id, index)
+    fields = shard_fields(run_id, index)
     chunk = storage.read_json_single(storage.run_key(tagged_shard_key(index), run_id=run_id))
 
     try:
@@ -33,12 +33,14 @@ def embed_shard(run_id: str, index: int) -> int:
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "")
         if code == "ValidationException":
-            activity.logger.error("%s ValidationException (non-retryable): %s", prefix, e)
+            activity.logger.error("embed ValidationException (non-retryable)", extra={**fields, "error": str(e)})
             raise ApplicationError(f"Bedrock ValidationException: {e}", non_retryable=True) from e
-        activity.logger.warning("%s Bedrock error %s — will retry: %s", prefix, code or "?", e)
+        activity.logger.warning(
+            "embed Bedrock error — will retry", extra={**fields, "code": code or "?", "error": str(e)}
+        )
         raise  # ThrottlingException etc. → RetryPolicy backoff.
 
     chunk["embedding"] = vector
     storage.write_json_single(storage.run_key(vector_shard_key(index), run_id=run_id), chunk)
-    activity.logger.info("%s → embedded dim=%d", prefix, len(vector))
+    activity.logger.info("embedded", extra={**fields, "dim": len(vector)})
     return len(vector)

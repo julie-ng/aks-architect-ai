@@ -44,5 +44,5 @@ class TaggingWorkflow:
 
         failed = await bounded_fanout(count, start)
         summary = {"run_id": run_id, "total": count, "tagged": count - len(failed), "failed": failed}
-        workflow.logger.info("TaggingWorkflow: %s", summary)
+        workflow.logger.info("tagging complete", extra=summary)
         return summary
