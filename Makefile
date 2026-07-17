@@ -32,6 +32,17 @@ pipeline/tag-sample:
 pipeline/embed:
 	cd rag-pipeline && uv run python embed.py
 
+# One-time: upload the existing local crawler dataset to the run-independent S3
+# `sources/` prefix that the Temporal ChunkWorkflow reads from. Sources are shared
+# across runs (upload once, read many); re-run only after a fresh crawl. Reads
+# S3_BUCKET / AWS_PROFILE / AWS_REGION from the environment (source .env first).
+# Phase 4 replaces this with the crawler Lambda writing to the same prefix.
+pipeline/upload-sources:
+	@test -n "$(S3_BUCKET)" || (echo "S3_BUCKET not set (source .env)" && exit 1)
+	aws --profile $(AWS_PROFILE) --region $(AWS_REGION) s3 cp \
+		web-scraper/storage/datasets/aks-docs/ s3://$(S3_BUCKET)/sources/ \
+		--recursive --exclude "*" --include "*.json"
+
 pipeline/query:
 	@test -n "$(Q)" || (echo "Usage: make pipeline/query Q=\"your question\"" && exit 1)
 	cd rag-pipeline && uv run python query.py "$(Q)"
