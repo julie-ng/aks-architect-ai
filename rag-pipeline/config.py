@@ -27,6 +27,7 @@ class Config:
     s3_bucket: str
     pipeline_run_id: str
     storage_base_dir: str
+    sources_prefix: str
     # Temporal orchestration (workflows/). Queue names, fan-out concurrency, and
     # retry ceilings are env-overridable; the retry-policy SHAPE (exponential
     # backoff) and stage/queue split are architectural (in workflows/shared.py).

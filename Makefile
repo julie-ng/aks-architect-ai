@@ -43,6 +43,24 @@ pipeline/upload-sources:
 		web-scraper/storage/datasets/aks-docs/ s3://$(S3_BUCKET)/sources/ \
 		--recursive --exclude "*" --include "*.json"
 
+# Build a SAMPLE subset of sources/ (first N objects) into sources-sample/ for fast
+# pipeline iteration — run the whole chunk→tag→embed→load flow at ~10% scale instead of
+# the full 143 docs / 3040 chunks. Then run with SOURCES_PREFIX=sources-sample.
+# Usage: make pipeline/sample-sources        (default N=15, ~10% of 143)
+#        make pipeline/sample-sources N=30
+N ?= 15
+pipeline/sample-sources:
+	@test -n "$(S3_BUCKET)" || (echo "S3_BUCKET not set (source .env)" && exit 1)
+	@echo "Copying first $(N) source objects → sources-sample/ ..."
+	@aws --profile $(AWS_PROFILE) --region $(AWS_REGION) s3api list-objects-v2 \
+		--bucket $(S3_BUCKET) --prefix sources/ --max-items $(N) \
+		--query "Contents[].Key" --output text | tr '\t' '\n' | grep '\.json$$' | while read key; do \
+			name=$$(basename "$$key"); \
+			aws --profile $(AWS_PROFILE) --region $(AWS_REGION) s3 cp \
+				s3://$(S3_BUCKET)/$$key s3://$(S3_BUCKET)/sources-sample/$$name --only-show-errors; \
+		done
+	@echo "Done. Run the pipeline with SOURCES_PREFIX=sources-sample"
+
 pipeline/query:
 	@test -n "$(Q)" || (echo "Usage: make pipeline/query Q=\"your question\"" && exit 1)
 	cd rag-pipeline && uv run python query.py "$(Q)"
