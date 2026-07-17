@@ -27,3 +27,6 @@ rag-pipeline/*.jsonl
 
 # local dev server
 temporal_server.db
+
+# Not working in Zed IDE anyway
+.devcontainer/
