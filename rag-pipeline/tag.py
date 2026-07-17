@@ -66,7 +66,10 @@ def _call_anthropic(system: str, user: str, model: str) -> str:
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user}],
     )
-    return response.content[0].text.strip()
+    block = response.content[0]
+    if not isinstance(block, anthropic.types.TextBlock):
+        raise TypeError(f"Expected a text block from Anthropic, got {type(block).__name__}")
+    return block.text.strip()
 
 
 # One module-level client, created lazily so ollama-only runs don't need AWS creds.
