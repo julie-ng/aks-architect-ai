@@ -1,7 +1,9 @@
 # Temporal Orchestration for the RAG Pipeline
 
 > [!IMPORTANT]
-> This is a draft, describing project status as of 17 July 2026.
+> This is a draft, describing project status as of 17 July 2026:
+> - Old CLI, local disk and [ollama](https://ollama.com/) driven RAG pipeline in `./rag-pipeline/` still works
+> - Newer Temporal + AWS driven workflows live in `./rag-pipeline/workflows/`, but still use a few methods from the old python files.
 
 The offline pipeline (chunk → tag → embed → load) is orchestrated with
 [Temporal](https://temporal.io). Each stage is a workflow; model calls and I/O are activities.
