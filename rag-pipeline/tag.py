@@ -21,6 +21,7 @@ import boto3
 import ollama
 
 from config import config as cfg
+from helpers.tags import parse_tag_response
 from helpers.taxonomy import format_taxonomy_prompt, load_taxonomy
 
 SYSTEM_PROMPT = """\
@@ -40,7 +41,16 @@ vocabulary is a hint for you, not part of the tag.
 - A chunk may match zero tags (return []) if none are relevant
 - Prefer specific answer tags over broad topic tags when the chunk discusses a specific option
 - Always include the parent topic tag when assigning an answer tag
-- Return ONLY the JSON array, no explanation"""
+- Assign AT MOST ONE answer per topic — the answers under a topic are mutually \
+exclusive options, so never list two answers from the same topic
+- Return ONLY the JSON array. Output nothing before the opening [ and nothing \
+after the closing ] — no prose, no explanation, no restating the chunk"""
+
+# Max output tokens for a tag response. Tags are short, but the full valid list
+# (parent topic + answer across several topics) can run long; 256 truncated some
+# arrays mid-token → invalid JSON → 0 tags. 512 fits the longest valid list with
+# margin. Shared across providers so behaviour is identical.
+_MAX_OUTPUT_TOKENS = 512
 
 
 def _call_ollama(system: str, user: str, model: str) -> str:
@@ -59,7 +69,7 @@ def _call_anthropic(system: str, user: str, model: str) -> str:
     client = anthropic.Anthropic()
     response = client.messages.create(
         model=model,
-        max_tokens=256,
+        max_tokens=_MAX_OUTPUT_TOKENS,
         temperature=0.1,
         # Cache the static system block (classifier instructions + tag vocabulary).
         # Anthropic requires an explicit cache_control breakpoint; Bedrock uses cachePoint.
@@ -98,7 +108,7 @@ def _call_bedrock(system: str, user: str, model: str) -> str:
         # cachePoint after the system text → everything before it is the cache prefix.
         system=[{"text": system}, {"cachePoint": {"type": "default"}}],
         messages=[{"role": "user", "content": [{"text": user}]}],
-        inferenceConfig={"maxTokens": 256, "temperature": 0.1},
+        inferenceConfig={"maxTokens": _MAX_OUTPUT_TOKENS, "temperature": 0.1},
     )
 
     usage = response.get("usage", {})
@@ -144,21 +154,10 @@ Return ONLY a JSON array of matching tags:"""
     else:
         content = _call_ollama(system_prompt, user_prompt, cfg.tagging_model)
 
-    # Strip markdown code fences if present
-    if content.startswith("```"):
-        content = content.split("\n", 1)[-1]
-        if content.endswith("```"):
-            content = content[: content.rfind("```")]
-        content = content.strip()
-
-    try:
-        tags = json.loads(content)
-        if isinstance(tags, list):
-            return [t for t in tags if isinstance(t, str)]
-    except json.JSONDecodeError:
+    tags, ok = parse_tag_response(content)
+    if not ok:
         print(f"  Warning: could not parse LLM response: {content[:80]}", file=sys.stderr)
-
-    return []
+    return tags
 
 
 def main() -> None:
