@@ -26,6 +26,7 @@ with workflow.unsafe.imports_passed_through():
         DB_LOAD_RETRY,
         DB_QUEUE,
         DEFAULT_QUEUE,
+        LOCAL_RETRY,
         bounded_fanout,
     )
 
@@ -40,6 +41,7 @@ class EmbedWorkflow:
             run_id,
             start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
             task_queue=DEFAULT_QUEUE,
+            retry_policy=LOCAL_RETRY,
         )
 
         def start(index: int):

@@ -47,6 +47,13 @@ BEDROCK_RETRY = RetryPolicy(
 # first attempt, so 2 = 1 retry.
 DB_LOAD_RETRY = RetryPolicy(maximum_attempts=cfg.temporal_db_load_max_attempts)
 
+# Local/deterministic activities (chunk, read_sources, manifest read). A failure is
+# almost always a real problem (missing artifact / dataset), not transient — so a low
+# ceiling that fails loud/fast, NOT the Temporal default of unlimited retries (which
+# would spin forever on a genuinely missing manifest). A couple of attempts still
+# rides out a transient S3/network blip.
+LOCAL_RETRY = RetryPolicy(maximum_attempts=cfg.temporal_local_max_attempts)
+
 # --- Activity timeouts -------------------------------------------------------
 BEDROCK_ACTIVITY_TIMEOUT = timedelta(seconds=60)
 DB_LOAD_ACTIVITY_TIMEOUT = timedelta(minutes=10)  # bulk load + HNSW rebuild is slow

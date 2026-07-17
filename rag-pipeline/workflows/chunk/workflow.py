@@ -10,7 +10,7 @@ from temporalio import workflow
 with workflow.unsafe.imports_passed_through():
     from workflows.chunk.activities.chunk_documents import chunk_documents
     from workflows.chunk.activities.read_sources import read_sources
-    from workflows.shared import CHUNK_ACTIVITY_TIMEOUT, DEFAULT_QUEUE
+    from workflows.shared import CHUNK_ACTIVITY_TIMEOUT, DEFAULT_QUEUE, LOCAL_RETRY
 
 
 @workflow.defn
@@ -22,12 +22,14 @@ class ChunkWorkflow:
             read_sources,
             start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
             task_queue=DEFAULT_QUEUE,
+            retry_policy=LOCAL_RETRY,
         )
         chunk_count = await workflow.execute_activity(
             chunk_documents,
             args=[run_id, docs],
             start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
             task_queue=DEFAULT_QUEUE,
+            retry_policy=LOCAL_RETRY,
         )
         workflow.logger.info("chunking complete", extra={"run_id": run_id, "shards": chunk_count})
         return chunk_count

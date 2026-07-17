@@ -16,6 +16,7 @@ with workflow.unsafe.imports_passed_through():
         BEDROCK_RETRY,
         CHUNK_ACTIVITY_TIMEOUT,
         DEFAULT_QUEUE,
+        LOCAL_RETRY,
         bounded_fanout,
     )
     from workflows.tag.activities.tag_shard import tag_shard
@@ -31,6 +32,7 @@ class TaggingWorkflow:
             run_id,
             start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
             task_queue=DEFAULT_QUEUE,
+            retry_policy=LOCAL_RETRY,
         )
 
         def start(index: int):

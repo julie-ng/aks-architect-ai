@@ -38,6 +38,7 @@ class Config:
     temporal_fanout_concurrency: int
     temporal_bedrock_max_attempts: int
     temporal_db_load_max_attempts: int
+    temporal_local_max_attempts: int
 
 
 config_defaults = Config(
@@ -78,6 +79,10 @@ config_defaults = Config(
     temporal_fanout_concurrency=10,
     temporal_bedrock_max_attempts=8,
     temporal_db_load_max_attempts=2,
+    # Local/deterministic activities (chunk, read_sources, manifest read). A failure is
+    # almost always a real problem (missing artifact), not transient → low ceiling, fail
+    # fast. Without this they inherit Temporal's default of UNLIMITED retries.
+    temporal_local_max_attempts=3,
 )
 
 config = Config(
@@ -109,5 +114,8 @@ config = Config(
     ),
     temporal_db_load_max_attempts=int(
         os.environ.get("TEMPORAL_DB_LOAD_MAX_ATTEMPTS", str(config_defaults.temporal_db_load_max_attempts))
+    ),
+    temporal_local_max_attempts=int(
+        os.environ.get("TEMPORAL_LOCAL_MAX_ATTEMPTS", str(config_defaults.temporal_local_max_attempts))
     ),
 )
