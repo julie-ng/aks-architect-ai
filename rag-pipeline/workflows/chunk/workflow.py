@@ -9,7 +9,6 @@ from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
     from workflows.chunk.activities.chunk_documents import chunk_documents
-    from workflows.chunk.activities.read_sources import read_sources
     from workflows.shared import CHUNK_ACTIVITY_TIMEOUT, DEFAULT_QUEUE, LOCAL_RETRY
 
 
@@ -17,16 +16,15 @@ with workflow.unsafe.imports_passed_through():
 class ChunkWorkflow:
     @workflow.run
     async def run(self, run_id: str) -> int:
-        """Read sources → chunk into shards. Returns the chunk (shard) count."""
-        docs = await workflow.execute_activity(
-            read_sources,
-            start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
-            task_queue=DEFAULT_QUEUE,
-            retry_policy=LOCAL_RETRY,
-        )
+        """Read S3 sources → chunk into shards. Returns the chunk (shard) count.
+
+        A single activity reads sources and writes shards, both by reference through S3,
+        so no bulk doc list crosses a Temporal payload boundary (the ~3MB dataset would
+        exceed the 2MB limit).
+        """
         chunk_count = await workflow.execute_activity(
             chunk_documents,
-            args=[run_id, docs],
+            run_id,
             start_to_close_timeout=CHUNK_ACTIVITY_TIMEOUT,
             task_queue=DEFAULT_QUEUE,
             retry_policy=LOCAL_RETRY,

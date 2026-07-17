@@ -22,7 +22,7 @@ from config import config as cfg
 # bedrock: tag_shard + embed_shard — rate-limited under Nova/Titan TPS.
 # db: load_vectors — worker runs it with max_concurrent_activities=1, so the
 #     single-writer rule is enforced by infrastructure, not convention.
-# default: workflow tasks + cheap/local activities (chunk, read_sources, manifest).
+# default: workflow tasks + cheap/local activities (chunk, manifest).
 BEDROCK_QUEUE = cfg.temporal_bedrock_queue
 DB_QUEUE = cfg.temporal_db_queue
 DEFAULT_QUEUE = cfg.temporal_default_queue
@@ -47,7 +47,7 @@ BEDROCK_RETRY = RetryPolicy(
 # first attempt, so 2 = 1 retry.
 DB_LOAD_RETRY = RetryPolicy(maximum_attempts=cfg.temporal_db_load_max_attempts)
 
-# Local/deterministic activities (chunk, read_sources, manifest read). A failure is
+# Local/deterministic activities (chunk, manifest read). A failure is
 # almost always a real problem (missing artifact / dataset), not transient — so a low
 # ceiling that fails loud/fast, NOT the Temporal default of unlimited retries (which
 # would spin forever on a genuinely missing manifest). A couple of attempts still
@@ -64,12 +64,25 @@ CHUNK_ACTIVITY_TIMEOUT = timedelta(minutes=2)
 # retries are the exception). Tune from Temporal UI observations.
 FANOUT_CONCURRENCY = cfg.temporal_fanout_concurrency
 
+# INFO-level progress cadence for large single-activity loops (chunk's shard writes):
+# an INFO line every N completions keeps the activity visibly alive without flooding
+# CloudWatch. Per-shard detail is emitted at DEBUG (opt-in via LOG_LEVEL=DEBUG).
+PROGRESS_LOG_EVERY = 100
 
-# --- Artifact key layout (relative keys; storage.run_key adds the runId) ------
+
+# --- Artifact key layout ------------------------------------------------------
+# Per-run keys (run_key prepends the runId): chunks/tagged/vectors shards + manifest.
 CHUNKS_PREFIX = "chunks"
 TAGGED_PREFIX = "tagged"
 VECTORS_PREFIX = "vectors"
 MANIFEST_NAME = "manifest.json"
+
+# Sources are RUN-INDEPENDENT: the crawler output is uploaded once and read by every
+# run (you don't re-crawl per run), so this is a top-level prefix, NOT run-scoped.
+# Phase 4: the crawler Lambda writes here; for now it's a one-time `aws s3 cp` of the
+# existing local dataset (see docs / the make target). Keys are NOT passed through
+# run_key.
+SOURCES_PREFIX = "sources"
 
 
 def shard_fields(run_id: str, index: int) -> dict:

@@ -79,7 +79,7 @@ config_defaults = Config(
     temporal_fanout_concurrency=10,
     temporal_bedrock_max_attempts=8,
     temporal_db_load_max_attempts=2,
-    # Local/deterministic activities (chunk, read_sources, manifest read). A failure is
+    # Local/deterministic activities (chunk, manifest read). A failure is
     # almost always a real problem (missing artifact), not transient → low ceiling, fail
     # fast. Without this they inherit Temporal's default of UNLIMITED retries.
     temporal_local_max_attempts=3,
