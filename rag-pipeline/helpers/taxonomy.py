@@ -72,9 +72,14 @@ def load_taxonomy() -> list[dict]:
 
 
 def format_taxonomy_prompt(taxonomy: list[dict]) -> str:
-    """Format taxonomy as a concise reference for the LLM prompt."""
+    """Format taxonomy as a concise reference for the LLM prompt.
+
+    The tag token is rendered atomically and the human-readable label is set off
+    as a parenthetical hint (never `tag: label`), so the LLM copies the exact tag
+    and does not bleed the label into the tag string.
+    """
     lines: list[str] = []
     for t in taxonomy:
-        topic = f" (under {t['topic']})" if "topic" in t else ""
-        lines.append(f"- {t['tag']}: {t['label']}{topic}")
+        topic = f", under {t['topic']}" if "topic" in t else ""
+        lines.append(f"- {t['tag']}  (hint: {t['label']}{topic})")
     return "\n".join(lines)

@@ -33,31 +33,38 @@ the chunk clearly discusses that topic or answer.
 Rules:
 - Return a JSON array of tag strings, e.g. ["topic:networking-plugin", "answer:azure_cni_overlay"]
 - Only use tags from the provided vocabulary — never invent new tags
+- Each tag is an exact token: lowercase, no spaces, of the form "topic:<key>" or \
+"answer:<key>". Copy the tag token EXACTLY as listed. Never append the \
+human-readable label or any description to a tag — the text after the tag in the \
+vocabulary is a hint for you, not part of the tag.
 - A chunk may match zero tags (return []) if none are relevant
 - Prefer specific answer tags over broad topic tags when the chunk discusses a specific option
 - Always include the parent topic tag when assigning an answer tag
 - Return ONLY the JSON array, no explanation"""
 
 
-def _call_ollama(messages: list[dict], model: str) -> str:
+def _call_ollama(system: str, user: str, model: str) -> str:
     response = ollama.chat(
         model=model,
-        messages=messages,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
         options={"temperature": 0.1},
     )
     return response["message"]["content"].strip()
 
 
-def _call_anthropic(messages: list[dict], model: str) -> str:
+def _call_anthropic(system: str, user: str, model: str) -> str:
     client = anthropic.Anthropic()
-    system = next((m["content"] for m in messages if m["role"] == "system"), "")
-    user_messages = [m for m in messages if m["role"] != "system"]
     response = client.messages.create(
         model=model,
         max_tokens=256,
         temperature=0.1,
-        system=system,
-        messages=user_messages,
+        # Cache the static system block (classifier instructions + tag vocabulary).
+        # Anthropic requires an explicit cache_control breakpoint; Bedrock uses cachePoint.
+        system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": user}],
     )
     return response.content[0].text.strip()
 
@@ -65,39 +72,61 @@ def _call_anthropic(messages: list[dict], model: str) -> str:
 # One module-level client, created lazily so ollama-only runs don't need AWS creds.
 _bedrock_client = None
 
+# Accumulated cache metrics across a tagging run — proves the cache is landing
+# (a checkpoint below Nova's 1024-token floor is silently dropped, not an error).
+_cache_stats = {"read": 0, "write": 0, "input": 0}
 
-def _call_bedrock(messages: list[dict], model: str) -> str:
-    """Tag via Bedrock (Nova Micro) using the Converse API.
 
-    Credentials come from the standard AWS chain (locally: AWS_PROFILE=process;
-    on Lambda: execution role); region from config.
+def _call_bedrock(system: str, user: str, model: str) -> str:
+    """Tag via Bedrock (Nova Micro) using the Converse API with prompt caching.
+
+    The static system block (classifier instructions + tag vocabulary) is cached
+    via a `cachePoint` so it is not re-billed/re-processed on every chunk. Nova's
+    minimum cacheable prefix is 1024 tokens; below that the checkpoint is silently
+    ignored. Credentials come from the standard AWS chain (locally
+    AWS_PROFILE=process; on Lambda the execution role); region from config.
     """
     global _bedrock_client
     if _bedrock_client is None:
         _bedrock_client = boto3.client("bedrock-runtime", region_name=cfg.aws_region)
 
-    system = next((m["content"] for m in messages if m["role"] == "system"), "")
-    user_messages = [
-        {"role": m["role"], "content": [{"text": m["content"]}]}
-        for m in messages
-        if m["role"] != "system"
-    ]
     response = _bedrock_client.converse(
         modelId=model,
-        system=[{"text": system}],
-        messages=user_messages,
+        # cachePoint after the system text → everything before it is the cache prefix.
+        system=[{"text": system}, {"cachePoint": {"type": "default"}}],
+        messages=[{"role": "user", "content": [{"text": user}]}],
         inferenceConfig={"maxTokens": 256, "temperature": 0.1},
     )
+
+    usage = response.get("usage", {})
+    _cache_stats["read"] += usage.get("cacheReadInputTokens", 0)
+    _cache_stats["write"] += usage.get("cacheWriteInputTokens", 0)
+    _cache_stats["input"] += usage.get("inputTokens", 0)
+
     return response["output"]["message"]["content"][0]["text"].strip()
 
 
-def tag_chunk(text: str, title: str, taxonomy_prompt: str) -> list[str]:
-    """Send a chunk to the LLM and parse the returned tags."""
-    user_prompt = f"""## Available Tags
+def build_system_prompt(taxonomy_prompt: str) -> str:
+    """Assemble the static system prompt: classifier instructions + tag vocabulary.
 
-{taxonomy_prompt}
+    This is identical for every chunk in a run, so it is the natural cache prefix
+    (see _call_bedrock's cachePoint). Only the per-chunk title/text goes in the
+    user message.
+    """
+    return f"""{SYSTEM_PROMPT}
 
-## Chunk to classify
+## Available Tags
+
+{taxonomy_prompt}"""
+
+
+def tag_chunk(text: str, title: str, system_prompt: str) -> list[str]:
+    """Send a chunk to the LLM and parse the returned tags.
+
+    `system_prompt` is the pre-assembled static prompt from build_system_prompt()
+    (instructions + vocabulary); only the chunk itself varies per call.
+    """
+    user_prompt = f"""## Chunk to classify
 
 Title: {title}
 
@@ -105,17 +134,12 @@ Title: {title}
 
 Return ONLY a JSON array of matching tags:"""
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_prompt},
-    ]
-
     if cfg.tagging_provider == "bedrock":
-        content = _call_bedrock(messages, cfg.tagging_model)
+        content = _call_bedrock(system_prompt, user_prompt, cfg.tagging_model)
     elif cfg.tagging_provider == "anthropic":
-        content = _call_anthropic(messages, cfg.tagging_model)
+        content = _call_anthropic(system_prompt, user_prompt, cfg.tagging_model)
     else:
-        content = _call_ollama(messages, cfg.tagging_model)
+        content = _call_ollama(system_prompt, user_prompt, cfg.tagging_model)
 
     # Strip markdown code fences if present
     if content.startswith("```"):
@@ -152,9 +176,10 @@ def main() -> None:
         print(msg, file=sys.stderr)
         sys.exit(1)
 
-    # Load taxonomy from content YAML
+    # Load taxonomy from content YAML and assemble the static (cacheable) system prompt.
     taxonomy = load_taxonomy()
     taxonomy_prompt = format_taxonomy_prompt(taxonomy)
+    system_prompt = build_system_prompt(taxonomy_prompt)
     valid_tags = {t["tag"] for t in taxonomy}
     print(
         f"Loaded {len(taxonomy)} tags ({len([t for t in taxonomy if t['tag'].startswith('topic:')])} topics, "
@@ -172,7 +197,7 @@ def main() -> None:
 
     with output_path.open("w", encoding="utf-8") as out:
         for i, chunk in enumerate(chunks, 1):
-            assigned = tag_chunk(chunk["text"], chunk.get("title", ""), taxonomy_prompt)
+            assigned = tag_chunk(chunk["text"], chunk.get("title", ""), system_prompt)
 
             # Filter to valid tags only
             assigned = [t for t in assigned if t in valid_tags]
@@ -193,6 +218,24 @@ def main() -> None:
     avg = total_tags_assigned / total if total else 0
     print(f"\nDone: {total} chunks → {tagged_count} tagged ({total_tags_assigned} total tags, avg {avg:.1f}/chunk)")
     print(f"Output: {output_path}")
+
+    # Report prompt-cache effectiveness (bedrock only). read >> write across the run
+    # confirms the system-prompt cachePoint is landing; read == 0 means the prefix
+    # was below Nova's 1024-token floor and the checkpoint was silently dropped.
+    if cfg.tagging_provider == "bedrock":
+        read, write, uncached = _cache_stats["read"], _cache_stats["write"], _cache_stats["input"]
+        billed = read + write + uncached
+        saved_pct = (read / billed * 100) if billed else 0
+        print(
+            f"Cache: {read:,} read + {write:,} write + {uncached:,} uncached input tokens "
+            f"→ {saved_pct:.0f}% of input read from cache (billed at ~10%)"
+        )
+        if read == 0 and total > 1:
+            print(
+                "  Warning: 0 cache reads — the system prefix may be below Nova's "
+                "1024-token minimum, so the cachePoint was silently ignored.",
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":
