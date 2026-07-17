@@ -45,7 +45,7 @@ class TestBoundedFanout:
         async def start(i):
             seen.append(i)
 
-        failed = await bounded_fanout(10, start)
+        failed = await bounded_fanout(10, start, concurrency=5)
         assert failed == []
         assert sorted(seen) == list(range(10))
 
@@ -56,7 +56,7 @@ class TestBoundedFanout:
             if i in {3, 10, 20, 55, 99}:
                 raise RuntimeError("boom")
 
-        failed = await bounded_fanout(100, start)
+        failed = await bounded_fanout(100, start, concurrency=5)
         assert failed == [3, 10, 20, 55, 99]
 
     @pytest.mark.asyncio
@@ -69,13 +69,12 @@ class TestBoundedFanout:
             raise RuntimeError("boom")
 
         with pytest.raises(FanoutAborted):
-            await bounded_fanout(100, start)
+            await bounded_fanout(100, start, concurrency=5)
         # Early abort: far fewer than 100 attempted (bounded by concurrency + threshold).
         assert len(attempted) < 100
 
     @pytest.mark.asyncio
-    async def test_concurrency_is_capped(self, monkeypatch):
-        monkeypatch.setattr(shared, "FANOUT_CONCURRENCY", 3)
+    async def test_concurrency_is_capped(self):
         current = 0
         peak = 0
 
@@ -86,5 +85,5 @@ class TestBoundedFanout:
             await asyncio.sleep(0.01)
             current -= 1
 
-        await bounded_fanout(20, start)
+        await bounded_fanout(20, start, concurrency=3)
         assert peak <= 3

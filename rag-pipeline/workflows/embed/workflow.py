@@ -26,6 +26,7 @@ with workflow.unsafe.imports_passed_through():
         DB_LOAD_RETRY,
         DB_QUEUE,
         DEFAULT_QUEUE,
+        EMBED_CONCURRENCY,
         LOCAL_RETRY,
         bounded_fanout,
     )
@@ -53,7 +54,7 @@ class EmbedWorkflow:
                 retry_policy=BEDROCK_RETRY,
             )
 
-        failed = await bounded_fanout(count, start)
+        failed = await bounded_fanout(count, start, EMBED_CONCURRENCY)
         if failed:
             # A partial embed would load an incomplete vector set. Fail rather than
             # silently under-populate the index. (Below-threshold failures still abort

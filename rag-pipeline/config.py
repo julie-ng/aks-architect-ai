@@ -36,7 +36,8 @@ class Config:
     temporal_bedrock_queue: str
     temporal_db_queue: str
     temporal_default_queue: str
-    temporal_fanout_concurrency: int
+    temporal_tag_concurrency: int
+    temporal_embed_concurrency: int
     temporal_bedrock_max_attempts: int
     temporal_db_load_max_attempts: int
     temporal_local_max_attempts: int
@@ -68,6 +69,10 @@ config_defaults = Config(
     s3_bucket="",
     pipeline_run_id="",
     storage_base_dir=".",
+    # Run-independent prefix the ChunkWorkflow reads source docs from. Override to a
+    # sample subset (e.g. "sources-sample") for fast pipeline iteration without the full
+    # 143-doc / 3040-chunk run. See `make pipeline/sample-sources`.
+    sources_prefix="sources",
     # Temporal. Address/namespace target the local CLI dev server by default
     # (phase 4 points these at Temporal Cloud). Queues split by throttled resource
     # (no env prefix scheme yet — premature for a POC). Concurrency + retry ceilings
@@ -77,7 +82,13 @@ config_defaults = Config(
     temporal_bedrock_queue="bedrock-queue",
     temporal_db_queue="db-queue",
     temporal_default_queue="default",
-    temporal_fanout_concurrency=10,
+    # Per-STAGE fan-out concurrency, tuned to each model's BINDING Bedrock quota (both
+    # Not-adjustable on-demand). Tag = Nova Micro, bound by 400 RPM (cross-region `eu.`
+    # profile) → ~3 keeps us just under. Embed = Titan V2, bound by 300K TPM (RPM is a
+    # generous 6000) → ~4 at ~350 tok/chunk keeps us under. At the old global 10 both ran
+    # 3-5× over quota → 54 throttles + backoff churn (measured 2026-07-17).
+    temporal_tag_concurrency=3,
+    temporal_embed_concurrency=4,
     temporal_bedrock_max_attempts=8,
     temporal_db_load_max_attempts=2,
     # Local/deterministic activities (chunk, manifest read). A failure is
@@ -102,13 +113,17 @@ config = Config(
     s3_bucket=os.environ.get("S3_BUCKET", config_defaults.s3_bucket),
     pipeline_run_id=os.environ.get("PIPELINE_RUN_ID", config_defaults.pipeline_run_id),
     storage_base_dir=os.environ.get("STORAGE_BASE_DIR", config_defaults.storage_base_dir),
+    sources_prefix=os.environ.get("SOURCES_PREFIX", config_defaults.sources_prefix),
     temporal_address=os.environ.get("TEMPORAL_ADDRESS", config_defaults.temporal_address),
     temporal_namespace=os.environ.get("TEMPORAL_NAMESPACE", config_defaults.temporal_namespace),
     temporal_bedrock_queue=os.environ.get("TEMPORAL_BEDROCK_QUEUE", config_defaults.temporal_bedrock_queue),
     temporal_db_queue=os.environ.get("TEMPORAL_DB_QUEUE", config_defaults.temporal_db_queue),
     temporal_default_queue=os.environ.get("TEMPORAL_DEFAULT_QUEUE", config_defaults.temporal_default_queue),
-    temporal_fanout_concurrency=int(
-        os.environ.get("TEMPORAL_FANOUT_CONCURRENCY", str(config_defaults.temporal_fanout_concurrency))
+    temporal_tag_concurrency=int(
+        os.environ.get("TEMPORAL_TAG_CONCURRENCY", str(config_defaults.temporal_tag_concurrency))
+    ),
+    temporal_embed_concurrency=int(
+        os.environ.get("TEMPORAL_EMBED_CONCURRENCY", str(config_defaults.temporal_embed_concurrency))
     ),
     temporal_bedrock_max_attempts=int(
         os.environ.get("TEMPORAL_BEDROCK_MAX_ATTEMPTS", str(config_defaults.temporal_bedrock_max_attempts))

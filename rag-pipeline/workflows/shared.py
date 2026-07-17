@@ -56,13 +56,19 @@ LOCAL_RETRY = RetryPolicy(maximum_attempts=cfg.temporal_local_max_attempts)
 
 # --- Activity timeouts -------------------------------------------------------
 BEDROCK_ACTIVITY_TIMEOUT = timedelta(seconds=60)
-DB_LOAD_ACTIVITY_TIMEOUT = timedelta(minutes=10)  # bulk load + HNSW rebuild is slow
+# The 3040-row executemany load runs ~14s/50-row batch on t4g.micro ≈ ~15 min, + the
+# HNSW rebuild. The old 10-min timeout was too short and Temporal CANCELLED the activity
+# mid-load at ~2200 rows → run failed. 30 min gives comfortable headroom until the load
+# is sped up (COPY instead of executemany would cut this to a few min).
+DB_LOAD_ACTIVITY_TIMEOUT = timedelta(minutes=30)
 CHUNK_ACTIVITY_TIMEOUT = timedelta(minutes=2)
 
-# --- Fan-out concurrency -----------------------------------------------------
-# Semaphore is the PRIMARY throttle-avoidance knob (keeps us under Bedrock TPS so
-# retries are the exception). Tune from Temporal UI observations.
-FANOUT_CONCURRENCY = cfg.temporal_fanout_concurrency
+# --- Fan-out concurrency (PER-STAGE, tuned to each model's binding quota) -----
+# The Semaphore is the PRIMARY throttle-avoidance knob. Tag and embed hit DIFFERENT
+# Bedrock quotas (Nova 400 RPM vs Titan 300K TPM), so they get different values. Passed
+# into bounded_fanout() per stage; see config.py for the quota rationale.
+TAG_CONCURRENCY = cfg.temporal_tag_concurrency
+EMBED_CONCURRENCY = cfg.temporal_embed_concurrency
 
 # INFO-level progress cadence for large single-activity loops (chunk's shard writes):
 # an INFO line every N completions keeps the activity visibly alive without flooding
@@ -78,11 +84,11 @@ VECTORS_PREFIX = "vectors"
 MANIFEST_NAME = "manifest.json"
 
 # Sources are RUN-INDEPENDENT: the crawler output is uploaded once and read by every
-# run (you don't re-crawl per run), so this is a top-level prefix, NOT run-scoped.
-# Phase 4: the crawler Lambda writes here; for now it's a one-time `aws s3 cp` of the
-# existing local dataset (see docs / the make target). Keys are NOT passed through
-# run_key.
-SOURCES_PREFIX = "sources"
+# run (you don't re-crawl per run), so this is a top-level prefix, NOT run-scoped. Keys
+# are NOT passed through run_key. Env-configurable (SOURCES_PREFIX) so a run can target a
+# sample subset (`sources-sample`) for fast iteration vs the full `sources`.
+# Phase 4: the crawler Lambda writes here; for now it's a one-time `make pipeline/upload-sources`.
+SOURCES_PREFIX = cfg.sources_prefix
 
 
 def shard_fields(run_id: str, index: int) -> dict:
@@ -128,13 +134,14 @@ class FanoutAborted(Exception):
     """Raised when a fan-out stage exceeds its failure threshold and aborts early."""
 
 
-async def bounded_fanout(count: int, start_activity):
+async def bounded_fanout(count: int, start_activity, concurrency: int):
     """Run `count` shard activities with bounded concurrency + early abort.
 
     `start_activity(index)` must return an awaitable (a `workflow.execute_activity(...)`
-    coroutine) for shard `index`. Concurrency is capped at FANOUT_CONCURRENCY (the
-    primary throttle-avoidance knob). As results resolve, hard failures are counted; on
-    crossing `failure_threshold(count)` the remaining in-flight activities are cancelled
+    coroutine) for shard `index`. `concurrency` caps in-flight activities — the PRIMARY
+    throttle-avoidance knob, tuned PER STAGE to each model's binding Bedrock quota (see
+    TAG_CONCURRENCY / EMBED_CONCURRENCY). As results resolve, hard failures are counted;
+    on crossing `failure_threshold(count)` the remaining in-flight activities are cancelled
     and the workflow fails immediately (don't let the rest also exhaust retries — the
     cost-blowup case). Below threshold, the stage completes and returns the failed indices.
 
@@ -145,7 +152,7 @@ async def bounded_fanout(count: int, start_activity):
     are safe and replay-stable.
     """
     threshold = failure_threshold(count)
-    sem = asyncio.Semaphore(FANOUT_CONCURRENCY)
+    sem = asyncio.Semaphore(concurrency)
     failed: list[int] = []
     aborted = False
 

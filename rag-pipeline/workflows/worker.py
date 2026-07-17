@@ -23,6 +23,7 @@ from workflows.chunk.activities.chunk_documents import chunk_documents
 from workflows.chunk.workflow import ChunkWorkflow
 from workflows.embed.activities.embed_shard import embed_shard
 from workflows.embed.activities.load_vectors import load_vectors
+from workflows.embed.load_vectors_workflow import LoadVectorsWorkflow
 from workflows.embed.workflow import EmbedWorkflow
 from workflows.logging_config import configure_logging
 from workflows.manifest_activity import read_chunk_count
@@ -31,7 +32,7 @@ from workflows.shared import BEDROCK_QUEUE, DB_QUEUE, DEFAULT_QUEUE
 from workflows.tag.activities.tag_shard import tag_shard
 from workflows.tag.workflow import TaggingWorkflow
 
-ALL_WORKFLOWS = [PipelineWorkflow, ChunkWorkflow, TaggingWorkflow, EmbedWorkflow]
+ALL_WORKFLOWS = [PipelineWorkflow, ChunkWorkflow, TaggingWorkflow, EmbedWorkflow, LoadVectorsWorkflow]
 
 
 async def main() -> None:
@@ -50,14 +51,15 @@ async def main() -> None:
         activity_executor=executor,
     )
 
-    # bedrock: fan-out model calls, bounded by the workflow Semaphore (and, if needed,
-    # the queue rate limit). High activity concurrency; they are I/O-bound.
+    # bedrock: fan-out model calls (tag + embed). The workflow Semaphores (TAG/EMBED
+    # concurrency) are the real throttle; this worker cap is just a generous ceiling above
+    # whichever stage is running — 2× the larger per-stage concurrency leaves headroom.
     bedrock_worker = Worker(
         client,
         task_queue=BEDROCK_QUEUE,
         activities=[tag_shard, embed_shard],
         activity_executor=executor,
-        max_concurrent_activities=cfg.temporal_fanout_concurrency * 2,
+        max_concurrent_activities=max(cfg.temporal_tag_concurrency, cfg.temporal_embed_concurrency) * 2,
     )
 
     # db: the single serialized writer. concurrency=1 makes "never fan out INSERTs"

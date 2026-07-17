@@ -18,6 +18,7 @@ from temporalio.client import Client
 
 from config import config as cfg
 from workflows.chunk.workflow import ChunkWorkflow
+from workflows.embed.load_vectors_workflow import LoadVectorsWorkflow
 from workflows.embed.workflow import EmbedWorkflow
 from workflows.pipeline.workflow import PipelineWorkflow
 from workflows.shared import DEFAULT_QUEUE
@@ -28,6 +29,8 @@ STAGES = {
     "chunk": ChunkWorkflow,
     "tag": TaggingWorkflow,
     "embed": EmbedWorkflow,
+    # load-vectors = re-load existing S3 vectors into Postgres WITHOUT re-embedding (recovery).
+    "load-vectors": LoadVectorsWorkflow,
 }
 
 

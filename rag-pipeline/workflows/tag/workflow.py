@@ -17,6 +17,7 @@ with workflow.unsafe.imports_passed_through():
         CHUNK_ACTIVITY_TIMEOUT,
         DEFAULT_QUEUE,
         LOCAL_RETRY,
+        TAG_CONCURRENCY,
         bounded_fanout,
     )
     from workflows.tag.activities.tag_shard import tag_shard
@@ -44,7 +45,7 @@ class TaggingWorkflow:
                 retry_policy=BEDROCK_RETRY,
             )
 
-        failed = await bounded_fanout(count, start)
+        failed = await bounded_fanout(count, start, TAG_CONCURRENCY)
         summary = {"run_id": run_id, "total": count, "tagged": count - len(failed), "failed": failed}
         workflow.logger.info("tagging complete", extra=summary)
         return summary
