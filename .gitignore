@@ -24,3 +24,6 @@ rag-pipeline/*.jsonl
 
 # Config
 .env
+
+# local dev server
+temporal_server.db

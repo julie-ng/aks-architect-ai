@@ -24,26 +24,8 @@ from pgvector.psycopg import register_vector
 
 from config import config as cfg
 from helpers import storage
+from helpers.db_load import CREATE_HNSW_SQL, HNSW_INDEX_NAME, INSERT_SQL
 from helpers.embedding import embed_text
-
-INSERT_SQL = """
-    INSERT INTO chunks
-        (id, text, url, title, description, source_name,
-         priority, tags, chunk_index, chunk_total, crawled_at, embedding)
-    VALUES
-        (%(id)s, %(text)s, %(url)s, %(title)s, %(description)s, %(source_name)s,
-         %(priority)s, %(tags)s, %(chunk_index)s, %(chunk_total)s, %(crawled_at)s, %(embedding)s)
-"""
-
-# HNSW index maintenance on every INSERT is I/O-heavy — on a small instance it
-# saturates disk and stalls the connection. So we DROP the index before the bulk
-# load and rebuild it once afterwards (far cheaper than 3040 incremental updates).
-# Must stay in sync with db/init.sql.
-HNSW_INDEX_NAME = "chunks_embedding_idx"
-CREATE_HNSW_SQL = f"""
-    CREATE INDEX IF NOT EXISTS {HNSW_INDEX_NAME}
-        ON chunks USING hnsw (embedding vector_cosine_ops)
-"""
 
 
 def main():

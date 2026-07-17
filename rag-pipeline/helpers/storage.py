@@ -40,16 +40,23 @@ def _require_bucket() -> str:
     return cfg.s3_bucket
 
 
-def run_key(name: str) -> str:
-    """Build a run-scoped key: `<pipeline_run_id>/<name>`, or bare `<name>` if unset.
+def run_key(name: str, run_id: str | None = None) -> str:
+    """Build a run-scoped key: `<run_id>/<name>`, or bare `<name>` if no run id.
 
-    For s3, a run id is required (refuse to write to a null run); for local, an
-    unset run id means the current behavior (bare filenames under storage_base_dir).
+    `run_id` is resolved from the explicit argument first, then `cfg.pipeline_run_id`
+    (env). The explicit form is for Temporal activities, which receive the runId as a
+    workflow argument rather than via env (env is un-recorded I/O that would break
+    determinism and collide across concurrent runs on a shared worker). The CLI scripts
+    call `run_key(name)` and fall back to cfg unchanged.
+
+    For s3, a run id is required (refuse to write to a null run); for local, an unset
+    run id means the current behavior (bare filenames under storage_base_dir).
     """
-    if cfg.pipeline_run_id:
-        return f"{cfg.pipeline_run_id}/{name}"
+    resolved = run_id or cfg.pipeline_run_id
+    if resolved:
+        return f"{resolved}/{name}"
     if cfg.storage_backend == "s3":
-        raise ValueError("STORAGE_BACKEND=s3 requires PIPELINE_RUN_ID to be set")
+        raise ValueError("STORAGE_BACKEND=s3 requires a run id (PIPELINE_RUN_ID or explicit run_id)")
     return name
 
 
@@ -69,6 +76,16 @@ def write_text(key: str, data: str) -> None:
         path = Path(cfg.storage_base_dir) / key
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(data, encoding="utf-8")
+
+
+def read_json_single(key: str) -> dict:
+    """Read a single JSON object from `key` (one shard = one object)."""
+    return json.loads(read_text(key))
+
+
+def write_json_single(key: str, obj: dict) -> None:
+    """Write a single JSON object to `key` (one shard = one object)."""
+    write_text(key, json.dumps(obj, ensure_ascii=False))
 
 
 def read_json_lines(key: str) -> Iterator[dict]:

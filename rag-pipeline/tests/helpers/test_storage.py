@@ -47,12 +47,22 @@ class TestRunKey:
 
     def test_s3_requires_run_id(self, monkeypatch):
         _override(monkeypatch, storage_backend="s3", pipeline_run_id="")
-        with pytest.raises(ValueError, match="PIPELINE_RUN_ID"):
+        with pytest.raises(ValueError, match="run id"):
             storage.run_key("chunks.jsonl")
 
     def test_s3_with_run_id_ok(self, monkeypatch):
         _override(monkeypatch, storage_backend="s3", pipeline_run_id="run1")
         assert storage.run_key("chunks.jsonl") == "run1/chunks.jsonl"
+
+    def test_explicit_run_id_wins_over_cfg(self, monkeypatch):
+        # Temporal activities pass runId explicitly; it takes precedence over env/cfg.
+        _override(monkeypatch, storage_backend="s3", pipeline_run_id="cfg-run")
+        assert storage.run_key("chunks/0001.json", run_id="wf-run") == "wf-run/chunks/0001.json"
+
+    def test_explicit_run_id_satisfies_s3_requirement(self, monkeypatch):
+        # s3 with no cfg run id but an explicit arg is fine (activity path).
+        _override(monkeypatch, storage_backend="s3", pipeline_run_id="")
+        assert storage.run_key("chunks/0001.json", run_id="wf-run") == "wf-run/chunks/0001.json"
 
 
 # ---------------------------------------------------------------------------

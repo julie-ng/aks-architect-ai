@@ -27,6 +27,17 @@ class Config:
     s3_bucket: str
     pipeline_run_id: str
     storage_base_dir: str
+    # Temporal orchestration (workflows/). Queue names, fan-out concurrency, and
+    # retry ceilings are env-overridable; the retry-policy SHAPE (exponential
+    # backoff) and stage/queue split are architectural (in workflows/shared.py).
+    temporal_address: str
+    temporal_namespace: str
+    temporal_bedrock_queue: str
+    temporal_db_queue: str
+    temporal_default_queue: str
+    temporal_fanout_concurrency: int
+    temporal_bedrock_max_attempts: int
+    temporal_db_load_max_attempts: int
 
 
 config_defaults = Config(
@@ -55,6 +66,18 @@ config_defaults = Config(
     s3_bucket="",
     pipeline_run_id="",
     storage_base_dir=".",
+    # Temporal. Address/namespace target the local CLI dev server by default
+    # (phase 4 points these at Temporal Cloud). Queues split by throttled resource
+    # (no env prefix scheme yet — premature for a POC). Concurrency + retry ceilings
+    # are the tunable knobs (Semaphore is the primary throttle-avoidance lever).
+    temporal_address="localhost:7233",
+    temporal_namespace="default",
+    temporal_bedrock_queue="bedrock-queue",
+    temporal_db_queue="db-queue",
+    temporal_default_queue="default",
+    temporal_fanout_concurrency=10,
+    temporal_bedrock_max_attempts=8,
+    temporal_db_load_max_attempts=2,
 )
 
 config = Config(
@@ -73,4 +96,18 @@ config = Config(
     s3_bucket=os.environ.get("S3_BUCKET", config_defaults.s3_bucket),
     pipeline_run_id=os.environ.get("PIPELINE_RUN_ID", config_defaults.pipeline_run_id),
     storage_base_dir=os.environ.get("STORAGE_BASE_DIR", config_defaults.storage_base_dir),
+    temporal_address=os.environ.get("TEMPORAL_ADDRESS", config_defaults.temporal_address),
+    temporal_namespace=os.environ.get("TEMPORAL_NAMESPACE", config_defaults.temporal_namespace),
+    temporal_bedrock_queue=os.environ.get("TEMPORAL_BEDROCK_QUEUE", config_defaults.temporal_bedrock_queue),
+    temporal_db_queue=os.environ.get("TEMPORAL_DB_QUEUE", config_defaults.temporal_db_queue),
+    temporal_default_queue=os.environ.get("TEMPORAL_DEFAULT_QUEUE", config_defaults.temporal_default_queue),
+    temporal_fanout_concurrency=int(
+        os.environ.get("TEMPORAL_FANOUT_CONCURRENCY", str(config_defaults.temporal_fanout_concurrency))
+    ),
+    temporal_bedrock_max_attempts=int(
+        os.environ.get("TEMPORAL_BEDROCK_MAX_ATTEMPTS", str(config_defaults.temporal_bedrock_max_attempts))
+    ),
+    temporal_db_load_max_attempts=int(
+        os.environ.get("TEMPORAL_DB_LOAD_MAX_ATTEMPTS", str(config_defaults.temporal_db_load_max_attempts))
+    ),
 )
