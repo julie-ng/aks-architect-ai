@@ -24,6 +24,7 @@ import uuid
 from pathlib import Path
 
 from config import config as cfg
+from helpers import storage
 from helpers.chunking import sections_to_chunks, split_by_headings
 
 
@@ -67,10 +68,12 @@ def main():
     parser.add_argument(
         "--output",
         default="chunks.jsonl",
-        help="Output JSONL file path",
+        help="Output JSONL key (run-scoped via storage backend)",
     )
     args = parser.parse_args()
 
+    # The crawler dataset is the crawler's local output, outside the storage
+    # abstraction (crawler→S3 is a later phase); read it directly from disk.
     dataset_path = Path(args.dataset)
     if not dataset_path.exists():
         print(f"Error: dataset directory not found: {dataset_path}", file=sys.stderr)
@@ -81,24 +84,24 @@ def main():
         print(f"Error: no JSON files found in {dataset_path}", file=sys.stderr)
         sys.exit(1)
 
-    output_path = Path(args.output)
+    output_key = storage.run_key(args.output)
     total_docs = 0
-    total_chunks = 0
+    all_chunks: list[dict] = []
 
-    with output_path.open("w", encoding="utf-8") as out:
-        for path in input_files:
-            with path.open(encoding="utf-8") as f:
-                doc = json.load(f)
+    for path in input_files:
+        with path.open(encoding="utf-8") as f:
+            doc = json.load(f)
 
-            chunks = chunk_document(doc)
-            for chunk in chunks:
-                out.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+        chunks = chunk_document(doc)
+        all_chunks.extend(chunks)
 
-            total_docs += 1
-            total_chunks += len(chunks)
-            print(f"  [{total_docs:>3}] {len(chunks):>3} chunks  {doc.get('title', path.name)[:70]}")
+        total_docs += 1
+        print(f"  [{total_docs:>3}] {len(chunks):>3} chunks  {doc.get('title', path.name)[:70]}")
 
-    print(f"\nDone: {total_docs} docs → {total_chunks} chunks → {output_path}")
+    # Chunk output is small (~1.7MB); write it as one JSONL artifact through the
+    # storage backend (local file or S3 object).
+    storage.write_json_lines(output_key, all_chunks)
+    print(f"\nDone: {total_docs} docs → {len(all_chunks)} chunks → {output_key}")
 
 
 if __name__ == "__main__":

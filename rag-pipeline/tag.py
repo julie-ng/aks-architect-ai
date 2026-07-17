@@ -11,16 +11,15 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import sys
-from pathlib import Path
 
 import anthropic
 import boto3
 import ollama
 
 from config import config as cfg
+from helpers import storage
 from helpers.tags import parse_tag_response
 from helpers.taxonomy import format_taxonomy_prompt, load_taxonomy
 
@@ -162,16 +161,12 @@ Return ONLY a JSON array of matching tags:"""
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Tag chunks with topic/answer labels using an LLM")
-    parser.add_argument("--input", default="chunks.jsonl", help="Input chunks file (default: chunks.jsonl)")
-    parser.add_argument("--output", default="tagged_chunks.jsonl", help="Output file (default: tagged_chunks.jsonl)")
+    parser.add_argument("--input", default="chunks.jsonl", help="Input chunks key (run-scoped via storage)")
+    parser.add_argument("--output", default="tagged_chunks.jsonl", help="Output key (run-scoped via storage)")
     args = parser.parse_args()
 
-    input_path = Path(args.input)
-    output_path = Path(args.output)
-
-    if not input_path.exists():
-        print(f"Error: {input_path} not found", file=sys.stderr)
-        sys.exit(1)
+    input_key = storage.run_key(args.input)
+    output_key = storage.run_key(args.output)
 
     if cfg.tagging_provider == "anthropic" and not os.environ.get("ANTHROPIC_API_KEY"):
         msg = "Error: ANTHROPIC_API_KEY environment variable is required when tagging_provider is 'anthropic'"
@@ -189,7 +184,11 @@ def main() -> None:
     )
 
     # Load chunks
-    chunks = [json.loads(line) for line in input_path.read_text().splitlines() if line.strip()]
+    try:
+        chunks = list(storage.read_json_lines(input_key))
+    except FileNotFoundError:
+        print(f"Error: {input_key} not found", file=sys.stderr)
+        sys.exit(1)
     total = len(chunks)
     print(f"Tagging {total} chunks with {cfg.tagging_model}...\n")
 
@@ -197,29 +196,30 @@ def main() -> None:
     total_tags_assigned = 0
     pad = len(str(total))
 
-    with output_path.open("w", encoding="utf-8") as out:
-        for i, chunk in enumerate(chunks, 1):
-            assigned = tag_chunk(chunk["text"], chunk.get("title", ""), system_prompt)
+    # Tag in place, accumulate, then write once (one JSONL artifact per backend —
+    # an S3 object is a single atomic put, so no incremental append).
+    for i, chunk in enumerate(chunks, 1):
+        assigned = tag_chunk(chunk["text"], chunk.get("title", ""), system_prompt)
 
-            # Filter to valid tags only
-            assigned = [t for t in assigned if t in valid_tags]
+        # Filter to valid tags only
+        assigned = [t for t in assigned if t in valid_tags]
 
-            # Merge with existing tags
-            existing_tags = chunk.get("tags", {})
-            existing_tags["taxonomy"] = assigned
-            chunk["tags"] = existing_tags
+        # Merge with existing tags
+        existing_tags = chunk.get("tags", {})
+        existing_tags["taxonomy"] = assigned
+        chunk["tags"] = existing_tags
 
-            out.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+        if assigned:
+            tagged_count += 1
+            total_tags_assigned += len(assigned)
 
-            if assigned:
-                tagged_count += 1
-                total_tags_assigned += len(assigned)
+        print(f"  [{i:>{pad}}/{total}] {len(assigned):>2} tags  {chunk.get('title', '')[:60]}")
 
-            print(f"  [{i:>{pad}}/{total}] {len(assigned):>2} tags  {chunk.get('title', '')[:60]}")
+    storage.write_json_lines(output_key, chunks)
 
     avg = total_tags_assigned / total if total else 0
     print(f"\nDone: {total} chunks → {tagged_count} tagged ({total_tags_assigned} total tags, avg {avg:.1f}/chunk)")
-    print(f"Output: {output_path}")
+    print(f"Output: {output_key}")
 
     # Report prompt-cache effectiveness (bedrock only). read >> write across the run
     # confirms the system-prompt cachePoint is landing; read == 0 means the prefix

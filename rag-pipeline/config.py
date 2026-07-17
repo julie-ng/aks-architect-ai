@@ -23,6 +23,10 @@ class Config:
     chunk_min_chars: int
     tagging_model: str
     tagging_provider: str
+    storage_backend: str
+    s3_bucket: str
+    pipeline_run_id: str
+    storage_base_dir: str
 
 
 config_defaults = Config(
@@ -44,6 +48,13 @@ config_defaults = Config(
     # on-demand model id — bare amazon.nova-micro-v1:0 fails in eu-west-1.
     tagging_model="eu.amazon.nova-micro-v1:0",
     tagging_provider="bedrock",
+    # Pipeline artifact storage. `local` reads/writes files under storage_base_dir
+    # (dev default); `s3` reads/writes under s3://<s3_bucket>/<pipeline_run_id>/.
+    # See helpers/storage.py. Defaults are dev-safe (local, no AWS needed).
+    storage_backend="local",
+    s3_bucket="",
+    pipeline_run_id="",
+    storage_base_dir=".",
 )
 
 config = Config(
@@ -58,4 +69,8 @@ config = Config(
     chunk_min_chars=int(os.environ.get("CHUNK_MIN_CHARS", str(config_defaults.chunk_min_chars))),
     tagging_model=os.environ.get("TAGGING_MODEL", config_defaults.tagging_model),
     tagging_provider=os.environ.get("TAGGING_PROVIDER", config_defaults.tagging_provider),
+    storage_backend=os.environ.get("STORAGE_BACKEND", config_defaults.storage_backend),
+    s3_bucket=os.environ.get("S3_BUCKET", config_defaults.s3_bucket),
+    pipeline_run_id=os.environ.get("PIPELINE_RUN_ID", config_defaults.pipeline_run_id),
+    storage_base_dir=os.environ.get("STORAGE_BASE_DIR", config_defaults.storage_base_dir),
 )

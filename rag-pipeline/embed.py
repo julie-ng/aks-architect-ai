@@ -18,12 +18,12 @@ Usage:
 import argparse
 import json
 import sys
-from pathlib import Path
 
 import psycopg
 from pgvector.psycopg import register_vector
 
 from config import config as cfg
+from helpers import storage
 from helpers.embedding import embed_text
 
 INSERT_SQL = """
@@ -48,12 +48,14 @@ CREATE_HNSW_SQL = f"""
 
 def main():
     parser = argparse.ArgumentParser(description="Embed chunks and insert into Postgres/pgvector")
-    parser.add_argument("--input", default="tagged_chunks.jsonl", help="Input JSONL file")
+    parser.add_argument("--input", default="tagged_chunks.jsonl", help="Input JSONL key (run-scoped via storage)")
     args = parser.parse_args()
 
-    input_path = Path(args.input)
-    if not input_path.exists():
-        print(f"Error: input file not found: {input_path}", file=sys.stderr)
+    input_key = storage.run_key(args.input)
+    try:
+        chunks = list(storage.read_json_lines(input_key))
+    except FileNotFoundError:
+        print(f"Error: input not found: {input_key}", file=sys.stderr)
         print("Run chunk.py → tag.py first to generate tagged_chunks.jsonl", file=sys.stderr)
         sys.exit(1)
 
@@ -69,7 +71,6 @@ def main():
     conn.commit()
     print("Cleared chunks table and dropped HNSW index for bulk load")
 
-    chunks = [json.loads(line) for line in input_path.read_text().splitlines() if line.strip()]
     total = len(chunks)
     print(f"Embedding {total} chunks...\n")
 
