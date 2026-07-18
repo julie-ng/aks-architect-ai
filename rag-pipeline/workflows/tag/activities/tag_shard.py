@@ -1,6 +1,6 @@
 """Activity: tag one chunk shard via Bedrock Nova, write the tagged shard.
 
-Lifts the existing tagging logic (`tag.py::tag_chunk`, which uses the cached Converse
+Lifts the shared tagging logic (`helpers.tagging.tag_chunk`, which uses the cached Converse
 system prompt) — the activity is a thin S3-read → tag → S3-write wrapper. Runs on the
 bedrock-queue (rate-limited) with the exponential-backoff retry policy.
 
@@ -16,8 +16,8 @@ from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 from helpers import storage
+from helpers.tagging import build_system_prompt, tag_chunk
 from helpers.taxonomy import format_taxonomy_prompt, load_taxonomy
-from tag import build_system_prompt, tag_chunk
 from workflows.shared import chunk_shard_key, shard_fields, tagged_shard_key
 
 # Built once per worker process and reused across every shard (the taxonomy is static

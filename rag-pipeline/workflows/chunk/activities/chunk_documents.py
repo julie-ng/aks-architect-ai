@@ -20,13 +20,11 @@ single activity (no fan-out).
 import concurrent.futures
 import itertools
 
-# chunk.py holds the pure chunking logic; reuse it rather than duplicating.
-from chunk import chunk_document  # noqa: E402  (local module, not the stdlib `chunk`)
-
 from temporalio import activity
 
 from config import config as cfg
 from helpers import storage
+from helpers.chunking import chunk_document
 from workflows.shared import MANIFEST_NAME, PROGRESS_LOG_EVERY, SOURCES_PREFIX, chunk_shard_key
 
 # S3 reads/writes here are one HTTP round-trip each; done sequentially, 3040 puts take

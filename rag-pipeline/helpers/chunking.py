@@ -1,10 +1,13 @@
 """
-chunking — Pure helper functions for splitting markdown into chunks.
+chunking — Split crawled markdown docs into chunks for embedding.
 
-Used by chunk.py. Separated out for testability.
+`chunk_document` is the doc-level entry point (used by both the old chunk.py CLI
+and the Temporal ChunkWorkflow's chunk_documents activity); the rest are pure
+section helpers, separated out for testability.
 """
 
 import re
+import uuid
 
 from config import config as cfg
 
@@ -132,3 +135,33 @@ def sections_to_chunks(
     merged = merge_small_chunks(raw, min_chars, max_chars)
     deduped = deduplicate(merged)
     return [t for t in deduped if len(t) >= min_chars]
+
+
+def chunk_document(doc: dict) -> list[dict]:
+    """Split a crawled page into chunks, each inheriting page metadata."""
+    markdown = doc.get("markdown", "").strip()
+    if not markdown:
+        return []
+
+    sections = split_by_headings(markdown)
+    chunk_texts = sections_to_chunks(sections, cfg.chunk_max_chars, cfg.chunk_min_chars)
+
+    results = []
+    for i, text in enumerate(chunk_texts):
+        results.append(
+            {
+                "id": str(uuid.uuid4()),
+                "text": text,
+                "url": doc.get("url", ""),
+                "title": doc.get("title", ""),
+                "description": doc.get("description", ""),
+                "source_name": doc.get("source_name", ""),
+                "priority": doc.get("priority", 0),
+                "tags": doc.get("tags", {}),
+                "chunk_index": i,
+                "chunk_total": len(chunk_texts),
+                "crawled_at": doc.get("crawled_at", ""),
+            }
+        )
+
+    return results

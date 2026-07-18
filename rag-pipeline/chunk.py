@@ -20,42 +20,10 @@ Usage:
 import argparse
 import json
 import sys
-import uuid
 from pathlib import Path
 
-from config import config as cfg
 from helpers import storage
-from helpers.chunking import sections_to_chunks, split_by_headings
-
-
-def chunk_document(doc: dict) -> list[dict]:
-    """Split a crawled page into chunks, each inheriting page metadata."""
-    markdown = doc.get("markdown", "").strip()
-    if not markdown:
-        return []
-
-    sections = split_by_headings(markdown)
-    chunk_texts = sections_to_chunks(sections, cfg.chunk_max_chars, cfg.chunk_min_chars)
-
-    results = []
-    for i, text in enumerate(chunk_texts):
-        results.append(
-            {
-                "id": str(uuid.uuid4()),
-                "text": text,
-                "url": doc.get("url", ""),
-                "title": doc.get("title", ""),
-                "description": doc.get("description", ""),
-                "source_name": doc.get("source_name", ""),
-                "priority": doc.get("priority", 0),
-                "tags": doc.get("tags", {}),
-                "chunk_index": i,
-                "chunk_total": len(chunk_texts),
-                "crawled_at": doc.get("crawled_at", ""),
-            }
-        )
-
-    return results
+from helpers.chunking import chunk_document
 
 
 def main():
