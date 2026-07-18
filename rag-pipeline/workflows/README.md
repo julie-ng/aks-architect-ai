@@ -28,6 +28,76 @@ PipelineWorkflow(run_id)              parent — one run_id, chains children
 LoadVectorsWorkflow    → load_vectors               re-load S3 vectors, no re-embed (recovery)
 ```
 
+### Topology — workflows, queues, and S3 hand-off
+
+Each stage reads the previous stage's shards from S3 and writes its own, so bulk data
+never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is a
+recovery variant that runs `load_vectors` alone against existing `vectors/` — no re-embed.
+
+```mermaid
+flowchart TD
+    subgraph pipeline["PipelineWorkflow (run_id) — chains children"]
+        direction TB
+        CW["ChunkWorkflow"] --> TW["TaggingWorkflow"] --> EW["EmbedWorkflow"]
+    end
+
+    S3S@{ type: database, label: "S3\nsources/" }
+    S3C@{ type: database, label: "S3\nchunks/" }
+    S3T@{ type: database, label: "S3\ntagged/" }
+    S3V@{ type: database, label: "S3\nvectors/" }
+    PG@{ type: database, label: "Postgres\npgvector" }
+
+    S3S -->|read| CW
+    CW -->|"chunk_documents · default-queue"| S3C
+    CW -.->|"manifest: chunk_count"| TW
+
+    S3C -->|read shards| TW
+    TW -->|"tag_shard × N fan-out · bedrock-queue · Nova"| S3T
+
+    S3T -->|read shards| EW
+    EW -->|"embed_shard × N fan-out · bedrock-queue · Titan"| S3V
+    EW -->|"load_vectors · db-queue · single writer"| PG
+```
+
+### Runtime flow over time — fan-out and retry
+
+Tag and embed **fan out** (bounded concurrency, drawn as collections); `load_vectors` is
+a **single serialized writer**. A throttle just triggers the RetryPolicy's backoff — the
+durability point: hitting the rate limit is a non-event, not a failure.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as PipelineWorkflow
+    participant C as ChunkWorkflow
+    participant T@{ "type" : "collections" } as TaggingWorkflow
+    participant E@{ "type" : "collections" } as EmbedWorkflow
+    participant BR@{ "type" : "database" } as Bedrock
+    participant S3@{ "type" : "database" } as S3
+    participant DB@{ "type" : "database" } as Postgres
+
+    P->>C: start child (run_id)
+    C->>S3: read sources/ → write chunks/ + manifest
+    C-->>P: chunk_count
+
+    P->>T: start child (run_id, count)
+    Note over T,BR: tag_shard × N (bounded concurrency)
+    loop each shard i
+        T->>BR: Converse (Nova) — classify chunk
+        alt throttled (429)
+            BR-->>T: ThrottlingException
+            Note over T,BR: RetryPolicy backoff 1→2→4…30s, retry
+        end
+        T->>S3: write tagged/i.json
+    end
+    T-->>P: tagged count
+
+    P->>E: start child (run_id, count)
+    Note over E,BR: embed_shard × N (Titan) → vectors/i.json
+    E->>DB: load_vectors — TRUNCATE, DROP HNSW,<br/>stream COPY, REBUILD HNSW (single writer)
+    E-->>P: rows loaded
+```
+
 Design decisions:
 
 - **Per-stage workflows, independently startable** — re-tag without re-chunk, etc. Keeps each
