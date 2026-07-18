@@ -1,9 +1,96 @@
-# Temporal Orchestration for the RAG Pipeline
+# RAG Pipeline with [Temporal](https://temporal.io/)
+
+_This `spike/temporal` branch explores migrating the app's original RAG pipeline to use temporal to optimize for speed._
 
 > [!IMPORTANT]
-> This is a draft, describing project status as of 17 July 2026:
-> - Old CLI, local disk and [ollama](https://ollama.com/) driven RAG pipeline in `./rag-pipeline/` still works
-> - Newer Temporal + AWS driven workflows live in `./rag-pipeline/workflows/`, but still use a few methods from the old python files.
+> This project is a work-in-progress. This readme describes status as of 18 July 2026.
+
+### Summary
+
+The initial reasoning was to speed up the original sequential, single worker RAG pipeline from ~1 hour to minutes by leveraging a combination Temporal and parallelized workers deployed to AWS Lambda functions. 
+
+The migration revealed however, although we reduced the pipeline down to ~30 minutes, most gains were from fan-outs as concurrency was capped by AWS LLM rate limits. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last shared failed, instead of re-runing a long pipeline.
+
+## Why RAG?
+
+The root project of this [aks-architect-ai](https://github.com/julie-ng/aks-architect-ai) repository is **an AI advisor** for designing an Azure Kubernetes Service (AKS) cluster. **Quality is ensured by _grounding_ responses in the official Microsoft documentation**, which is scraped by [/web-scraper](./../web-scraper/README.md).
+
+The running AI chat application demonstrates the added-value of this RAG pipeline (click on screenshots to view full size):
+
+| Chat UI | Debug UI |
+|:--|:--|
+| <img src="./../../docs/screenshots/app-preview.png" alt="App preview" width="400"> | <img src="./../../docs/screenshots/retrieval-api.png" alt="UI for testing Retrieval" width="320"> |
+| LLM responses (including recommendations) are grounded in offiical Microsoft documentation. | For debugging, users can test how queries and reformulation surface different references based on scores. |
+
+### Anatomy of a TAG pipeline
+
+Broadly speaking, broadly RAG pipeline has the follwowing stages:
+
+| Stage | Input | Output | Description |
+|:--|:--|:--|:--|
+| 🧱 **Chunking** | Crawled JSON docs | `chunks.jsonl` | Split markdown by headings, merge/split to target size |
+| 🏷️ **Tagging** | `chunks.jsonl` | `tagged_chunks.jsonl` | LLM classifies each chunk against design framework taxonomy |
+| 📐 **Embedding into Vectors** | `tagged_chunks.jsonl` | Postgres/pgvector | LLM generate vectors from text, insert into DB with full metadata |
+
+#### Fragility and Impact
+
+A RAG pipeline can fail for many reasons, e.g. throttling, network errors, etc. Even if it runs successfully, it can take a really long time (hours, days) to complete - which slows down iterative improvements to the overall application.
+
+## Why Temporal?
+
+The initial reasoning was to speed up the RAG pipeline. At the capstone stage, the pipeline was already relatively stable thanks to self-throttling via `sleep`s.
+
+### Previous Pipeline
+
+It worked. But it was slow.
+
+This project initially crawled the Microsoft Docs and found ca. 700 pages (out of thousands) relevant to AKS that our AI app could use for RAG. It needed to run overnight.
+
+At Bootcamp finish, the pipeline status:
+
+- **Sources shortened to ca. 143 documents** listed in [`/web-scraper/SOURCES/`](./../../web-scraper/SOURCES/).
+- Documents were 
+  - chunked by splitting markdown on headings (deterministic — no model)
+  - tagged with `gemma3:4b` (Ollama)
+  - embedded with `nomic-embed-text` (Ollama, 768-dim)
+  - in vectors, which were saved in DB (`pgvector/pgvector:pg17` container)
+
+
+Old CLI, local disk and [ollama](https://ollama.com/) driven RAG pipeline in `./rag-pipeline/` still works
+
+### Temporalized Pipeline
+
+
+Newer Temporal + AWS driven workflows live in `./rag-pipeline/workflows/`, but still use a few methods from the old python files.
+
+```mermaid
+flowchart LR
+  subgraph pipeline["RAG Pipeline — Temporal.io"]
+    direction LR
+    chunk["chunk"] -->|"chunks.jsonl"| tag["tag"] -->|"tagged_chunks.jsonl"| embed["embed"]
+    s3[("S3 · hand-off")]
+  end
+
+  subgraph shared["Shared — Bedrock + DB"]
+    direction TB
+    nova["Nova Micro<br/>(tagging)"]
+    bedrock["Titan Text Embeddings V2 · 1024-dim<br/>(embeddings)"]
+    db[("RDS Postgres<br/>+ pgvector")]
+  end
+
+  s3 -->|"*.json sources"| chunk
+  tag -->|"classify tags"| nova
+  embed -->|embed| bedrock
+  embed -->|"1024-dim vectors"| db
+
+  classDef awsBox fill:#ff9900,color:#000,stroke:#232f3e;
+  classDef storageBox fill:#e91e63,color:#fff,stroke:#880e4f;
+  classDef aiBox fill:#1e88e5,color:#fff,stroke:#0d47a1;
+  class chunk,tag,embed awsBox;
+  class s3,db storageBox;
+  class nova,bedrock aiBox;
+  style shared fill:#f0f0f0,stroke:#bdbdbd,color:#000;
+```
 
 The offline pipeline (chunk → tag → embed → load) is orchestrated with
 [Temporal](https://temporal.io). Each stage is a workflow; model calls and I/O are activities.
@@ -19,6 +106,11 @@ and durable resume survive throttling, crashes, and even a laptop sleeping mid-r
 
 ## Architecture
 
+Each stage reads the previous stage's shards from S3 and writes its own, so bulk data
+never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is a
+recovery variant that runs `load_vectors` alone against existing `vectors/` — no re-embed.
+
+
 ```
 PipelineWorkflow(run_id)              parent — one run_id, chains children
 ├── ChunkWorkflow      → chunk_documents            reads S3 sources → chunk shards + manifest
@@ -26,37 +118,6 @@ PipelineWorkflow(run_id)              parent — one run_id, chains children
 └── EmbedWorkflow      → embed_shard(run_id, i)     fan-out: Titan → vectors/{i}.json
                        → load_vectors(run_id, n)    single serialized activity → Postgres
 LoadVectorsWorkflow    → load_vectors               re-load S3 vectors, no re-embed (recovery)
-```
-
-### Topology — workflows, queues, and S3 hand-off
-
-Each stage reads the previous stage's shards from S3 and writes its own, so bulk data
-never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is a
-recovery variant that runs `load_vectors` alone against existing `vectors/` — no re-embed.
-
-```mermaid
-flowchart TD
-    subgraph pipeline["PipelineWorkflow (run_id) — chains children"]
-        direction TB
-        CW["ChunkWorkflow"] --> TW["TaggingWorkflow"] --> EW["EmbedWorkflow"]
-    end
-
-    S3S@{ type: database, label: "S3\nsources/" }
-    S3C@{ type: database, label: "S3\nchunks/" }
-    S3T@{ type: database, label: "S3\ntagged/" }
-    S3V@{ type: database, label: "S3\nvectors/" }
-    PG@{ type: database, label: "Postgres\npgvector" }
-
-    S3S -->|read| CW
-    CW -->|"chunk_documents · default-queue"| S3C
-    CW -.->|"manifest: chunk_count"| TW
-
-    S3C -->|read shards| TW
-    TW -->|"tag_shard × N fan-out · bedrock-queue · Nova"| S3T
-
-    S3T -->|read shards| EW
-    EW -->|"embed_shard × N fan-out · bedrock-queue · Titan"| S3V
-    EW -->|"load_vectors · db-queue · single writer"| PG
 ```
 
 ### Runtime flow over time — fan-out and retry
@@ -139,15 +200,35 @@ Config (env-overridable, see `config.py` / `.env.sample`): `TEMPORAL_ADDRESS`,
 `SOURCES_PREFIX`, `LOG_LEVEL` (`debug` = per-shard). Logs are structured JSON (queryable in
 CloudWatch Logs Insights when workers move to AWS).
 
-## Findings at full scale (3040 chunks, real AWS)
+## Findings at full scale (real AWS)
 
-**Speed is concurrency, not Temporal:**
+The story is chronological — each step built on the last, and each taught something different.
+Numbers below are at **3040 chunks** unless noted; the final end-to-end run is at **3496**.
 
-| Stage | Sequential | Fan-out | Performance constraint |
-|---|---|---|---|
-| Chunk | 14m 43s | **16.6 s** | parallel S3 I/O (thread pool), not Temporal |
-| Tag | 36m 22s | **9m 21s** | concurrency, quota-capped |
-| Embed + Load Vectors | 17m 27s | fan-out + **15.6 s** load | 13m 55s (executemany) → 15.6 s (COPY + parallel reads) |
+1. **Sequential baseline.** Each stage timed on its own: chunk+tag **36m 22s**, embed+load
+   **17m 27s**. The natural first implementation (`for chunk in chunks: …`) — no concurrency.
+
+2. **Fan-out (concurrency 10).** Tagging dropped to **9m 21s** — but Temporal's history showed
+   **54 Bedrock throttle events** (zero failures; every one retried + backed off). The observability
+   is what *revealed* we were ~5× over Nova's 400 RPM limit.
+
+3. **Tuned to the quota (concurrency ~3).** Backing concurrency down to match the quota cut the
+   throttle-and-backoff churn → **~8 min**, near Nova's ~7.6-min hard floor. Counter-intuitive but
+   real: *less* concurrency was faster, because we stopped fighting the rate limiter.
+
+4. **Load: the bottleneck moved twice.** `executemany` **13m 55s** → binary `COPY` **12m 57s**
+   (barely helped — the cost had moved to sequential S3 reads) → COPY + 20-way parallel reads
+   **15.6 s**. See below.
+
+5. **Full end-to-end (3496 chunks).** One `PipelineWorkflow`, one command: **30m 32s**, chunk_count
+   3496, **0 tag failures, 0 intervention.**
+
+**Speed is concurrency, and it's capped by AWS quotas — not Temporal.** The wins in steps 2–4 are
+thread-pool / `asyncio` concurrency, not Temporal. Where work is compute/IO-bound (chunk, load) it
+collapses from minutes to seconds; where it's quota-bound (tag on Nova 400 RPM, embed on Titan 300K
+TPM) the rate limit is a floor concurrency can't beat. **Temporal's contribution is not on this
+axis** — it's the observability that *enabled* the step-2→3 tuning, and the durability that made 54
+throttles a non-event. (See "The rate limit is the ceiling" below.)
 
 **The DB load: the bottleneck moved twice.** The load started at 13m 55s (`executemany`).
 Switching to binary `COPY` alone barely helped (~12m 57s) — because the real cost was no longer
