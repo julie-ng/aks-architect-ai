@@ -42,6 +42,79 @@ A RAG pipeline can fail for many reasons, e.g. throttling, network errors, etc. 
 
 A reliable and speedy RAG pipeline is important because the _real_ value-add to the user of introducing an LLM as an advisor is to **supplement LLMs with _human-driven_ subject matter expertise**. This expertise is applied via curation of [sources](./../web-scraper/SOURCES/), architectural design [taxonomies](./../advisor-ui/content/), and [system prompt](https://github.com/julie-ng/aks-architect-llm-system-prompt).
 
+## How to Demo
+
+### Step 1 - Deploy AWS Infrastructure
+
+This demo requires AWS Bedrock and S3. Go to [/infrastructure/](./../../infrastructure/) and follow instructions and scripts to:
+
+1. Deploy AWS RDS for our Postgres database with `pgvector`
+2. Enable in AWS Bedrock the Titan and Nova LLMs needed for this pipeline.
+3. Apply IAM roles and permissions 
+
+### Step 2 - Configure Environment
+
+`config.py` reads all configuration from the environment. Copy [`.env.sample`](./../../.env.sample) for reference and `source` your `.env` before running anything below. Key variables:
+
+- `AWS_PROFILE`, `AWS_REGION` — credentials + region for Bedrock / S3 / RDS
+- `DATABASE_URL` — Postgres (RDS) connection string
+- `STORAGE_BACKEND=s3`, `S3_BUCKET` — pipeline artifact storage
+- `SOURCES_PREFIX` — which S3 prefix to read sources from (`sources`, or `sources-sample` for fast iteration)
+- `TAGGING_MODEL`, `EMBEDDING_MODEL` — Bedrock Nova / Titan
+- `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE` — Temporal server
+- `TEMPORAL_TAG_CONCURRENCY`, `TEMPORAL_EMBED_CONCURRENCY` — per-stage fan-out, tuned to each model's quota
+
+### Step 3 - Copy Sources
+
+To skip the [/web-scraper/](./../../web-scraper/) step, copy the source documents in JSON format from this [`skai-pipeline-store-test-f440010`](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=sources/) S3 bucket (temporarily publicly available).
+
+```bash
+aws s3 cp s3://skai-pipeline-store-test-f440010/sources/ ./sources/ \
+  --recursive \
+  --no-sign-request \
+  --region eu-west-1
+```
+
+This downloads [143 JSON files](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=sources/) to a local `./sources/`. Then upload them to the `sources/` prefix in **your** bucket:
+
+```bash
+aws s3 cp ./sources/ s3://$S3_BUCKET/sources/ \
+  --recursive \
+  --exclude "*" --include "*.json"
+```
+
+### Step 4 - Start Temporal Server
+
+```bash
+temporal server start-dev
+```
+
+### Step 5A - Start Worker
+
+```bash
+caffeinate -i uv run python -m workflows.worker            # caffeinate: don't sleep mid-run
+```
+
+### Step 5B - Start Workflow(s)
+
+```bash
+uv run python -m workflows.starter                         # full pipeline, fresh run_id
+uv run python -m workflows.starter --stage tag --run-id <id>   # or a single stage
+```
+
+**Fast iteration** — full runs are ~25 min; use the ~10% sample:
+
+```bash
+make pipeline/sample-sources          # build sources-sample/ (15 docs) in S3
+export SOURCES_PREFIX=sources-sample  # restart worker to pick up; runs in seconds
+```
+
+Config (env-overridable, see `config.py` / `.env.sample`): `TEMPORAL_ADDRESS`,
+`TEMPORAL_TAG_CONCURRENCY=3` (Nova 400 RPM), `TEMPORAL_EMBED_CONCURRENCY=4` (Titan 300K TPM),
+`SOURCES_PREFIX`, `LOG_LEVEL` (`debug` = per-shard). Logs are structured JSON (queryable in
+CloudWatch Logs Insights when workers move to AWS).
+
+
 ## Why Temporal?
 
 The initial reasoning was to speed up the RAG pipeline. At the capstone stage, the pipeline was already relatively stable thanks to self-throttling via `sleep`s.
@@ -159,27 +232,6 @@ sequenceDiagram
   load streams a binary `COPY` fed by a bounded 20-way S3 read-ahead window: reads parallelize,
   the COPY writer stays single-threaded (the window bounds worker memory; the `db-queue`
   single-writer bounds Postgres write concurrency — separate concerns).
-
-## Running locally
-
-```bash
-temporal server start-dev                                  # 1. dev server
-caffeinate -i uv run python -m workflows.worker            # 2. worker (caffeinate: don't sleep)
-uv run python -m workflows.starter                         # 3. full pipeline (fresh run_id)
-#   --stage chunk|tag|embed|load-vectors  --run-id <id>    #    or a single stage
-```
-
-**Fast iteration** — full runs are ~25 min; use the ~10% sample:
-
-```bash
-make pipeline/sample-sources          # build sources-sample/ (15 docs) in S3
-export SOURCES_PREFIX=sources-sample  # restart worker to pick up; runs in seconds
-```
-
-Config (env-overridable, see `config.py` / `.env.sample`): `TEMPORAL_ADDRESS`,
-`TEMPORAL_TAG_CONCURRENCY=3` (Nova 400 RPM), `TEMPORAL_EMBED_CONCURRENCY=4` (Titan 300K TPM),
-`SOURCES_PREFIX`, `LOG_LEVEL` (`debug` = per-shard). Logs are structured JSON (queryable in
-CloudWatch Logs Insights when workers move to AWS).
 
 ## Findings at full scale (real AWS)
 
