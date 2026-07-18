@@ -10,6 +10,8 @@ a clean full reload. DB_LOAD_RETRY allows exactly one retry (a repeat failure is
 structural I/O saturation, not transient).
 """
 
+import concurrent.futures
+from collections import deque
 from datetime import datetime
 from uuid import UUID
 
@@ -22,6 +24,24 @@ from config import config as cfg
 from helpers import storage
 from helpers.db_load import COPY_SQL, COPY_TYPES, CREATE_HNSW_SQL, HNSW_INDEX_NAME
 from workflows.shared import PROGRESS_LOG_EVERY, vector_shard_key
+
+# After COPY made the DB write instant, the load is gated by SEQUENTIAL S3 reads (one GET
+# per shard). A thread pool reads shards ahead of the single COPY writer; only the reads
+# parallelize — copy.write_row stays on the main thread (COPY is one non-thread-safe
+# stream). Mirrors chunk_documents._S3_IO_CONCURRENCY.
+_S3_READ_CONCURRENCY = 20
+
+# Bounded read-ahead window: at most this many shards are in flight/buffered at once, so
+# the reader can't outrun the writer and materialize all N vectors in RAM (~3040 × 1024
+# float32 ≈ hundreds of MB). This bounds WORKER-PROCESS memory — a separate concern from
+# the db-queue single-writer rule, which bounds POSTGRES write concurrency, not memory.
+# It also future-proofs for Lambda, where per-invocation memory is a hard ceiling.
+_READ_AHEAD_WINDOW = 128
+
+
+def _read_shard(run_id: str, index: int) -> dict:
+    """Read one vector shard from S3 (the parallelizable, latency-bound step)."""
+    return storage.read_json_single(storage.run_key(vector_shard_key(index), run_id=run_id))
 
 
 def _parse_crawled_at(value) -> datetime | None:
@@ -78,17 +98,31 @@ def load_vectors(run_id: str, count: int) -> int:
         conn.commit()
         log.info("truncated chunks + dropped HNSW for index-free load", extra=fields)
 
-        # One streaming COPY = one transaction: read each shard from S3 and write it to
-        # the COPY stream as we go (no all-in-memory list of 1024-float vectors). TRUNCATE
-        # already made the load all-or-nothing, so a single commit at the end (vs the old
-        # per-batch commits) is the right idiom — a mid-load failure just retries clean.
+        # One streaming COPY = one transaction, fed by a bounded read-ahead window: a thread
+        # pool reads shards from S3 in parallel (the latency-bound step), while the single
+        # main thread drains them IN ORDER into the COPY stream. The deque of futures caps
+        # in-flight reads at _READ_AHEAD_WINDOW so the reader can't buffer all N vectors in
+        # RAM — true backpressure (ThreadPoolExecutor.map would pre-submit all N and buffer
+        # completed results with no bound). TRUNCATE already made the load all-or-nothing, so
+        # a single commit at the end is the right idiom — a mid-load failure just retries clean.
         inserted = 0
-        with conn.cursor() as cur, cur.copy(COPY_SQL) as copy:
+        with (
+            concurrent.futures.ThreadPoolExecutor(max_workers=_S3_READ_CONCURRENCY) as pool,
+            conn.cursor() as cur,
+            cur.copy(COPY_SQL) as copy,
+        ):
             copy.set_types(COPY_TYPES)
-            for i in range(count):
-                chunk = storage.read_json_single(storage.run_key(vector_shard_key(i), run_id=run_id))
+            # Prime the window, then refill one read per row written (keeps ≤ window in flight).
+            window = min(_READ_AHEAD_WINDOW, count)
+            futures: deque = deque(pool.submit(_read_shard, run_id, i) for i in range(window))
+            next_to_submit = window
+            while futures:
+                chunk = futures.popleft().result()  # in-order; blocks until this shard is read
                 copy.write_row(_row(chunk))
                 inserted += 1
+                if next_to_submit < count:
+                    futures.append(pool.submit(_read_shard, run_id, next_to_submit))
+                    next_to_submit += 1
                 if inserted % PROGRESS_LOG_EVERY == 0 or inserted == count:
                     log.info("copied rows", extra={**fields, "inserted": inserted, "count": count})
         conn.commit()
