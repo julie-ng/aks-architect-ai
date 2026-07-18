@@ -184,55 +184,60 @@ CloudWatch Logs Insights when workers move to AWS).
 ## Findings at full scale (real AWS)
 
 The story is chronological — each step built on the last, and each taught something different.
+
 Numbers below are at **3040 chunks** unless noted; the final end-to-end run is at **3496**.
 
-1. **Sequential baseline.** Each stage timed on its own: chunk+tag **36m 22s**, embed+load
-   **17m 27s**. The natural first implementation (`for chunk in chunks: …`) — no concurrency.
+1. **Sequential baseline.**
+   - Each stage timed on its own: chunk+tag **36m 22s**, embed+load **17m 27s**.
+   - The natural first implementation (`for chunk in chunks: …`) — no concurrency.
 
-2. **Fan-out (concurrency 10).** Tagging dropped to **9m 21s** — but Temporal's history showed
-   **54 Bedrock throttle events** (zero failures; every one retried + backed off). The observability
-   is what *revealed* we were ~5× over Nova's 400 RPM limit.
+2. **Fan-out (concurrency 10).**
+   - Tagging dropped to **9m 21s**.
+   - But Temporal's history showed **54 Bedrock throttle events** (zero failures; every one retried + backed off).
+   - The observability is what *revealed* we were ~5× over Nova's 400 RPM limit.
 
-3. **Tuned to the quota (concurrency ~3).** Backing concurrency down to match the quota cut the
-   throttle-and-backoff churn → **~8 min**, near Nova's ~7.6-min hard floor. Counter-intuitive but
-   real: *less* concurrency was faster, because we stopped fighting the rate limiter.
+3. **Tuned to the quota (concurrency ~3).**
+   - Backing concurrency down to match the quota cut the throttle-and-backoff churn → **~8 min**, near Nova's ~7.6-min hard floor.
+   - Counter-intuitive but real: *less* concurrency was faster, because we stopped fighting the rate limiter.
 
-4. **Load: the bottleneck moved twice.** `executemany` **13m 55s** → binary `COPY` **12m 57s**
-   (barely helped — the cost had moved to sequential S3 reads) → COPY + 20-way parallel reads
-   **15.6 s**. See below.
+4. **Load: the bottleneck moved twice.**
+   - `executemany` **13m 55s** → binary `COPY` **12m 57s** (barely helped — the cost had moved to sequential S3 reads) → COPY + 20-way parallel reads **15.6 s**.
+   - See "The DB load" below.
 
-5. **Full end-to-end (3496 chunks).** One `PipelineWorkflow`, one command: **30m 32s**, chunk_count
-   3496, **0 tag failures, 0 intervention.**
+5. **Full end-to-end (3496 chunks).**
+   - One `PipelineWorkflow`, one command: **30m 32s**, chunk_count 3496, **0 tag failures, 0 intervention.**
 
-**Speed is concurrency, and it's capped by AWS quotas — not Temporal.** The wins in steps 2–4 are
-thread-pool / `asyncio` concurrency, not Temporal. Where work is compute/IO-bound (chunk, load) it
-collapses from minutes to seconds; where it's quota-bound (tag on Nova 400 RPM, embed on Titan 300K
-TPM) the rate limit is a floor concurrency can't beat. **Temporal's contribution is not on this
-axis** — it's the observability that *enabled* the step-2→3 tuning, and the durability that made 54
-throttles a non-event. (See "The rate limit is the ceiling" below.)
+### Speed is concurrency, and it's capped by AWS quotas — not Temporal
 
-**The DB load: the bottleneck moved twice.** The load started at 13m 55s (`executemany`).
-Switching to binary `COPY` alone barely helped (~12m 57s) — because the real cost was no longer
-the DB write but **3040 sequential S3 reads** (~25 s per 100 shards). Parallelizing those reads
-(a bounded 20-way read-ahead) removed that floor: **13m 55s → 15.6 s, ~53×**. The lesson is to
-measure where time actually goes, not where you assume it does.
+- The wins in steps 2–4 are thread-pool / `asyncio` concurrency, not Temporal.
+- Compute/IO-bound work (chunk, load) collapses from minutes to seconds.
+- Quota-bound work (tag on Nova 400 RPM, embed on Titan 300K TPM) hits a floor concurrency can't beat.
+- **Temporal's contribution is not on this axis** — it's the observability that *enabled* the step-2→3 tuning, and the durability that made 54 throttles a non-event.
 
-**The rate limit is the ceiling, not compute.** Bedrock quotas are not adjustable on-demand:
-Nova 400 RPM (a ~7.6 min hard floor for 3040 chunks), Titan 300K TPM. The tag run at concurrency
-10 exceeded Nova RPM ~5× → **54 throttle events, zero permanent failures, zero manual
-intervention** (max retry = 2). The fix was tuning concurrency to the quota (tag=3, embed=4), not
-more compute — more workers/Lambda would only throttle harder.
+### The DB load: the bottleneck moved twice
 
-**Durability, proven by accident (real incidents, no data loss):**
-1. A misconfigured second worker's activities failed; the healthy worker completed them on retry.
-2. 54 Bedrock throttles during tagging — all retried and cleared.
-3. Two `load_vectors` failures, both client-side (the DB itself stayed healthy — inserts ran at a
-   steady rate throughout): once the laptop slept and severed the connection, once the activity's
-   10-min timeout was too short and Temporal cancelled it mid-load. Because the embed fan-out had
-   already finished (vectors safe in S3), recovery was a `load-vectors`-only re-run — no
-   re-embedding — via `LoadVectorsWorkflow` (after bumping the timeout to 30 min).
+- Started at **13m 55s** (`executemany`).
+- Binary `COPY` alone barely helped (**~12m 57s**) — the real cost was no longer the DB write but **3040 sequential S3 reads** (~25 s per 100 shards).
+- Parallelizing those reads (a bounded 20-way read-ahead) removed that floor: **13m 55s → 15.6 s, ~53×**.
+- Lesson: measure where time actually goes, not where you assume it does.
+
+### The rate limit is the ceiling, not compute
+
+- Bedrock quotas are not adjustable on-demand: Nova **400 RPM** (a ~7.6-min hard floor for 3040 chunks), Titan **300K TPM**.
+- The tag run at concurrency 10 exceeded Nova RPM ~5× → **54 throttle events, zero permanent failures, zero manual intervention** (max retry = 2).
+- The fix was tuning concurrency to the quota (tag=3, embed=4), not more compute — more workers/Lambda would only throttle harder.
+
+### Durability, proven by accident (real incidents, no data loss)
+
+- A misconfigured second worker's activities failed; the healthy worker completed them on retry.
+- 54 Bedrock throttles during tagging — all retried and cleared.
+- Two `load_vectors` failures, both client-side (the DB itself stayed healthy — inserts ran at a steady rate throughout):
+  - once the laptop slept and severed the connection;
+  - once the activity's 10-min timeout was too short and Temporal cancelled it mid-load.
+  - Because the embed fan-out had already finished (vectors safe in S3), recovery was a `load-vectors`-only re-run — no re-embedding — via `LoadVectorsWorkflow` (after bumping the timeout to 30 min).
 
 ## Next steps
 
-- **Phase 4:** workers → Lambda + Temporal Cloud. Lambda's value is scale-to-zero cost,
-  not speed (bottlenecks are AWS quotas + a single DB). ~$0.50 for a full day of scale testing.
+- **Phase 4:** workers → Lambda + Temporal Cloud.
+  - Lambda's value is scale-to-zero cost, not speed (bottlenecks are AWS quotas + a single DB).
+  - ~$0.50 for a full day of scale testing.
