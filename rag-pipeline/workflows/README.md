@@ -11,7 +11,7 @@ The initial reasoning was to speed up the original sequential, single worker RAG
 
 The migration revealed however, although we reduced the pipeline down to ~30 minutes, most gains were from fan-outs as concurrency was capped by AWS LLM rate limits. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last shared failed, instead of re-runing a long pipeline.
 
-## Why RAG?
+## Why Retrieval-Augmented Generation (RAG)?
 
 The root project of this [aks-architect-ai](https://github.com/julie-ng/aks-architect-ai) repository is **an AI advisor** for designing an Azure Kubernetes Service (AKS) cluster. **Quality is ensured by _grounding_ responses in the official Microsoft documentation**, which is scraped by [/web-scraper](./../web-scraper/README.md).
 
@@ -22,9 +22,9 @@ The running AI chat application demonstrates the added-value of this RAG pipelin
 | <img src="./../../docs/screenshots/app-preview.png" alt="App preview" width="400"> | <img src="./../../docs/screenshots/retrieval-api.png" alt="UI for testing Retrieval" width="320"> |
 | LLM responses (including recommendations) are grounded in offiical Microsoft documentation. | For debugging, users can test how queries and reformulation surface different references based on scores. |
 
-### Anatomy of a TAG pipeline
+### Anatomy of a RAG pipeline
 
-Broadly speaking, broadly RAG pipeline has the follwowing stages:
+Broadly speaking, our RAG pipeline has the follwowing stages:
 
 | Stage | Input | Output | Description |
 |:--|:--|:--|:--|
@@ -32,15 +32,26 @@ Broadly speaking, broadly RAG pipeline has the follwowing stages:
 | 🏷️ **Tagging** | `chunks.jsonl` | `tagged_chunks.jsonl` | LLM classifies each chunk against design framework taxonomy |
 | 📐 **Embedding into Vectors** | `tagged_chunks.jsonl` | Postgres/pgvector | LLM generate vectors from text, insert into DB with full metadata |
 
-#### Fragility and Impact
+Once in the database, the [`retrieval-api`](./../../retrieval-api/) surfaces the most relevant sources based on user query for the LLM to ground its response.
+
+#### Fragility
 
 A RAG pipeline can fail for many reasons, e.g. throttling, network errors, etc. Even if it runs successfully, it can take a really long time (hours, days) to complete - which slows down iterative improvements to the overall application.
+
+#### Impact
+
+A reliable and speedy RAG pipeline is important because the _real_ value-add to the user of introducing an LLM as an advisor is to **supplement LLMs with _human-driven_ subject matter expertise**. This expertise is applied via curation of [sources](./../web-scraper/SOURCES/), architectural design [taxonomies](./../advisor-ui/content/), and [system prompt](https://github.com/julie-ng/aks-architect-llm-system-prompt).
 
 ## Why Temporal?
 
 The initial reasoning was to speed up the RAG pipeline. At the capstone stage, the pipeline was already relatively stable thanks to self-throttling via `sleep`s.
 
-### Previous Pipeline
+> [!IMPORTANT]
+> Much of the design, most notable in diagrams and infra as code includes granular Lambda functions to parallelize workers to speed up the pipeline. That hypothesis was proven wrong and **Lambdas were _not needed_, and thus not implemented**. But it is still scattered around code base as of 18 July 2026.
+> 
+> For demo and for production, a single monolithic worker produces most cost-efficient results.
+
+## Before – Previous Pipeline
 
 It worked. But it was slow.
 
@@ -48,68 +59,17 @@ This project initially crawled the Microsoft Docs and found ca. 700 pages (out o
 
 At Bootcamp finish, the pipeline status:
 
-- **Sources shortened to ca. 143 documents** listed in [`/web-scraper/SOURCES/`](./../../web-scraper/SOURCES/).
-- Documents were 
-  - chunked by splitting markdown on headings (deterministic — no model)
-  - tagged with `gemma3:4b` (Ollama)
-  - embedded with `nomic-embed-text` (Ollama, 768-dim)
-  - in vectors, which were saved in DB (`pgvector/pgvector:pg17` container)
+…
 
+## After – Temporalized Pipeline
 
-Old CLI, local disk and [ollama](https://ollama.com/) driven RAG pipeline in `./rag-pipeline/` still works
+Newer Temporal + AWS driven workflows live in [`./rag-pipeline/workflows/`](.), but still use a few methods from the old python files.
 
-### Temporalized Pipeline
-
-
-Newer Temporal + AWS driven workflows live in `./rag-pipeline/workflows/`, but still use a few methods from the old python files.
-
-```mermaid
-flowchart LR
-  subgraph pipeline["RAG Pipeline — Temporal.io"]
-    direction LR
-    chunk["chunk"] -->|"chunks.jsonl"| tag["tag"] -->|"tagged_chunks.jsonl"| embed["embed"]
-    s3[("S3 · hand-off")]
-  end
-
-  subgraph shared["Shared — Bedrock + DB"]
-    direction TB
-    nova["Nova Micro<br/>(tagging)"]
-    bedrock["Titan Text Embeddings V2 · 1024-dim<br/>(embeddings)"]
-    db[("RDS Postgres<br/>+ pgvector")]
-  end
-
-  s3 -->|"*.json sources"| chunk
-  tag -->|"classify tags"| nova
-  embed -->|embed| bedrock
-  embed -->|"1024-dim vectors"| db
-
-  classDef awsBox fill:#ff9900,color:#000,stroke:#232f3e;
-  classDef storageBox fill:#e91e63,color:#fff,stroke:#880e4f;
-  classDef aiBox fill:#1e88e5,color:#fff,stroke:#0d47a1;
-  class chunk,tag,embed awsBox;
-  class s3,db storageBox;
-  class nova,bedrock aiBox;
-  style shared fill:#f0f0f0,stroke:#bdbdbd,color:#000;
-```
-
-The offline pipeline (chunk → tag → embed → load) is orchestrated with
-[Temporal](https://temporal.io). Each stage is a workflow; model calls and I/O are activities.
-
-```
-sources (S3) → chunk → tag (Bedrock Nova) → embed (Bedrock Titan) → load (Postgres/pgvector)
-```
-
-**Why:** the pipeline is long-running, makes thousands of rate-limited API calls, and is re-run
-often by engineers tuning RAG quality. Temporal doesn't make it faster (concurrency does that,
-and AWS quotas cap the speed) — it makes hitting the rate limit a **non-event**: retries, backoff,
-and durable resume survive throttling, crashes, and even a laptop sleeping mid-run.
-
-## Architecture
+### Workflow Architecture
 
 Each stage reads the previous stage's shards from S3 and writes its own, so bulk data
 never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is a
 recovery variant that runs `load_vectors` alone against existing `vectors/` — no re-embed.
-
 
 ```
 PipelineWorkflow(run_id)              parent — one run_id, chains children
@@ -120,11 +80,17 @@ PipelineWorkflow(run_id)              parent — one run_id, chains children
 LoadVectorsWorkflow    → load_vectors               re-load S3 vectors, no re-embed (recovery)
 ```
 
-### Runtime flow over time — fan-out and retry
+- Each stage is a workflow
+- Model calls and I/O are activities.
 
-Tag and embed **fan out** (bounded concurrency, drawn as collections); `load_vectors` is
-a **single serialized writer**. A throttle just triggers the RetryPolicy's backoff — the
-durability point: hitting the rate limit is a non-event, not a failure.
+### Pipeline Runs — Fan-out and Retry
+
+This squence diagram illustrates how the child workflows and activities are executed. Note:
+
+- The `tag` and `embed` stages **fan out** (bounded concurrency, drawn as collections)
+- `load_vectors` is a **_single_ serialized writer**
+- An API throttle just triggers the RetryPolicy's backoff
+- the durability point: hitting the rate limit is a non-event, not a failure
 
 ```mermaid
 sequenceDiagram
@@ -159,20 +125,35 @@ sequenceDiagram
     E-->>P: rows loaded
 ```
 
-Design decisions:
+### Design decisions:
 
-- **Per-stage workflows, independently startable** — re-tag without re-chunk, etc. Keeps each
-  workflow's event history separate (well under Temporal's 50K-event limit).
-- **Data by reference, never through payloads** — shards live in S3; workflows pass only small
-  values (run_id, index, counts). Bulk data through a payload hits the 2 MB limit.
-- **Producer owns sharding** — each stage writes fan-out-ready shards the next reads directly.
-- **Task queues split by throttled resource:** `bedrock-queue` (tag+embed, rate-limited),
-  `db-queue` (`max_concurrent_activities=1` — enforces single-writer), `default` (cheap/local).
-- **Per-activity RetryPolicy by failure nature:** bedrock 8 attempts + backoff (throttles are
-  transient; `ValidationException` non-retryable); db-load 2 (idempotent TRUNCATE+reload);
-  local 3 (missing artifact = real; bounded, not Temporal's unlimited default).
-- **Bounded fan-out + early abort** — a per-stage `Semaphore` caps concurrency (tuned per quota);
-  a failure counter aborts the stage past `max(20, 2%)`.
+- **Per-stage workflows, independently startable** 
+  - re-tag without re-chunk, etc. Keeps each workflow's event history separate (well under Temporal's 50K-event limit).
+
+- **Data by reference, never through payloads**
+  - shards live in S3. 
+  - workflows pass only small values (run_id, index, counts). 
+  - Bulk data through a payload hits the 2 MB limit.
+
+- **Producer owns sharding** 
+  - each stage writes fan-out-ready shards the next reads directly.
+  
+- **Task queues split by throttled resource:** 
+  - `bedrock-queue` (tag+embed, rate-limited)
+  - `db-queue` (`max_concurrent_activities=1` — enforces single-writer)
+  - `default` (cheap/local).
+  
+- **Per-activity RetryPolicy by failure nature:** 
+  - bedrock 8 attempts + backoff throttles are transient; 
+  - `ValidationException` non-retryable; 
+  - db-load 2 (idempotent TRUNCATE+reload);
+  - local 3 (missing artifact = real; bounded, not Temporal's unlimited default).
+
+- **Bounded fan-out + early abort** 
+  - a per-stage `Semaphore` caps concurrency 
+  - concurrency tuned per quot
+  - a failure counter aborts the stage past `max(20, 2%)` – protect the database
+
 - **Single serialized DB load (Option A)** — `TRUNCATE → DROP HNSW → bulk COPY → REBUILD HNSW`.
   Building the index once (not per-insert) keeps the small RDS instance from saturating I/O. The
   load streams a binary `COPY` fed by a bounded 20-way S3 read-ahead window: reads parallelize,
