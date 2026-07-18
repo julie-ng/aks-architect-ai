@@ -24,13 +24,25 @@ from config import config as cfg
 _s3_client = None
 
 
+# Activities read/write shards with a 20-way thread pool (chunk_documents, load_vectors);
+# boto3's default connection pool is 10, so the extra ~10 connections per wave were being
+# created-then-discarded (harmless but wasteful "Connection pool is full" warnings). Size the
+# pool above our S3 concurrency so connections are reused, not churned.
+_S3_MAX_POOL_CONNECTIONS = 32
+
+
 def _s3():
     """Lazily create (and cache) the boto3 S3 client. Only imported/used for s3."""
     global _s3_client
     if _s3_client is None:
         import boto3
+        from botocore.config import Config
 
-        _s3_client = boto3.client("s3", region_name=cfg.aws_region)
+        _s3_client = boto3.client(
+            "s3",
+            region_name=cfg.aws_region,
+            config=Config(max_pool_connections=_S3_MAX_POOL_CONNECTIONS),
+        )
     return _s3_client
 
 
