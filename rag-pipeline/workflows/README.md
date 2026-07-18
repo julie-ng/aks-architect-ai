@@ -140,13 +140,11 @@ CloudWatch Logs Insights when workers move to AWS).
 
 **Speed is concurrency, not Temporal:**
 
-| Stage | Sequential | Fan-out | Note |
+| Stage | Sequential | Fan-out | Performance constraint |
 |---|---|---|---|
-| Chunk | ~15 min* | **16.6 s** | parallel S3 I/O (thread pool), not Temporal |
+| Chunk | 14m 43s | **16.6 s** | parallel S3 I/O (thread pool), not Temporal |
 | Tag | 36m 22s | **9m 21s** | concurrency, quota-capped |
-| Embed + load | 17m 27s | fan-out + **~14 min** load | DB load is a serial floor |
-
-\* projected from measured S3-put rate.
+| Embed + Load Vectors | 17m 27s | fan-out + **~14 min** load | DB load is a serial floor |
 
 **The rate limit is the ceiling, not compute.** Bedrock quotas are not adjustable on-demand:
 Nova 400 RPM (a ~7.6 min hard floor for 3040 chunks), Titan 300K TPM. The tag run at concurrency
