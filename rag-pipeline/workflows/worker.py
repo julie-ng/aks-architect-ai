@@ -14,6 +14,8 @@ Run: `AWS_PROFILE=process uv run python -m workflows.worker`
 
 import asyncio
 import concurrent.futures
+import logging
+import signal
 
 from temporalio.client import Client
 from temporalio.worker import Worker
@@ -33,6 +35,8 @@ from workflows.tag.activities.tag_shard import tag_shard
 from workflows.tag.workflow import TaggingWorkflow
 
 ALL_WORKFLOWS = [PipelineWorkflow, ChunkWorkflow, TaggingWorkflow, EmbedWorkflow, LoadVectorsWorkflow]
+
+logger = logging.getLogger("workflows.worker")
 
 
 async def main() -> None:
@@ -72,12 +76,24 @@ async def main() -> None:
         max_concurrent_activities=1,
     )
 
+    # Graceful shutdown: SIGINT (Ctrl-C) and SIGTERM (kill / container/Lambda stop) set the
+    # same Event. Exiting the `async with` drains each worker's in-flight activities before
+    # its poller stops; per-activity resources (e.g. load_vectors' DB connection) are freed
+    # in their own `finally`. This replaces `await asyncio.Future()`, which let a bare Ctrl-C
+    # unwind as an uncaught KeyboardInterrupt traceback.
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop.set)
+
     print(f"Workers running on {cfg.temporal_address} (ns={cfg.temporal_namespace}):")
     print(f"  {DEFAULT_QUEUE}: workflows + chunk/manifest")
     print(f"  {BEDROCK_QUEUE}: tag_shard, embed_shard")
     print(f"  {DB_QUEUE}: load_vectors (single writer)")
     async with default_worker, bedrock_worker, db_worker:
-        await asyncio.Future()  # run until cancelled
+        await stop.wait()
+        logger.info("shutdown signal received — draining in-flight activities")
+    logger.info("workers stopped cleanly")
 
 
 if __name__ == "__main__":
