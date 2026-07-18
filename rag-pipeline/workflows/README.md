@@ -112,8 +112,11 @@ Design decisions:
   local 3 (missing artifact = real; bounded, not Temporal's unlimited default).
 - **Bounded fan-out + early abort** — a per-stage `Semaphore` caps concurrency (tuned per quota);
   a failure counter aborts the stage past `max(20, 2%)`.
-- **Single serialized DB load (Option A)** — `TRUNCATE → DROP HNSW → batched INSERT → REBUILD
-  HNSW`. Building the index once (not per-insert) keeps the small RDS instance from saturating I/O.
+- **Single serialized DB load (Option A)** — `TRUNCATE → DROP HNSW → bulk COPY → REBUILD HNSW`.
+  Building the index once (not per-insert) keeps the small RDS instance from saturating I/O. The
+  load streams a binary `COPY` fed by a bounded 20-way S3 read-ahead window: reads parallelize,
+  the COPY writer stays single-threaded (the window bounds worker memory; the `db-queue`
+  single-writer bounds Postgres write concurrency — separate concerns).
 
 ## Running locally
 
@@ -144,7 +147,13 @@ CloudWatch Logs Insights when workers move to AWS).
 |---|---|---|---|
 | Chunk | 14m 43s | **16.6 s** | parallel S3 I/O (thread pool), not Temporal |
 | Tag | 36m 22s | **9m 21s** | concurrency, quota-capped |
-| Embed + Load Vectors | 17m 27s | fan-out + **~14 min** load | DB load is a serial floor |
+| Embed + Load Vectors | 17m 27s | fan-out + **15.6 s** load | 13m 55s (executemany) → 15.6 s (COPY + parallel reads) |
+
+**The DB load: the bottleneck moved twice.** The load started at 13m 55s (`executemany`).
+Switching to binary `COPY` alone barely helped (~12m 57s) — because the real cost was no longer
+the DB write but **3040 sequential S3 reads** (~25 s per 100 shards). Parallelizing those reads
+(a bounded 20-way read-ahead) removed that floor: **13m 55s → 15.6 s, ~53×**. The lesson is to
+measure where time actually goes, not where you assume it does.
 
 **The rate limit is the ceiling, not compute.** Bedrock quotas are not adjustable on-demand:
 Nova 400 RPM (a ~7.6 min hard floor for 3040 chunks), Titan 300K TPM. The tag run at concurrency
@@ -163,8 +172,5 @@ more compute — more workers/Lambda would only throttle harder.
 
 ## Next steps
 
-- **DB load ~14 min** (single-writer floor). Switch `executemany` → Postgres `COPY` (~3-5 min);
-  wrinkle is COPY serialization of the `vector(1024)` / `jsonb` / `timestamptz` columns.
-- **`load_vectors` heartbeating** — moot once workers run on non-sleeping infra.
 - **Phase 4:** workers → Lambda + Temporal Cloud. Lambda's value is scale-to-zero cost,
   not speed (bottlenecks are AWS quotas + a single DB). ~$0.50 for a full day of scale testing.
