@@ -121,9 +121,13 @@ def list_keys(prefix: str) -> list[str]:
     s3: object keys under the prefix (paginated).
     """
     if cfg.storage_backend == "s3":
+        # S3 Prefix is a literal STRING match, not a folder match: Prefix="sources"
+        # also matches "sources-sample/..." (sources is a string-prefix of it). Normalize
+        # to a trailing slash so we only list the intended "folder".
+        s3_prefix = prefix if prefix.endswith("/") else f"{prefix}/"
         keys: list[str] = []
         paginator = _s3().get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=_require_bucket(), Prefix=prefix):
+        for page in paginator.paginate(Bucket=_require_bucket(), Prefix=s3_prefix):
             keys.extend(obj["Key"] for obj in page.get("Contents", []))
         return sorted(keys)
 
