@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 from app.config import Settings
@@ -11,11 +12,30 @@ def _make_row(score, payload):
 
 class TestEmbedQuery:
     @patch("app.services.retrieval.ollama")
-    def test_returns_embedding(self, mock_ollama):
+    def test_returns_embedding_ollama(self, mock_ollama):
         mock_ollama.embeddings.return_value = {"embedding": [0.1, 0.2, 0.3]}
-        result = embed_query("test question", "nomic-embed-text", "search_query: ")
+        settings = Settings(
+            embedding_provider="ollama",
+            embedding_model="nomic-embed-text",
+            embedding_prefix="search_query: ",
+        )
+        result = embed_query("test question", settings)
         assert result == [0.1, 0.2, 0.3]
         mock_ollama.embeddings.assert_called_once_with(model="nomic-embed-text", prompt="search_query: test question")
+
+    @patch("app.services.retrieval._get_bedrock_client")
+    def test_returns_embedding_bedrock(self, mock_get_client):
+        body = MagicMock()
+        body.read.return_value = json.dumps({"embedding": [0.4, 0.5, 0.6]})
+        mock_get_client.return_value.invoke_model.return_value = {"body": body}
+        settings = Settings(
+            embedding_provider="bedrock",
+            embedding_model="amazon.titan-embed-text-v2:0",
+            embedding_vector_dim=1024,
+        )
+        result = embed_query("test question", settings)
+        assert result == [0.4, 0.5, 0.6]
+        mock_get_client.return_value.invoke_model.assert_called_once()
 
 
 class TestBuildFilterClause:

@@ -1,11 +1,30 @@
 import json
 import math
 
+import boto3
 import ollama
 from psycopg import Connection
 from psycopg.rows import dict_row
 
 from app.config import Settings
+
+# One module-level Bedrock client — boto3 clients are thread-safe and reused across
+# calls. Region comes from settings; credentials from the standard chain (AWS_* env
+# vars locally and on Vercel, an instance role on App Runner). Lazily created so the
+# ollama-only path never requires AWS.
+_bedrock_client = None
+
+
+def _get_bedrock_client(region: str):
+    """Return the shared Bedrock runtime client, creating it on first use.
+
+    @param region: AWS region for the bedrock-runtime endpoint
+    @returns: A cached boto3 bedrock-runtime client
+    """
+    global _bedrock_client
+    if _bedrock_client is None:
+        _bedrock_client = boto3.client("bedrock-runtime", region_name=region)
+    return _bedrock_client
 
 SEARCH_SQL = """
     SELECT id::text, text, url, title, description, source_name, priority, tags,
@@ -17,10 +36,32 @@ SEARCH_SQL = """
 """
 
 
-def embed_query(question: str, model: str, prefix: str) -> list[float]:
-    """Embed a question string using Ollama."""
-    response = ollama.embeddings(model=model, prompt=prefix + question)
-    return response["embedding"]
+def embed_query(question: str, settings: Settings) -> list[float]:
+    """Embed a question string, using Bedrock Titan or Ollama per settings.
+
+    Titan takes raw text (no prefix) and must match the offline pipeline's Titan
+    call so query and document vectors share an embedding space. The ollama path
+    keeps the nomic-style `embedding_prefix` for local offline dev.
+
+    @param question: The user question to embed
+    @param settings: Runtime settings (provider, model, region, dim, prefix)
+    @returns: The embedding vector
+    """
+    if settings.embedding_provider == "bedrock":
+        client = _get_bedrock_client(settings.aws_region)
+        body = json.dumps(
+            {
+                "inputText": question,
+                "dimensions": settings.embedding_vector_dim,
+                "normalize": True,
+            }
+        )
+        response = client.invoke_model(modelId=settings.embedding_model, body=body)
+        payload = json.loads(response["body"].read())
+        return payload["embedding"]
+    else:
+        response = ollama.embeddings(model=settings.embedding_model, prompt=settings.embedding_prefix + question)
+        return response["embedding"]
 
 
 def build_filter_clause(filters: dict[str, str | list[str]]) -> tuple[str, dict]:
@@ -92,7 +133,7 @@ def retrieve(
     filters: dict[str, str | list[str]] | None = None,
 ) -> list[dict]:
     """High-level: embed question, search pgvector, re-rank by priority, return results."""
-    vector = embed_query(question, settings.embedding_model, settings.embedding_prefix)
+    vector = embed_query(question, settings)
 
     # Fetch extra candidates so re-ranking has a larger pool
     fetch_k = settings.retrieval_top_k * 3

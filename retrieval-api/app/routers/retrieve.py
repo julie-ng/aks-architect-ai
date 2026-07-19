@@ -31,6 +31,7 @@ def retrieve_endpoint(
         settings.reformulation_temperature,
         req.design_context,
         settings.reformulation_provider,
+        settings.aws_region,
     )
     logger.info("[retrieve] reformulated: %s", reformulated)
 

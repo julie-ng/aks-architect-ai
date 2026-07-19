@@ -1,4 +1,5 @@
 import anthropic
+import boto3
 import ollama
 
 REFORMULATION_PROMPT = """\
@@ -22,6 +23,7 @@ def reformulate_query(
     temperature: float = 0.1,
     design_context: str | None = None,
     provider: str = "ollama",
+    aws_region: str = "eu-west-1",
 ) -> str:
     """Rewrite a user question into a better retrieval query.
 
@@ -45,7 +47,18 @@ def reformulate_query(
             messages.extend(history)
         messages.append({"role": "user", "content": question})
 
-        if provider == "anthropic":
+        if provider == "bedrock":
+            # Nova via the Converse API. System is a separate top-level field; the
+            # cross-region eu.* inference profile id is required in eu-west-1.
+            client = boto3.client("bedrock-runtime", region_name=aws_region)
+            response = client.converse(
+                modelId=model,
+                system=[{"text": system_content}],
+                messages=[{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages],
+                inferenceConfig={"temperature": temperature, "maxTokens": 256},
+            )
+            return response["output"]["message"]["content"][0]["text"].strip()
+        elif provider == "anthropic":
             client = anthropic.Anthropic()
             response = client.messages.create(
                 model=model,
