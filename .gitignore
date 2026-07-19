@@ -23,7 +23,9 @@ web-scraper/SOURCES_FRAMEWORK.yaml
 rag-pipeline/*.jsonl
 
 # Config
-.env
+.env*
+!.env.sample
+!.env.config
 
 # local dev server
 temporal_server.db
