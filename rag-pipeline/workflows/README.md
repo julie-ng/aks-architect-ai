@@ -47,6 +47,17 @@ A reliable and speedy RAG pipeline is important because the _real_ value-add to 
 
 ## How to Demo
 
+Running the demo requires:
+
+1. [Deploying AWS Infrastructure](./../../infrastructure/)
+  - Database
+  - IAM roles and policies
+2. Configuring your environment (expand instructions below)
+3. [Temporal Dev Server](https://docs.temporal.io/cli/command-reference/server)
+
+<details>
+  <summary>View Full instructions</summary>
+
 ### Step 1 - Deploy AWS Infrastructure
 
 This demo requires AWS Bedrock and S3. Go to [/infrastructure/](./../../infrastructure/) and follow instructions and scripts to:
@@ -147,7 +158,6 @@ Overview of all stages
 | `embed` | [`EmbedWorkflow`](./embed/workflow.py) | Fan-out: Titan embeds each shard, then loads vectors to Postgres |
 | `load-vectors` | [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py) | Re-load existing S3 vectors into Postgres, no re-embed (recovery stage) |
 
----
 
 #### Fast iteration
 
@@ -160,6 +170,7 @@ export SOURCES_PREFIX=sources-sample  # restart worker to pick up; runs in secon
 
 > [!IMPORTANT]
 > First upload a sample of the `/sources/` *.json files into S3 with the `sources-sample/` prefix.
+</details>
 
 ## Why Temporal?
 
