@@ -110,7 +110,7 @@ never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is 
 recovery variant that runs `load_vectors` alone against existing `vectors/` — no re-embed.
 
 ```
-PipelineWorkflow(run_id)              parent — one run_id, chains children
+PipelineWorkflow(run_id)                            parent — one run_id, chains children
 ├── ChunkWorkflow      → chunk_documents            reads S3 sources → chunk shards + manifest
 ├── TaggingWorkflow    → tag_shard(run_id, i)       fan-out: Nova → tagged/{i}.json
 └── EmbedWorkflow      → embed_shard(run_id, i)     fan-out: Titan → vectors/{i}.json
