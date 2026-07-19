@@ -1,6 +1,6 @@
 # RAG Pipeline with [Temporal](https://temporal.io/)
 
-_This `spike/temporal` branch explores migrating the app's original RAG pipeline to use temporal to optimize for speed._
+_This `spike/temporal` branch explores migrating the app's original RAG pipeline to use Temporal to optimize for speed._
 
 > [!IMPORTANT]
 > Much of the design, most notable in diagrams and infra as code includes granular Lambda functions to parallelize workers to speed up the pipeline. That hypothesis was proven wrong and **Lambdas were _not needed_, and thus not implemented**. But it is still scattered around code base as of 18 July 2026.
@@ -21,9 +21,9 @@ To help navigate a large monorepo, these are important deep links to files/direc
 
 ## Executive Summary
 
-The initial reasoning was to speed up the original sequential, single worker RAG pipeline from ~1 hour to minutes by leveraging a combination Temporal and parallelized workers deployed to AWS Lambda functions. 
+The initial reasoning was to speed up the original sequential, single worker RAG pipeline from ~1 hour to minutes by leveraging a combination of Temporal and parallelized workers deployed to AWS Lambda functions. 
 
-The migration revealed however, although we reduced the pipeline down to ~30 minutes, **most gains were from fan-outs as concurrency was capped by AWS LLM rate limits**. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last actvity/shard failed, instead of re-runing the entire pipeline.
+The migration revealed however, although we reduced the pipeline down to ~30 minutes, **most gains were from fan-outs as concurrency was capped by AWS LLM rate limits**. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last activity/shard failed, instead of re-running the entire pipeline.
 
 Temporal doesn't speed up the pipeline. More importantly, it speeds up pipeline _iterations_, e.g. fine-tuning, which is the strongest driver of quality improvement after a data set has been exhausted.
 
@@ -36,11 +36,11 @@ The running AI chat application demonstrates the added-value of this RAG pipelin
 | Chat UI | Debug UI |
 |:--|:--|
 | <img src="./../../docs/screenshots/app-preview.png" alt="App preview" width="400"> | <img src="./../../docs/screenshots/retrieval-api.png" alt="UI for testing Retrieval" width="320"> |
-| LLM responses (including recommendations) are grounded in offiical Microsoft documentation. | For debugging, users can test how queries and reformulation surface different references based on scores. |
+| LLM responses (including recommendations) are grounded in official Microsoft documentation. | For debugging, users can test how queries and reformulation surface different references based on scores. |
 
 ### Anatomy of a RAG pipeline
 
-Broadly speaking, our RAG pipeline has the follwowing stages:
+Broadly speaking, our RAG pipeline has the following stages:
 
 | Stage | Input | Output | Description |
 |:--|:--|:--|:--|
@@ -64,13 +64,13 @@ A reliable and speedy RAG pipeline is important because the _real_ value-add to 
 This specific pipeline converts official Microsoft documentation into a data-format so that an LLM can use [retrieval-api](./../../retrieval-api/) to fetch relevant content chunks to ground its responses. Basically:
 
 - **Pre-requisite: Scraped Docs**  
-  After [`/web-scraper/`](./../../web-scraper/), has already scraped the official docs as fined in [`SOURCES`](./../../web-scraper/SOURCES) and outputs JSON format that includes the article contents as markdown. See example [sources/000000042.json](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/sources/000000042.json) 
+  After [`/web-scraper/`](./../../web-scraper/), has already scraped the official docs as defined in [`SOURCES`](./../../web-scraper/SOURCES) and outputs JSON format that includes the article contents as markdown. See example [sources/000000042.json](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/sources/000000042.json) 
 
 - **Chunking Stage**  
   Deterministic workflow that splits the markdown by headings, e.g. `###`
 
 - **Tagging Stage**  
-  The chunks are tagged according to a [an AKS design framework taxonomy](./../#design-framework-taxonomy), which results in something like this after tagging stage:
+  The chunks are tagged according to [an AKS design framework taxonomy](./../#design-framework-taxonomy), which results in something like this after tagging stage:
   ```json
   {
     "source_name": "landing-zone-accelerator",
@@ -105,7 +105,7 @@ Once in the database, the chunks are surfaced via queries through the [retrieval
 
 ## Workflow Design
 
-I started by mapping the existing pipeline onto Temporal 1:1 
+I started by mapping the existing pipeline onto Temporal 1:1:
 
 - Each stage became a workflow.
 - Every model call and I/O became an activity.
@@ -119,15 +119,15 @@ A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`.
 | Child | [`TaggingWorkflow`](./tag/workflow.py) | 20m 17s | 20,846 |
 | Child | [`EmbedWorkflow`](./embed/workflow.py) | 9m 52s | 20,651 |
 
-Additionally, there is an standalone [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py) to recover from a database bottleneck without re-embedding over 3,000 chunks.
+Additionally, there is a standalone [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py) to recover from a database bottleneck without re-embedding over 3,000 chunks.
 
 ### Event Limits
 
 Temporal workflows have 50k event history limit.
 
-- **Capstone Dataset: 143 documents** - Splitting the stages into separate child workflows keeps each event history small, well under the limit.
+- **Capstone Dataset: 143 documents** — Splitting the stages into separate child workflows keeps each event history small, well under the limit.
 
-- **Original Dataset: 700+ documents** would exceed the limit. It is solvable with [`Continue-As-New`](https://docs.temporal.io/workflow-execution/continue-as-new), but out of scope of this spike.
+- **Original Dataset: 700+ documents** would exceed the limit. It is solvable with [`Continue-As-New`](https://docs.temporal.io/workflow-execution/continue-as-new), but out of scope for this spike.
 
 ### Queue Design
 
