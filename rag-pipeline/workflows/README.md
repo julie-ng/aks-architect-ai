@@ -225,7 +225,7 @@ Migrating to Temporal was also an exercise in finding where the time actually we
 
 The spike started out designed for one Lambda per workflow. But once the bottlenecks turned out to be AWS quotas and a single DB — not compute — that granularity bought nothing. A **single monolithic worker** is the most performant *and* cheapest option, so the planned Lambda architecture isn't needed. The stale Lambda scaffolding still lingers in the diagrams and IaC (see the note at the top).
 
-## Durability
+## Durability – Where Temporal Actually Pays Off
 
 If the speed-up was concurrency, why Temporal? Because everything above was only *possible* — and *survivable* — thanks to what Temporal gives out of the box. Three things earned it, each from a real incident on this project.
 
@@ -251,7 +251,7 @@ Temporal's event history is **how we found the tuning**:
 - It surfaced all 54 throttles, their retry counts, and which shards backed off — that's what revealed we were 5× over the Nova quota and pointed us to concurrency=3.
 - Without that visibility, the sequential loop's `[2623/3040]` print told us nothing about *why* it stalled.
 
-## Conclusion
+## Conclusion – Focus on Quality, not Speed
 
 This was already a working pipeline, so my instinct was "if it isn't broken, don't fix it". But the RAG pipeline **is** the value-add — without it, this AKS advisor is just a chat with a good LLM. The difference is **human-curated guidance** grounded in scattered official docs.
 
