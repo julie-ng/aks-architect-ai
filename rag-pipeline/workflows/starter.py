@@ -14,10 +14,8 @@ import argparse
 import asyncio
 from datetime import datetime, timezone
 
-from temporalio.client import Client
-
-from config import config as cfg
 from workflows.chunk.workflow import ChunkWorkflow
+from workflows.client import connect_client
 from workflows.embed.load_vectors_workflow import LoadVectorsWorkflow
 from workflows.embed.workflow import EmbedWorkflow
 from workflows.pipeline.workflow import PipelineWorkflow
@@ -47,7 +45,7 @@ async def main() -> None:
     run_id = args.run_id or _new_run_id()
     wf = STAGES[args.stage]
 
-    client = await Client.connect(cfg.temporal_address, namespace=cfg.temporal_namespace)
+    client = await connect_client()
     print(f"Starting {args.stage} workflow, run_id={run_id}")
     handle = await client.start_workflow(
         wf.run,

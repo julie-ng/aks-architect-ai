@@ -33,6 +33,8 @@ class Config:
     # backoff) and stage/queue split are architectural (in workflows/shared.py).
     temporal_address: str
     temporal_namespace: str
+    temporal_api_key: str
+    temporal_build_id: str
     temporal_bedrock_queue: str
     temporal_db_queue: str
     temporal_default_queue: str
@@ -79,6 +81,13 @@ config_defaults = Config(
     # are the tunable knobs (Semaphore is the primary throttle-avoidance lever).
     temporal_address="localhost:7233",
     temporal_namespace="default",
+    # Empty for local dev (no auth). Set for Temporal Cloud → TLS auto-enables
+    # in worker.py/starter.py when this is non-empty (API-key auth, no cert files).
+    temporal_api_key="",
+    # Worker code-version stamp, recorded on each task for observability (Cloud UI).
+    # Set to the deploying git hash. Empty → SDK auto-computes a checksum. This is
+    # metadata only; it does NOT enable deployment-based task routing.
+    temporal_build_id="",
     temporal_bedrock_queue="bedrock-queue",
     temporal_db_queue="db-queue",
     temporal_default_queue="default",
@@ -116,6 +125,8 @@ config = Config(
     sources_prefix=os.environ.get("SOURCES_PREFIX", config_defaults.sources_prefix),
     temporal_address=os.environ.get("TEMPORAL_ADDRESS", config_defaults.temporal_address),
     temporal_namespace=os.environ.get("TEMPORAL_NAMESPACE", config_defaults.temporal_namespace),
+    temporal_api_key=os.environ.get("TEMPORAL_API_KEY", config_defaults.temporal_api_key),
+    temporal_build_id=os.environ.get("TEMPORAL_WORKER_BUILD_ID", config_defaults.temporal_build_id),
     temporal_bedrock_queue=os.environ.get("TEMPORAL_BEDROCK_QUEUE", config_defaults.temporal_bedrock_queue),
     temporal_db_queue=os.environ.get("TEMPORAL_DB_QUEUE", config_defaults.temporal_db_queue),
     temporal_default_queue=os.environ.get("TEMPORAL_DEFAULT_QUEUE", config_defaults.temporal_default_queue),
