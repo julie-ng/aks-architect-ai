@@ -1,36 +1,24 @@
 services:
-  postgres:
-    image: pgvector/pgvector:pg17
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-
   retrieval-api:
     env_file:
       - path: retrieval-api/.env.retrieval-api.sample
         required: true
-      - path: .env.provider.ollama
+      - path: .env.provider.aws
+        required: true
+      - path: .env.demo
         required: true
     build: retrieval-api
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
-    depends_on:
-      - postgres
     volumes:
       - ./retrieval-api/app:/workspace/app
     environment:
       APP_ENVIRONMENT: development
       CORS_ORIGINS: '["http://localhost:3000"]'
-      # Assembled from the postgres service parts (overrides the blank sample default).
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      OLLAMA_HOST: http://host.docker.internal:11434
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -38,7 +26,9 @@ services:
     env_file:
       - path: advisor-ui/.env.advisor-ui.sample
         required: true
-      - path: .env.provider.ollama
+      - path: .env.provider.vercel
+        required: true
+      - path: .env.demo
         required: true
     build:
       context: advisor-ui
@@ -48,18 +38,15 @@ services:
       - "24678:24678" # Nuxt HMR websocket
     depends_on:
       - retrieval-api
-      - postgres
     volumes:
       - ./advisor-ui:/workspace
       - advisor_ui_node_modules:/workspace/node_modules
     environment:
+      NUXT_DATABASE_URL: ${DATABASE_URL} # currently shared
       NUXT_APP_ENVIRONMENT: development
-      NUXT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NUXT_RETRIEVAL_API_HOST: http://retrieval-api:8000
-      NUXT_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:
-  postgres_data:
   advisor_ui_node_modules:

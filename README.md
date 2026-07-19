@@ -58,6 +58,69 @@ Models are configurable per environment via `AI_PROVIDER` env var.
 > [!TIP]
 > Ultimately switched all runtime models to Anthropic for performance and quality reasons. For chat `gemma3:4b` (largest my M3 MacBook Pro can run comfortably) was fine with RAG and citing sources. But it couldn't properly follow directions in long system prompt (~10k tokens) and tools.
 
+## Environment Configuration
+
+Configuration is layered into three kinds of files so that **non-secret defaults live in git** while **secrets and provider choice stay out of it**.
+
+### The three layers
+
+| Layer | File(s) | In git? | Holds |
+|:--|:--|:--|:--|
+| **1. Service defaults** | `<service>/.env.<service>.sample` | ✅ committed | Every env var a service reads, with sensible defaults; provider-specific + secret vars left blank |
+| **2. Provider override** | `.env.provider.{aws,ollama,anthropic,vercel}` | ✅ committed | Model ids / dims / endpoints that vary by LLM backend — fills in the blanks left in layer 1 |
+| **3. Secrets** | `.env`, `.env.demo` | 🚫 gitignored | API keys, DB URL, OAuth secrets, AWS credentials |
+
+- **Service vars are exhaustively listed** in each service's `.env.<service>.sample` (e.g. [`retrieval-api/.env.retrieval-api.sample`](./retrieval-api/.env.retrieval-api.sample)). That file is the source of truth for "what does this service configure."
+- **Provider-specific values** (which embedding model, its vector dimension, the reformulation model) differ by backend, so they're pulled out into `.env.provider.*`. Swap backends by swapping which fragment you load — the service sample stays untouched.
+- **Secrets never enter git.** Keep them in a gitignored `.env` (or `.env.demo`) with real values; the committed samples leave those fields blank.
+
+### How they combine (later wins)
+
+Env files are applied **in order, and later files override earlier ones** — so you stack general → specific → secret. To run a service locally outside Docker:
+
+```bash
+source ./retrieval-api/.env.retrieval-api.sample   # 1. service defaults (blanks for provider + secrets)
+source ./.env.provider.aws                         # 2. fills provider blanks (Titan embed, Nova reformulation)
+source ./.env.demo                                 # 3. fills secrets (DB URL, AWS creds)
+uv run uvicorn app.main:app                        # now fully configured
+```
+
+### AWS credentials (when using the `aws` provider)
+
+`.env.provider.aws` sets the Bedrock **models**, but the AWS **credentials** are secrets resolved from your SSO session / profile. Export them into the three `AWS_*` env vars — Compose then injects them into the containers (the same shape Vercel/Lambda would use in prod):
+
+```bash
+export $(aws configure export-credentials --profile process --format env-no-export)
+```
+
+> [!WARNING]
+> SSO credentials include an `AWS_SESSION_TOKEN` that **expires** (hours). When Bedrock calls start returning auth/expired-token errors mid-session, re-run the command. Production IAM-user keys omit the session token and don't expire.
+
+### With Docker Compose
+
+[`docker-compose.demo.yaml`](./docker-compose.demo.yaml) expresses the same layering via each service's `env_file:` list (again, **last entry wins**):
+
+```yaml
+retrieval-api:
+  env_file:
+    - path: retrieval-api/.env.retrieval-api.sample   # 1. service defaults
+      required: true
+    - path: .env.provider.aws                         # 2. provider override (Bedrock)
+      required: true
+    - path: .env.demo                                 # 3. secrets
+      required: true
+```
+
+> [!NOTE]
+> An `environment:` block in Compose overrides **all** `env_file:` entries. It's used sparingly here — e.g. `NUXT_DATABASE_URL: ${DATABASE_URL}` bridges the shared `DATABASE_URL` (from `.env.demo`) into the Nuxt-prefixed name the UI expects, so the database URL is defined once.
+
+To start the application, run:
+
+```bash
+source ./.env
+docker compose -f docker-compose.demo.yaml up --build
+```
+
 ## RAG Pipeline
 
 The pipeline grounds the LLM in official AKS documentation from [https://learn.microsoft.com](https://learn.microsoft.com)
