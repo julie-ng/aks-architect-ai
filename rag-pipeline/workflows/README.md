@@ -133,13 +133,14 @@ Temporal workflows have 50k event history limit.
 
 Work is split across three task queues **by what constrains it**, not by cost:
 
-| Queue | Runs | Why its own queue |
-|:--|:--|:--|
-| `bedrock-queue` | `tag_shard`, `embed_shard` | Rate-limited by Nova / Titan quotas |
-| `db-queue` | `load_vectors` | `max_concurrent_activities=1` enforces a single DB writer |
-| `default` | workflows + chunk/manifest | Unconstrained — no rate limit or single-writer rule |
+| Queue | Runs | Constraint | Retry Policy |
+|:--|:--|:--|:--|
+| `bedrock-queue` | [`tag_shard`](./tag/activities/tag_shard.py), [`embed_shard`](./embed/activities/embed_shard.py) | Rate-limited by Nova / Titan quotas | Backoff + retry (throttles are transient); fail fast on `ValidationException` |
+| `db-queue` | [`load_vectors`](./embed/activities/load_vectors.py) | Single writer (`max_concurrent_activities=1`) | Bounded retries (idempotent reload) |
+| `default` | workflows + [`chunk_documents`](./chunk/activities/chunk_documents.py), [`read_chunk_count`](./manifest_activity.py) | Unconstrained | Bounded retries (a missing artifact is a real bug, not Temporal's unlimited default) |
 
-Each queue also gets a `RetryPolicy` matched to its failure mode — Bedrock throttles are transient (backoff + retry), a `ValidationException` is not (fail fast), and a missing artifact is a real bug (bounded retries, not Temporal's unlimited default).
+> [!NOTE]
+> `load_vectors` is a single writer because it does a full refresh — `TRUNCATE` the `chunks` table, then bulk-load every vector. Concurrent writers would corrupt each other (e.g. one truncating mid-load of another).
 
 ### Data by Reference (S3)
 
