@@ -119,7 +119,7 @@ A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`.
 | Child | [`TaggingWorkflow`](./tag/workflow.py) | 20m 17s | 20,846 |
 | Child | [`EmbedWorkflow`](./embed/workflow.py) | 9m 52s | 20,651 |
 
-Additionally, there is a standalone [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py) to recover from a database bottleneck without re-embedding over 3,000 chunks.
+Each stage workflow is **independently startable** — you can re-tag without re-chunking. That's also why there is a standalone [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py): it recovers from a database bottleneck by re-loading existing vectors, without re-embedding over 3,000 chunks.
 
 ### Event Limits
 
@@ -150,11 +150,11 @@ Workflows pass only small values (`run_id`, shard index, counts) — **never bul
 s3://<bucket>/<run_id>/{chunks,tagged,vectors}/NNNN.json
 ```
 
-The `run_id` correlates all of a run's artifacts, and each shard file is addressable on its own — which is what makes independent re-runs and recovery possible.
+Each stage is the **producer** of its own shards — it writes fan-out-ready files the next stage reads directly, so the stages stay decoupled. The `run_id` correlates all of a run's artifacts, and each shard file is addressable on its own — which is what makes independent re-runs and recovery possible.
 
 ## Workflow Sequence
 
-The `tag` and `embed` stages **fan out** (bounded concurrency); `load_vectors` is a **single serialized writer**. An API throttle just triggers the `RetryPolicy` backoff — the run continues.
+The `tag` and `embed` stages **fan out** (bounded concurrency); `load_vectors` is a **single serialized writer** that rebuilds the pgvector HNSW (Hierarchical Navigable Small World) index once after the bulk load. An API throttle just triggers the `RetryPolicy` backoff — the run continues.
 
 ```mermaid
 sequenceDiagram
@@ -188,9 +188,6 @@ sequenceDiagram
     E->>DB: load_vectors — TRUNCATE, DROP HNSW,<br/>stream COPY, REBUILD HNSW (single writer)
     E-->>P: rows loaded
 ```
-
-- **Per-stage workflows are independently startable** — re-tag without re-chunk, etc. Each keeps its own event history (well under Temporal's 50K-event limit).
-- **The producer owns sharding** — each stage writes fan-out-ready shards the next reads directly.
 
 ## Performance
 
