@@ -194,22 +194,36 @@ sequenceDiagram
 
 ## Performance
 
-Migrating to Temporal was also an exercise in finding where the time actually went. Numbers are at **3040 chunks** (the final end-to-end run at 3496 is noted).
+Migrating to Temporal was also an exercise in finding where the time actually went. Numbers are at **3,040 chunks** (the final end-to-end run at 3,496 is noted).
 
 ### Bottlenecks
 
-- **The LLM stages are rate-limit-bound, not compute-bound.** Bedrock quotas aren't adjustable on-demand: Nova **400 RPM** (a ~7.6-min hard floor for 3040 chunks), Titan **300K TPM**. At concurrency 10, tagging exceeded Nova's RPM ~5× → **54 throttle events**.
-- **The DB load's real cost was hidden.** The load looked DB-bound at ~14 min, but the bottleneck was actually **3040 sequential S3 reads** (~25 s per 100 shards) — not the write.
+- **The LLM stages are rate-limit-bound, not compute-bound.**   
+  Bedrock quotas aren't adjustable on-demand: 
+  - Nova **400 RPM** (a ~7.6-min hard floor for 3,040 chunks)
+  - Titan **300K TPM**.  
+
+  At concurrency 10, tagging exceeded Nova's RPM ~5× → **54 throttle events**.
+- **The DB load's real cost was hidden.**   
+  The load looked DB-bound at ~14 min, but the bottleneck was actually **3,040 sequential S3 reads** (~25 s per 100 shards) — not the write.
 
 ### Solutions
 
 - **Fan-out (sharding)** collapsed the compute/IO-bound stages: chunk **~15 min → 16.6 s**.
-- **Tuning concurrency to the quota** (tag=3, embed=4) beat throwing more at it — at concurrency 3, tagging ran ~8 min near the hard floor. *Counter-intuitive: less concurrency was faster, because we stopped fighting the rate limiter.*
+- **Tuning concurrency to the quota** (tag=3, embed=4) beat throwing more at it
+  - At concurrency 3, tagging ran ~8 min near the hard floor. 
+  - Counter-intuitive: _**less** concurrency was **faster**_, because we stopped fighting the rate limiter.
 - **Binary `COPY` + 20-way parallel S3 reads** fixed the load once we saw where the time went: **13m 55s → 15.6 s (~53×)**.
 
 ### Result
 
+#### Reduced Execution Time by 50%
+
 **~1 hour → ~30 minutes** end-to-end (3496 chunks, one command, zero intervention). But almost all of that gain was **concurrency, not Temporal** — the rate limit is a floor we can't cross, and we'd have hit the same speed with plain thread pools.
+
+#### The Target Architecture Is Simpler Than Planned
+
+The spike started out designed for one Lambda per workflow. But once the bottlenecks turned out to be AWS quotas and a single DB — not compute — that granularity bought nothing. A **single monolithic worker** is the most performant *and* cheapest option, so the planned Lambda architecture isn't needed. The stale Lambda scaffolding still lingers in the diagrams and IaC (see the note at the top).
 
 ## Durability
 
