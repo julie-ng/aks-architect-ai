@@ -25,7 +25,15 @@ rag-pipeline/*.jsonl
 # Config
 .env*
 !.env.sample
-!.env.config
+
+# Provider specific model names vary - easier to spell out
+!.env.provider.aws
+!.env.provider.anthropic
+!.env.provider.vercel
+!.env.provider.ollama
+
+# Service specific samples
+!*.env.*.sample
 
 # local dev server
 temporal_server.db
