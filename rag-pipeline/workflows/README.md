@@ -103,11 +103,9 @@ Once in the database, the chunks are surfaced via queries through the [retrieval
 | Resiliency | Manual `sleep`s | Built-in retries + backoff |
 | Recovery | Start over from scratch | Resume the failed stage/shard |
 
-## Temporal Workflow Architecture
+## Workflow Design
 
-Each stage reads the previous stage's shards from S3 and writes its own, so bulk data
-never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is a
-recovery variant that runs `load_vectors` alone against existing `vectors/` — no re-embed.
+We mapped the existing pipeline onto Temporal 1:1 — **each stage became a workflow; every model call and I/O became an activity.** A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`.
 
 ```
 PipelineWorkflow(run_id)                            parent — one run_id, chains children
@@ -118,17 +116,34 @@ PipelineWorkflow(run_id)                            parent — one run_id, chain
 LoadVectorsWorkflow    → load_vectors               re-load S3 vectors, no re-embed (recovery)
 ```
 
-- Each stage is a workflow
-- Model calls and I/O are activities.
+- **Per-stage workflows are independently startable** — re-tag without re-chunk, etc. Each keeps its own event history (well under Temporal's 50K-event limit).
+- **The producer owns sharding** — each stage writes fan-out-ready shards the next reads directly.
 
-### Pipeline Runs — Fan-out and Retry
+### Queue Design
 
-This squence diagram illustrates how the child workflows and activities are executed. Note:
+Work is split across three task queues **by what constrains it**, not by cost:
 
-- The `tag` and `embed` stages **fan out** (bounded concurrency, drawn as collections)
-- `load_vectors` is a **_single_ serialized writer**
-- An API throttle just triggers the RetryPolicy's backoff
-- the durability point: hitting the rate limit is a non-event, not a failure
+| Queue | Runs | Why its own queue |
+|:--|:--|:--|
+| `bedrock-queue` | `tag_shard`, `embed_shard` | Rate-limited by Nova / Titan quotas |
+| `db-queue` | `load_vectors` | `max_concurrent_activities=1` enforces a single DB writer |
+| `default` | workflows + chunk/manifest | Unconstrained — no rate limit or single-writer rule |
+
+Each queue also gets a `RetryPolicy` matched to its failure mode — Bedrock throttles are transient (backoff + retry), a `ValidationException` is not (fail fast), and a missing artifact is a real bug (bounded retries, not Temporal's unlimited default).
+
+### Data by Reference (S3)
+
+Workflows pass only small values (`run_id`, shard index, counts) — **never bulk data**, which would blow Temporal's 2 MB payload limit. Every stage hands off through S3 instead, under a per-run prefix:
+
+```
+s3://<bucket>/<run_id>/{chunks,tagged,vectors}/NNNN.json
+```
+
+The `run_id` correlates all of a run's artifacts, and each shard file is addressable on its own — which is what makes independent re-runs and recovery possible.
+
+## Workflow Sequence
+
+The `tag` and `embed` stages **fan out** (bounded concurrency); `load_vectors` is a **single serialized writer**. An API throttle just triggers the `RetryPolicy` backoff — the run continues.
 
 ```mermaid
 sequenceDiagram
@@ -163,92 +178,55 @@ sequenceDiagram
     E-->>P: rows loaded
 ```
 
-### Design decisions:
+## Performance
 
-- **Per-stage workflows, independently startable** 
-  - re-tag without re-chunk, etc. Keeps each workflow's event history separate (well under Temporal's 50K-event limit).
+Migrating to Temporal was also an exercise in finding where the time actually went. Numbers are at **3040 chunks** (the final end-to-end run at 3496 is noted).
 
-- **Data by reference, never through payloads**
-  - shards live in S3. 
-  - workflows pass only small values (run_id, index, counts). 
-  - Bulk data through a payload hits the 2 MB limit.
+### Bottlenecks
 
-- **Producer owns sharding** 
-  - each stage writes fan-out-ready shards the next reads directly.
-  
-- **Task queues split by throttled resource:** 
-  - `bedrock-queue` (tag+embed, rate-limited)
-  - `db-queue` (`max_concurrent_activities=1` — enforces single-writer)
-  - `default` (cheap/local).
-  
-- **Per-activity RetryPolicy by failure nature:** 
-  - bedrock 8 attempts + backoff throttles are transient; 
-  - `ValidationException` non-retryable; 
-  - db-load 2 (idempotent TRUNCATE+reload);
-  - local 3 (missing artifact = real; bounded, not Temporal's unlimited default).
+- **The LLM stages are rate-limit-bound, not compute-bound.** Bedrock quotas aren't adjustable on-demand: Nova **400 RPM** (a ~7.6-min hard floor for 3040 chunks), Titan **300K TPM**. At concurrency 10, tagging exceeded Nova's RPM ~5× → **54 throttle events**.
+- **The DB load's real cost was hidden.** The load looked DB-bound at ~14 min, but the bottleneck was actually **3040 sequential S3 reads** (~25 s per 100 shards) — not the write.
 
-- **Bounded fan-out + early abort** 
-  - a per-stage `Semaphore` caps concurrency 
-  - concurrency tuned per quot
-  - a failure counter aborts the stage past `max(20, 2%)` – protect the database
+### Solutions
 
-- **Single serialized DB load (Option A)** — `TRUNCATE → DROP HNSW → bulk COPY → REBUILD HNSW`.
-  Building the index once (not per-insert) keeps the small RDS instance from saturating I/O. The
-  load streams a binary `COPY` fed by a bounded 20-way S3 read-ahead window: reads parallelize,
-  the COPY writer stays single-threaded (the window bounds worker memory; the `db-queue`
-  single-writer bounds Postgres write concurrency — separate concerns).
+- **Fan-out (sharding)** collapsed the compute/IO-bound stages: chunk **~15 min → 16.6 s**.
+- **Tuning concurrency to the quota** (tag=3, embed=4) beat throwing more at it — at concurrency 3, tagging ran ~8 min near the hard floor. *Counter-intuitive: less concurrency was faster, because we stopped fighting the rate limiter.*
+- **Binary `COPY` + 20-way parallel S3 reads** fixed the load once we saw where the time went: **13m 55s → 15.6 s (~53×)**.
 
-## Findings at full scale (real AWS)
+### Result
 
-The story is chronological — each step built on the last, and each taught something different.
+**~1 hour → ~30 minutes** end-to-end (3496 chunks, one command, zero intervention). But almost all of that gain was **concurrency, not Temporal** — the rate limit is a floor we can't cross, and we'd have hit the same speed with plain thread pools.
 
-Numbers below are at **3040 chunks** unless noted; the final end-to-end run is at **3496**.
+## Durability
 
-1. **Sequential baseline.**
-   - Each stage timed on its own: chunk+tag **36m 22s**, embed+load **17m 27s**.
-   - The natural first implementation (`for chunk in chunks: …`) — no concurrency.
+If the speed-up was concurrency, why Temporal? Because everything above was only *possible* — and *survivable* — thanks to what Temporal gives out of the box. Three things earned it, each from a real incident on this project.
 
-2. **Fan-out (concurrency 10).**
-   - Tagging dropped to **9m 21s**.
-   - But Temporal's history showed **54 Bedrock throttle events** (zero failures; every one retried + backed off).
-   - The observability is what *revealed* we were ~5× over Nova's 400 RPM limit.
+### Retries & Backoff
 
-3. **Tuned to the quota (concurrency ~3).**
-   - Backing concurrency down to match the quota cut the throttle-and-backoff churn → **~8 min**, near Nova's ~7.6-min hard floor.
-   - Counter-intuitive but real: *less* concurrency was faster, because we stopped fighting the rate limiter.
+The rate limit became a **non-event**, not a failure:
 
-4. **Load: the bottleneck moved twice.**
-   - `executemany` **13m 55s** → binary `COPY` **12m 57s** (barely helped — the cost had moved to sequential S3 reads) → COPY + 20-way parallel reads **15.6 s**.
-   - See "The DB load" below.
+- 54 Nova throttles during one tagging run — every one retried with backoff, **zero permanent failures, zero manual intervention** (max retry attempt = 2).
+- A misconfigured second worker's activities failed mid-run; the healthy worker simply completed them on retry.
+- The old pipeline crashed the whole run on the first unhandled throttle.
 
-5. **Full end-to-end (3496 chunks).**
-   - One `PipelineWorkflow`, one command: **30m 32s**, chunk_count 3496, **0 tag failures, 0 intervention.**
+### Resume, Don't Restart
 
-### Speed is concurrency, and it's capped by AWS quotas — not Temporal
+Because stages hand off through S3, a failure resumes **only the failed part** — no redoing expensive work:
 
-- The wins in steps 2–4 are thread-pool / `asyncio` concurrency, not Temporal.
-- Compute/IO-bound work (chunk, load) collapses from minutes to seconds.
-- Quota-bound work (tag on Nova 400 RPM, embed on Titan 300K TPM) hits a floor concurrency can't beat.
-- **Temporal's contribution is not on this axis** — it's the observability that *enabled* the step-2→3 tuning, and the durability that made 54 throttles a non-event.
+- The `load_vectors` activity died twice mid-load (once a laptop sleep severed the DB connection, once a too-short timeout cancelled it). Both times the embed fan-out had already finished, so recovery was a **`load-vectors`-only re-run — no re-embedding**, via `LoadVectorsWorkflow`.
+- The old pipeline had no such seam: a crash meant re-running a ~3040-line `.jsonl` from scratch.
 
-### The DB load: the bottleneck moved twice
+### Observability
 
-- Started at **13m 55s** (`executemany`).
-- Binary `COPY` alone barely helped (**~12m 57s**) — the real cost was no longer the DB write but **3040 sequential S3 reads** (~25 s per 100 shards).
-- Parallelizing those reads (a bounded 20-way read-ahead) removed that floor: **13m 55s → 15.6 s, ~53×**.
-- Lesson: measure where time actually goes, not where you assume it does.
+Temporal's event history is **how we found the tuning**:
 
-### The rate limit is the ceiling, not compute
+- It surfaced all 54 throttles, their retry counts, and which shards backed off — that's what revealed we were 5× over the Nova quota and pointed us to concurrency=3.
+- Without that visibility, the sequential loop's `[2623/3040]` print told us nothing about *why* it stalled.
 
-- Bedrock quotas are not adjustable on-demand: Nova **400 RPM** (a ~7.6-min hard floor for 3040 chunks), Titan **300K TPM**.
-- The tag run at concurrency 10 exceeded Nova RPM ~5× → **54 throttle events, zero permanent failures, zero manual intervention** (max retry = 2).
-- The fix was tuning concurrency to the quota (tag=3, embed=4), not more compute — more workers/Lambda would only throttle harder.
+## Conclusion
 
-### Durability, proven by accident (real incidents, no data loss)
+This was already a working pipeline, so my instinct was "if it isn't broken, don't fix it". But the RAG pipeline **is** the value-add — without it, this AKS advisor is just a chat with a good LLM. The difference is **human-curated guidance** grounded in scattered official docs.
 
-- A misconfigured second worker's activities failed; the healthy worker completed them on retry.
-- 54 Bedrock throttles during tagging — all retried and cleared.
-- Two `load_vectors` failures, both client-side (the DB itself stayed healthy — inserts ran at a steady rate throughout):
-  - once the laptop slept and severed the connection;
-  - once the activity's 10-min timeout was too short and Temporal cancelled it mid-load.
-  - Because the embed fan-out had already finished (vectors safe in S3), recovery was a `load-vectors`-only re-run — no re-embedding — via `LoadVectorsWorkflow` (after bumping the timeout to 30 min).
+I'd avoided touching the pipeline precisely because it was slow: a long run is idle time I could spend on features that reach users faster. It's critical, but invisible. I set out to speed up the _whole pipeline_ — and only during the migration realized the speed that mattered was **iteration** on individual steps, which is exactly what Temporal's resume-where-it-crashed durability unlocks.
+
+Before Temporal, I was limited to optimizing for speed. Now with Temporal, I can optimize for _quality_.
