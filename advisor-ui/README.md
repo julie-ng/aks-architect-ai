@@ -167,6 +167,37 @@ For full schema, see JSON overview for humans at [localhost:3000/api/_debug/sche
 
 ---
 
+## LLM Provider
+
+The chat + title models resolve through [`server/utils/provider.ts`](./server/utils/provider.ts), swapped via `NUXT_AI_PROVIDER`. Three options — **the model id format differs per provider**, so set the model env vars to match the chosen provider:
+
+**Vercel AI Gateway** (production — per-key spend controls + observability). Model ids are namespaced `provider/model`.
+
+```bash
+export NUXT_AI_PROVIDER=vercel
+export NUXT_AI_GATEWAY_API_KEY=<vercel-gateway-key>
+export NUXT_AI_CHAT_MODEL=anthropic/claude-sonnet-4.6
+export NUXT_AI_LLM_XS_MODEL=anthropic/claude-haiku-4.5
+```
+
+**Anthropic** (direct). Bare model ids, no `provider/` prefix.
+
+```bash
+export NUXT_AI_PROVIDER=anthropic
+export NUXT_AI_GATEWAY_API_KEY=<anthropic-api-key>
+export NUXT_AI_CHAT_MODEL=claude-sonnet-4.6
+export NUXT_AI_LLM_XS_MODEL=claude-haiku-4.5
+```
+
+**Ollama** (local dev — default). Local model tags.
+
+```bash
+export NUXT_AI_PROVIDER=ollama
+export NUXT_AI_OLLAMA_BASE_URL=http://localhost:11434
+export NUXT_AI_CHAT_MODEL=gemma3:4b
+export NUXT_AI_LLM_XS_MODEL=gemma3:270m
+```
+
 ## LLM Flow
 
 ### System Prompt
