@@ -3,6 +3,11 @@
 _This `spike/temporal` branch explores migrating the app's original RAG pipeline to use temporal to optimize for speed._
 
 > [!IMPORTANT]
+> Much of the design, most notable in diagrams and infra as code includes granular Lambda functions to parallelize workers to speed up the pipeline. That hypothesis was proven wrong and **Lambdas were _not needed_, and thus not implemented**. But it is still scattered around code base as of 18 July 2026.
+> 
+> For demo and for production, a single monolithic worker produces most cost-efficient results.
+
+> [!NOTE]
 > This project is a work-in-progress. This readme describes status as of 18 July 2026.
 
 #### Navigation
@@ -14,14 +19,13 @@ To help navigate a large monorepo, these are important deep links to files/direc
 - [`/rag-pipeline/workflows/`](./) – this directory, which contains all the Temporal Workflows code
 - [`/rag-pipeline/README.md`](./../README.md) – describes the OLD sequential pipeline _before_ Temporal spike, which should still work.
 
-### Summary
+## Executive Summary
 
 The initial reasoning was to speed up the original sequential, single worker RAG pipeline from ~1 hour to minutes by leveraging a combination Temporal and parallelized workers deployed to AWS Lambda functions. 
 
-The migration revealed however, although we reduced the pipeline down to ~30 minutes, most gains were from fan-outs as concurrency was capped by AWS LLM rate limits. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last shared failed, instead of re-runing a long pipeline.
+The migration revealed however, although we reduced the pipeline down to ~30 minutes, **most gains were from fan-outs as concurrency was capped by AWS LLM rate limits**. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last actvity/shard failed, instead of re-runing the entire pipeline.
 
-> [!NOTE]
-> As of 18 July 2026, all pipeline runs of the [143 source document set](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=sources/) were run using local workers on a MacBook Pro (M3 Pro, 11-core CPU, 14-core GPU, 36GB RAM). Your mileage may vary depending on your hardware.
+Temporal doesn't speed up the pipeline. More importantly, it speeds up pipeline _iterations_, e.g. fine-tuning, which is the strongest driver of quality improvement after a data set has been exhausted.
 
 ## Why Retrieval-Augmented Generation (RAG)?
 
@@ -54,30 +58,52 @@ A RAG pipeline can fail for many reasons, e.g. throttling, network errors, etc. 
 
 A reliable and speedy RAG pipeline is important because the _real_ value-add to the user of introducing an LLM as an advisor is to **supplement LLMs with _human-driven_ subject matter expertise**. This expertise is applied via curation of [sources](./../web-scraper/SOURCES/), architectural design [taxonomies](./../advisor-ui/content/), and [system prompt](https://github.com/julie-ng/aks-architect-llm-system-prompt).
 
-## Why Temporal?
+<details>
+  <summary><strong>Details: how the pipeline turns Microsoft docs into searchable, tagged, vectorized chunks</strong></summary>
 
-The initial reasoning was to speed up the RAG pipeline. At the capstone stage, the pipeline was already relatively stable thanks to self-throttling via `sleep`s.
+This specific pipeline converts official Microsoft documentation into a data-format so that an LLM can use [retrieval-api](./../../retrieval-api/) to fetch relevant content chunks to ground its responses. Basically
 
-> [!IMPORTANT]
-> Much of the design, most notable in diagrams and infra as code includes granular Lambda functions to parallelize workers to speed up the pipeline. That hypothesis was proven wrong and **Lambdas were _not needed_, and thus not implemented**. But it is still scattered around code base as of 18 July 2026.
-> 
-> For demo and for production, a single monolithic worker produces most cost-efficient results.
+- **Pre-requisite: Scraped Docs**  
+  After [`/web-scraper/`](./../../web-scraper/), has already scraped the official docs as fined in [`SOURCES`](./../../web-scraper/SOURCES) and outputs JSON format that includes the article contents as markdown. See example [sources/000000042.json](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/sources/000000042.json) 
 
-## Before – Previous Pipeline
+- **Chunking Stage**  
+  Deterministic workflow that splits the markdown by headings, e.g. `###`
 
-It worked. But it was slow.
+- **Tagging Stage**  
+  The chunks are tagged according to a [an AKS design framework taxonomy](./../#design-framework-taxonomy), which results in something like this after tagging stage:
+  ```json
+  {
+    "source_name": "landing-zone-accelerator",
+    "priority": 15,
+    "tags": {
+      "group": "Landing Zone Accelerator",
+      "workloads": ["landing-zone", "all"],
+      "scenarios": ["enterprise"]
+    }
+  }
+  ```
 
-This project initially crawled the Microsoft Docs and found ca. 700 pages (out of thousands) relevant to AKS that our AI app could use for RAG. It needed to run overnight.
+- **Embedding Stage**  
+  The text chunks, incl. metadata are embedded into vectors and saved to Postgres DB.
 
-At Bootcamp finish, the pipeline status:
+Once in the database, the chunks are surfaced via queries through the [retrieval-api](./../../retrieval-api/).
+</details>
 
-…
+## Pipeline - Before & After Temporal Comparison
 
-## After – Temporalized Pipeline
+> [!NOTE]
+> As of 18 July 2026, all pipeline runs of the [143 source document set](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=sources/) were run using local workers on a MacBook Pro (M3 Pro, 11-core CPU, 14-core GPU, 36GB RAM). Your mileage may vary depending on your hardware.
 
-Newer Temporal + AWS driven workflows live in [`./rag-pipeline/workflows/`](.), but still use a few methods from the old python files.
+| | Old Pipeline | Temporalized Pipeline |
+|:--|:--|:--|
+| Source Documents | 143 | 143 |
+| DB Instance Size | `db.t4g.micro` | `db.t4g.micro` |
+| Workers | 1 | 1 |
+| Duration | ~1 hour | ~25–30 minutes |
+| Resiliency | Manual `sleep`s | Built-in retries + backoff |
+| Recovery | Start over from scratch | Resume the failed stage/shard |
 
-### Workflow Architecture
+## Temporal Workflow Architecture
 
 Each stage reads the previous stage's shards from S3 and writes its own, so bulk data
 never crosses a Temporal payload boundary. `LoadVectorsWorkflow` (not shown) is a
