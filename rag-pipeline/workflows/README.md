@@ -61,7 +61,7 @@ A reliable and speedy RAG pipeline is important because the _real_ value-add to 
 <details>
   <summary><strong>Details: how the pipeline turns Microsoft docs into searchable, tagged, vectorized chunks</strong></summary>
 
-This specific pipeline converts official Microsoft documentation into a data-format so that an LLM can use [retrieval-api](./../../retrieval-api/) to fetch relevant content chunks to ground its responses. Basically
+This specific pipeline converts official Microsoft documentation into a data-format so that an LLM can use [retrieval-api](./../../retrieval-api/) to fetch relevant content chunks to ground its responses. Basically:
 
 - **Pre-requisite: Scraped Docs**  
   After [`/web-scraper/`](./../../web-scraper/), has already scraped the official docs as fined in [`SOURCES`](./../../web-scraper/SOURCES) and outputs JSON format that includes the article contents as markdown. See example [sources/000000042.json](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/sources/000000042.json) 
@@ -252,9 +252,3 @@ Numbers below are at **3040 chunks** unless noted; the final end-to-end run is a
   - once the laptop slept and severed the connection;
   - once the activity's 10-min timeout was too short and Temporal cancelled it mid-load.
   - Because the embed fan-out had already finished (vectors safe in S3), recovery was a `load-vectors`-only re-run — no re-embedding — via `LoadVectorsWorkflow` (after bumping the timeout to 30 min).
-
-## Next steps
-
-- **Phase 4:** workers → Lambda + Temporal Cloud.
-  - Lambda's value is scale-to-zero cost, not speed (bottlenecks are AWS quotas + a single DB).
-  - ~$0.50 for a full day of scale testing.
