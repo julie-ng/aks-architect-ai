@@ -1,6 +1,6 @@
 # RAG Pipeline with [Temporal](https://temporal.io/)
 
-_This `spike/temporal` branch explores migrating the app's original RAG pipeline to use temporal to optimize for speed._
+_This `spike/temporal` branch explores migrating the app's original RAG pipeline to use Temporal to optimize for speed._
 
 > [!IMPORTANT]
 > Much of the design, most notable in diagrams and infra as code includes granular Lambda functions to parallelize workers to speed up the pipeline. That hypothesis was proven wrong and **Lambdas were _not needed_, and thus not implemented**. But it is still scattered around code base as of 18 July 2026.
@@ -21,9 +21,9 @@ To help navigate a large monorepo, these are important deep links to files/direc
 
 ## Executive Summary
 
-The initial reasoning was to speed up the original sequential, single worker RAG pipeline from ~1 hour to minutes by leveraging a combination Temporal and parallelized workers deployed to AWS Lambda functions. 
+The initial reasoning was to speed up the original sequential, single worker RAG pipeline from ~1 hour to minutes by leveraging a combination of Temporal and parallelized workers deployed to AWS Lambda functions. 
 
-The migration revealed however, although we reduced the pipeline down to ~30 minutes, **most gains were from fan-outs as concurrency was capped by AWS LLM rate limits**. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last actvity/shard failed, instead of re-runing the entire pipeline.
+The migration revealed however, although we reduced the pipeline down to ~30 minutes, **most gains were from fan-outs as concurrency was capped by AWS LLM rate limits**. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last activity/shard failed, instead of re-running the entire pipeline.
 
 Temporal doesn't speed up the pipeline. More importantly, it speeds up pipeline _iterations_, e.g. fine-tuning, which is the strongest driver of quality improvement after a data set has been exhausted.
 
@@ -36,11 +36,11 @@ The running AI chat application demonstrates the added-value of this RAG pipelin
 | Chat UI | Debug UI |
 |:--|:--|
 | <img src="./../../docs/screenshots/app-preview.png" alt="App preview" width="400"> | <img src="./../../docs/screenshots/retrieval-api.png" alt="UI for testing Retrieval" width="320"> |
-| LLM responses (including recommendations) are grounded in offiical Microsoft documentation. | For debugging, users can test how queries and reformulation surface different references based on scores. |
+| LLM responses (including recommendations) are grounded in official Microsoft documentation. | For debugging, users can test how queries and reformulation surface different references based on scores. |
 
 ### Anatomy of a RAG pipeline
 
-Broadly speaking, our RAG pipeline has the follwowing stages:
+Broadly speaking, our RAG pipeline has the following stages:
 
 | Stage | Input | Output | Description |
 |:--|:--|:--|:--|
@@ -64,13 +64,13 @@ A reliable and speedy RAG pipeline is important because the _real_ value-add to 
 This specific pipeline converts official Microsoft documentation into a data-format so that an LLM can use [retrieval-api](./../../retrieval-api/) to fetch relevant content chunks to ground its responses. Basically:
 
 - **Pre-requisite: Scraped Docs**  
-  After [`/web-scraper/`](./../../web-scraper/), has already scraped the official docs as fined in [`SOURCES`](./../../web-scraper/SOURCES) and outputs JSON format that includes the article contents as markdown. See example [sources/000000042.json](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/sources/000000042.json) 
+  After [`/web-scraper/`](./../../web-scraper/), has already scraped the official docs as defined in [`SOURCES`](./../../web-scraper/SOURCES) and outputs JSON format that includes the article contents as markdown. See example [sources/000000042.json](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/sources/000000042.json) 
 
 - **Chunking Stage**  
   Deterministic workflow that splits the markdown by headings, e.g. `###`
 
 - **Tagging Stage**  
-  The chunks are tagged according to a [an AKS design framework taxonomy](./../#design-framework-taxonomy), which results in something like this after tagging stage:
+  The chunks are tagged according to [an AKS design framework taxonomy](./../#design-framework-taxonomy), which results in something like this after tagging stage:
   ```json
   {
     "source_name": "landing-zone-accelerator",
@@ -105,31 +105,42 @@ Once in the database, the chunks are surfaced via queries through the [retrieval
 
 ## Workflow Design
 
-We mapped the existing pipeline onto Temporal 1:1 — **each stage became a workflow; every model call and I/O became an activity.** A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`.
+I started by mapping the existing pipeline onto Temporal 1:1:
 
-```
-PipelineWorkflow(run_id)                            parent — one run_id, chains children
-├── ChunkWorkflow      → chunk_documents            reads S3 sources → chunk shards + manifest
-├── TaggingWorkflow    → tag_shard(run_id, i)       fan-out: Nova → tagged/{i}.json
-└── EmbedWorkflow      → embed_shard(run_id, i)     fan-out: Titan → vectors/{i}.json
-                       → load_vectors(run_id, n)    single serialized activity → Postgres
-LoadVectorsWorkflow    → load_vectors               re-load S3 vectors, no re-embed (recovery)
-```
+- Each stage became a workflow.
+- Every model call and I/O became an activity.
+ 
+A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`. Here is a real run (143 docs → 3,496 chunks, zero failures):
 
-- **Per-stage workflows are independently startable** — re-tag without re-chunk, etc. Each keeps its own event history (well under Temporal's 50K-event limit).
-- **The producer owns sharding** — each stage writes fan-out-ready shards the next reads directly.
+| Type | Workflow | Duration | Events |
+|:--|:--|--:|--:|
+| Parent | [`PipelineWorkflow`](./pipeline/workflow.py) | 30m 31s | 32 |
+| Child | [`ChunkWorkflow`](./chunk/workflow.py) | 20s | 11 |
+| Child | [`TaggingWorkflow`](./tag/workflow.py) | 20m 17s | 20,846 |
+| Child | [`EmbedWorkflow`](./embed/workflow.py) | 9m 52s | 20,651 |
+
+Each stage workflow is **independently startable** — you can re-tag without re-chunking. That's also why there is a standalone [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py): it recovers from a database bottleneck by re-loading existing vectors, without re-embedding over 3,000 chunks.
+
+### Event Limits
+
+Temporal workflows have 50k event history limit.
+
+- **Capstone Dataset: 143 documents** — Splitting the stages into separate child workflows keeps each event history small, well under the limit.
+
+- **Original Dataset: 700+ documents** would exceed the limit. It is solvable with [`Continue-As-New`](https://docs.temporal.io/workflow-execution/continue-as-new), but out of scope for this spike.
 
 ### Queue Design
 
 Work is split across three task queues **by what constrains it**, not by cost:
 
-| Queue | Runs | Why its own queue |
-|:--|:--|:--|
-| `bedrock-queue` | `tag_shard`, `embed_shard` | Rate-limited by Nova / Titan quotas |
-| `db-queue` | `load_vectors` | `max_concurrent_activities=1` enforces a single DB writer |
-| `default` | workflows + chunk/manifest | Unconstrained — no rate limit or single-writer rule |
+| Queue | Runs | Constraint | Retry Policy |
+|:--|:--|:--|:--|
+| `bedrock-queue` | [`tag_shard`](./tag/activities/tag_shard.py), [`embed_shard`](./embed/activities/embed_shard.py) | Rate-limited by Nova / Titan quotas | Backoff + retry (throttles are transient); fail fast on `ValidationException` |
+| `db-queue` | [`load_vectors`](./embed/activities/load_vectors.py) | Single writer (`max_concurrent_activities=1`) | Bounded retries (idempotent reload) |
+| `default` | workflows + [`chunk_documents`](./chunk/activities/chunk_documents.py), [`read_chunk_count`](./manifest_activity.py) | Unconstrained | Bounded retries (a missing artifact is a real bug, not Temporal's unlimited default) |
 
-Each queue also gets a `RetryPolicy` matched to its failure mode — Bedrock throttles are transient (backoff + retry), a `ValidationException` is not (fail fast), and a missing artifact is a real bug (bounded retries, not Temporal's unlimited default).
+> [!NOTE]
+> `load_vectors` is a single writer because it does a full refresh — `TRUNCATE` the `chunks` table, then bulk-load every vector. Concurrent writers would corrupt each other (e.g. one truncating mid-load of another).
 
 ### Data by Reference (S3)
 
@@ -139,11 +150,11 @@ Workflows pass only small values (`run_id`, shard index, counts) — **never bul
 s3://<bucket>/<run_id>/{chunks,tagged,vectors}/NNNN.json
 ```
 
-The `run_id` correlates all of a run's artifacts, and each shard file is addressable on its own — which is what makes independent re-runs and recovery possible.
+Each stage is the **producer** of its own shards — it writes fan-out-ready files the next stage reads directly, so the stages stay decoupled. The `run_id` correlates all of a run's artifacts, and each shard file is addressable on its own — which is what makes independent re-runs and recovery possible.
 
 ## Workflow Sequence
 
-The `tag` and `embed` stages **fan out** (bounded concurrency); `load_vectors` is a **single serialized writer**. An API throttle just triggers the `RetryPolicy` backoff — the run continues.
+The `tag` and `embed` stages **fan out** (bounded concurrency); `load_vectors` is a **single serialized writer** that rebuilds the pgvector HNSW (Hierarchical Navigable Small World) index once after the bulk load. An API throttle just triggers the `RetryPolicy` backoff — the run continues.
 
 ```mermaid
 sequenceDiagram
@@ -180,24 +191,38 @@ sequenceDiagram
 
 ## Performance
 
-Migrating to Temporal was also an exercise in finding where the time actually went. Numbers are at **3040 chunks** (the final end-to-end run at 3496 is noted).
+Migrating to Temporal was also an exercise in finding where the time actually went. Numbers are at **3,040 chunks** (the final end-to-end run at 3,496 is noted).
 
 ### Bottlenecks
 
-- **The LLM stages are rate-limit-bound, not compute-bound.** Bedrock quotas aren't adjustable on-demand: Nova **400 RPM** (a ~7.6-min hard floor for 3040 chunks), Titan **300K TPM**. At concurrency 10, tagging exceeded Nova's RPM ~5× → **54 throttle events**.
-- **The DB load's real cost was hidden.** The load looked DB-bound at ~14 min, but the bottleneck was actually **3040 sequential S3 reads** (~25 s per 100 shards) — not the write.
+- **The LLM stages are rate-limit-bound, not compute-bound.**   
+  Bedrock quotas aren't adjustable on-demand: 
+  - Nova **400 RPM** (a ~7.6-min hard floor for 3,040 chunks)
+  - Titan **300K TPM**.  
+
+  At concurrency 10, tagging exceeded Nova's RPM ~5× → **54 throttle events**.
+- **The DB load's real cost was hidden.**   
+  The load looked DB-bound at ~14 min, but the bottleneck was actually **3,040 sequential S3 reads** (~25 s per 100 shards) — not the write.
 
 ### Solutions
 
 - **Fan-out (sharding)** collapsed the compute/IO-bound stages: chunk **~15 min → 16.6 s**.
-- **Tuning concurrency to the quota** (tag=3, embed=4) beat throwing more at it — at concurrency 3, tagging ran ~8 min near the hard floor. *Counter-intuitive: less concurrency was faster, because we stopped fighting the rate limiter.*
+- **Tuning concurrency to the quota** (tag=3, embed=4) beat throwing more at it
+  - At concurrency 3, tagging ran ~8 min near the hard floor. 
+  - Counter-intuitive: _**less** concurrency was **faster**_, because we stopped fighting the rate limiter.
 - **Binary `COPY` + 20-way parallel S3 reads** fixed the load once we saw where the time went: **13m 55s → 15.6 s (~53×)**.
 
 ### Result
 
-**~1 hour → ~30 minutes** end-to-end (3496 chunks, one command, zero intervention). But almost all of that gain was **concurrency, not Temporal** — the rate limit is a floor we can't cross, and we'd have hit the same speed with plain thread pools.
+#### Reduced Execution Time by 50%
 
-## Durability
+**~1 hour → ~30 minutes** end-to-end (3,496 chunks, one command, zero intervention). But almost all of that gain was **concurrency, not Temporal** — the rate limit is a floor we can't cross, and we'd have hit the same speed with plain thread pools.
+
+#### The Target Architecture Is Simpler Than Planned
+
+The spike started out designed for one Lambda per workflow. But once the bottlenecks turned out to be AWS quotas and a single DB — not compute — that granularity bought nothing. A **single monolithic worker** is the most performant *and* cheapest option, so the planned Lambda architecture isn't needed. The stale Lambda scaffolding still lingers in the diagrams and IaC (see the note at the top).
+
+## Durability – Where Temporal Actually Pays Off
 
 If the speed-up was concurrency, why Temporal? Because everything above was only *possible* — and *survivable* — thanks to what Temporal gives out of the box. Three things earned it, each from a real incident on this project.
 
@@ -223,7 +248,7 @@ Temporal's event history is **how we found the tuning**:
 - It surfaced all 54 throttles, their retry counts, and which shards backed off — that's what revealed we were 5× over the Nova quota and pointed us to concurrency=3.
 - Without that visibility, the sequential loop's `[2623/3040]` print told us nothing about *why* it stalled.
 
-## Conclusion
+## Conclusion – Focus on Quality, not Speed
 
 This was already a working pipeline, so my instinct was "if it isn't broken, don't fix it". But the RAG pipeline **is** the value-add — without it, this AKS advisor is just a chat with a good LLM. The difference is **human-curated guidance** grounded in scattered official docs.
 
