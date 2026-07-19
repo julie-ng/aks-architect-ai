@@ -11,6 +11,9 @@ The initial reasoning was to speed up the original sequential, single worker RAG
 
 The migration revealed however, although we reduced the pipeline down to ~30 minutes, most gains were from fan-outs as concurrency was capped by AWS LLM rate limits. Temporal's durability, however, accelerated development time with its retries so configuration fine-tuning could pick up where the last shared failed, instead of re-runing a long pipeline.
 
+> [!NOTE]
+> As of 18 July 2026, all pipeline runs of the [143 source document set](https://skai-pipeline-store-test-f440010.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=sources/) were run using local workers on a MacBook Pro (M3 Pro, 11-core CPU, 14-core GPU, 36GB RAM). Your mileage may vary depending on your hardware.
+
 ## Why Retrieval-Augmented Generation (RAG)?
 
 The root project of this [aks-architect-ai](https://github.com/julie-ng/aks-architect-ai) repository is **an AI advisor** for designing an Azure Kubernetes Service (AKS) cluster. **Quality is ensured by _grounding_ responses in the official Microsoft documentation**, which is scraped by [/web-scraper](./../web-scraper/README.md).
@@ -54,15 +57,36 @@ This demo requires AWS Bedrock and S3. Go to [/infrastructure/](./../../infrastr
 
 ### Step 2 - Configure Environment
 
-`config.py` reads all configuration from the environment. Copy [`.env.sample`](./../../.env.sample) for reference and `source` your `.env` before running anything below. Key variables:
+All configuration from the environment. To setup, run these steps:
 
-- `AWS_PROFILE`, `AWS_REGION` — credentials + region for Bedrock / S3 / RDS
-- `DATABASE_URL` — Postgres (RDS) connection string
-- `STORAGE_BACKEND=s3`, `S3_BUCKET` — pipeline artifact storage
-- `SOURCES_PREFIX` — which S3 prefix to read sources from (`sources`, or `sources-sample` for fast iteration)
-- `TAGGING_MODEL`, `EMBEDDING_MODEL` — Bedrock Nova / Titan
-- `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE` — Temporal server
-- `TEMPORAL_TAG_CONCURRENCY`, `TEMPORAL_EMBED_CONCURRENCY` — per-stage fan-out, tuned to each model's quota
+1. Copy [`.env.sample`](./../../.env.sample) into a `.env` file.
+
+> [!TIP]
+> The `.env` file lives in the **project _root_ directory** and is automatically git ignored.
+
+2. Edit and set the variables below (ignore the ones for other parts of the app)
+
+  | Variable | Default / Example | Description |
+  |:--|:--|:--|
+  | `AWS_PROFILE` | `process` | [AWS credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html#cli-configure-sign-in-cached-credentials)  profile name |
+  | `AWS_REGION` | `eu-west-1` | Region for Bedrock / S3 / RDS |
+  | `DATABASE_URL` | `postgresql://…@host:5432/db` | Postgres (RDS) connection string |
+  | `STORAGE_BACKEND` | `s3` | Pipeline artifact storage backend (`local` or `s3`) |
+  | `S3_BUCKET` | `skai-pipeline-store-xyz` | Bucket for sources + stage artifacts |
+  | `SOURCES_PREFIX` | `sources` | S3 prefix to read sources from (`sources-sample` for fast iteration) |
+  | `TAGGING_MODEL` | `eu.amazon.nova-micro-v1:0` | Bedrock Nova — tagging (needs the `eu.` inference profile) |
+  | `EMBEDDING_MODEL` | `amazon.titan-embed-text-v2:0` | Bedrock Titan — embeddings |
+  | `TEMPORAL_ADDRESS` | `localhost:7233` | Temporal server address |
+  | `TEMPORAL_NAMESPACE` | `default` | Temporal namespace |
+  | `TEMPORAL_TAG_CONCURRENCY` | `3` | Tag fan-out concurrency, tuned to Nova 400 RPM |
+  | `TEMPORAL_EMBED_CONCURRENCY` | `4` | Embed fan-out concurrency, tuned to Titan 300K TPM |
+
+3. Finally load the variables into your shell 
+
+```bash
+# from project root
+source ./.env
+```
 
 ### Step 3 - Copy Sources
 
@@ -97,23 +121,45 @@ caffeinate -i uv run python -m workflows.worker            # caffeinate: don't s
 
 ### Step 5B - Start Workflow(s)
 
+#### Run Full Pipeline
+
+Run the full RAG pipeline (`pipeline`) that includes all stages, which takes about 25-30 minutes on a MacBook Pro (M3 Pro)
+
 ```bash
-uv run python -m workflows.starter                         # full pipeline, fresh run_id
-uv run python -m workflows.starter --stage tag --run-id <id>   # or a single stage
+uv run python -m workflows.starter                         
 ```
 
-**Fast iteration** — full runs are ~25 min; use the ~10% sample:
+#### Run Individual Stages
+
+It is also possible to run a individual stage, which is useful if the full pipeline fails. For example to run the `tag` stage:
+
+```bash
+uv run python -m workflows.starter --stage tag --run-id <id> 
+```
+
+Overview of all stages
+
+| `--stage` | Workflow | Runs |
+|:--|:--|:--|
+| `pipeline` | [`PipelineWorkflow`](./pipeline/workflow.py) | Full pipeline (default) — chains chunk → tag → embed |
+| `chunk` | [`ChunkWorkflow`](./chunk/workflow.py) | Read S3 sources → chunk shards + manifest |
+| `tag` | [`TaggingWorkflow`](./tag/workflow.py) | Fan-out: Nova tags each chunk shard |
+| `embed` | [`EmbedWorkflow`](./embed/workflow.py) | Fan-out: Titan embeds each shard, then loads vectors to Postgres |
+| `load-vectors` | [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py) | Re-load existing S3 vectors into Postgres, no re-embed (recovery stage) |
+
+---
+
+#### Fast iteration
+
+To fine-tune the pipeline configuring, it is useful to run workflows against the ~10% sample set:
 
 ```bash
 make pipeline/sample-sources          # build sources-sample/ (15 docs) in S3
 export SOURCES_PREFIX=sources-sample  # restart worker to pick up; runs in seconds
 ```
 
-Config (env-overridable, see `config.py` / `.env.sample`): `TEMPORAL_ADDRESS`,
-`TEMPORAL_TAG_CONCURRENCY=3` (Nova 400 RPM), `TEMPORAL_EMBED_CONCURRENCY=4` (Titan 300K TPM),
-`SOURCES_PREFIX`, `LOG_LEVEL` (`debug` = per-shard). Logs are structured JSON (queryable in
-CloudWatch Logs Insights when workers move to AWS).
-
+> [!IMPORTANT]
+> First upload a sample of the `/sources/` *.json files into S3 with the `sources-sample/` prefix.
 
 ## Why Temporal?
 
