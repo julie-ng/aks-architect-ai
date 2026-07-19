@@ -105,19 +105,29 @@ Once in the database, the chunks are surfaced via queries through the [retrieval
 
 ## Workflow Design
 
-We mapped the existing pipeline onto Temporal 1:1 — **each stage became a workflow; every model call and I/O became an activity.** A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`.
+I started by mapping the existing pipeline onto Temporal 1:1 
 
-```
-PipelineWorkflow(run_id)                            parent — one run_id, chains children
-├── ChunkWorkflow      → chunk_documents            reads S3 sources → chunk shards + manifest
-├── TaggingWorkflow    → tag_shard(run_id, i)       fan-out: Nova → tagged/{i}.json
-└── EmbedWorkflow      → embed_shard(run_id, i)     fan-out: Titan → vectors/{i}.json
-                       → load_vectors(run_id, n)    single serialized activity → Postgres
-LoadVectorsWorkflow    → load_vectors               re-load S3 vectors, no re-embed (recovery)
-```
+- Each stage became a workflow.
+- Every model call and I/O became an activity.
+ 
+A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`. Here is a real run (143 docs → 3496 chunks, zero failures):
 
-- **Per-stage workflows are independently startable** — re-tag without re-chunk, etc. Each keeps its own event history (well under Temporal's 50K-event limit).
-- **The producer owns sharding** — each stage writes fan-out-ready shards the next reads directly.
+| Type | Workflow | Duration | Events |
+|:--|:--|--:|--:|
+| Parent | [`PipelineWorkflow`](./pipeline/workflow.py) | 30m 31s | 32 |
+| Child | [`ChunkWorkflow`](./chunk/workflow.py) | 20s | 11 |
+| Child | [`TaggingWorkflow`](./tag/workflow.py) | 20m 17s | 20,846 |
+| Child | [`EmbedWorkflow`](./embed/workflow.py) | 9m 52s | 20,651 |
+
+Additionally, there is an standalone [`LoadVectorsWorkflow`](./embed/load_vectors_workflow.py) to recover from a database bottleneck without re-embedding over 3,000 chunks.
+
+### Event Limits
+
+Temporal workflows have 50k event history limit.
+
+- **Capstone Dataset: 143 documents** - Splitting the stages into separate child workflows keeps each event history small, well under the limit.
+
+- **Original Dataset: 700+ documents** would exceed the limit. It is solvable with [`Continue-As-New`](https://docs.temporal.io/workflow-execution/continue-as-new), but out of scope of this spike.
 
 ### Queue Design
 
@@ -177,6 +187,9 @@ sequenceDiagram
     E->>DB: load_vectors — TRUNCATE, DROP HNSW,<br/>stream COPY, REBUILD HNSW (single writer)
     E-->>P: rows loaded
 ```
+
+- **Per-stage workflows are independently startable** — re-tag without re-chunk, etc. Each keeps its own event history (well under Temporal's 50K-event limit).
+- **The producer owns sharding** — each stage writes fan-out-ready shards the next reads directly.
 
 ## Performance
 
