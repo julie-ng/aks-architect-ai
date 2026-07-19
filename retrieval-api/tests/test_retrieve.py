@@ -80,6 +80,7 @@ class TestRetrieveEndpoint:
             0.1,
             None,
             "ollama",
+            "eu-west-1",
         )
 
     def test_passes_design_context_to_reformulate(self, mock_reform, mock_retrieve):

@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     embedding_prefix: str = ""
     document_prefix: str = ""
     aws_region: str = "eu-west-1"
-    chat_model: str = "llama3.2"
     # Query reformulation on Bedrock Nova Micro (cross-region eu.* inference profile —
     # the bare model id fails in eu-west-1). Same region/credentials as the Titan call.
     reformulation_provider: Literal["ollama", "anthropic", "bedrock"] = "bedrock"
