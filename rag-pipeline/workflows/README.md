@@ -110,7 +110,7 @@ I started by mapping the existing pipeline onto Temporal 1:1:
 - Each stage became a workflow.
 - Every model call and I/O became an activity.
  
-A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`. Here is a real run (143 docs → 3496 chunks, zero failures):
+A parent `PipelineWorkflow` chains the three stage workflows under one `run_id`. Here is a real run (143 docs → 3,496 chunks, zero failures):
 
 | Type | Workflow | Duration | Events |
 |:--|:--|--:|--:|
@@ -216,7 +216,7 @@ Migrating to Temporal was also an exercise in finding where the time actually we
 
 #### Reduced Execution Time by 50%
 
-**~1 hour → ~30 minutes** end-to-end (3496 chunks, one command, zero intervention). But almost all of that gain was **concurrency, not Temporal** — the rate limit is a floor we can't cross, and we'd have hit the same speed with plain thread pools.
+**~1 hour → ~30 minutes** end-to-end (3,496 chunks, one command, zero intervention). But almost all of that gain was **concurrency, not Temporal** — the rate limit is a floor we can't cross, and we'd have hit the same speed with plain thread pools.
 
 #### The Target Architecture Is Simpler Than Planned
 
