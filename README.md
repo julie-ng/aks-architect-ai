@@ -91,6 +91,11 @@ And you can test it worked with `make pipeline/query`.
 
 See [Makefile](./Makefile) for all commands.
 
+## Testing and Linting
+
+- `make unit-tests` runs the web-scraper tests plus the rag-pipeline and retrieval-api pytest suites.
+- `make lint` runs advisor-ui linting plus retrieval-api and rag-pipeline ruff checks and format checks.
+
 ### Step 1 - Start Ollama
 
 Install [Ollama](https://ollama.com/). Then pull models and start service.
