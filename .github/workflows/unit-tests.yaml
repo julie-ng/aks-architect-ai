@@ -91,8 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
-          token: ${{ secrets.AKS_AI_WORKFLOWS_PAT }}
+          submodules: true          
       - uses: actions/setup-node@v4
         with:
           node-version: 22
